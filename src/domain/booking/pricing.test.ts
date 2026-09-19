@@ -18,10 +18,17 @@ describe("priceBooking (server-authoritative)", () => {
     expect(p.grandTotal).toBe(99900);
   });
 
-  it("charges children at the adult rate (no child rate yet)", () => {
+  it("charges children at the adult rate when no child rate is set", () => {
     const p = priceBooking({ trekId: TREK, basePrice: 100000, adults: 1, children: 2 });
     expect(p.priceChild).toBe(100000);
     expect(p.subtotal).toBe(300000);
+  });
+
+  it("uses the child rate when present", () => {
+    const p = priceBooking({ trekId: TREK, basePrice: 129900, childPrice: 99900, adults: 2, children: 1 });
+    expect(p.priceAdult).toBe(129900);
+    expect(p.priceChild).toBe(99900);
+    expect(p.subtotal).toBe(129900 * 2 + 99900);
   });
 
   it("sums valid active addons", () => {

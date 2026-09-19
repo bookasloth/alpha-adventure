@@ -4,10 +4,21 @@ import { z } from "zod";
 // docs/V2_DECISIONS.md). Amounts are NEVER accepted from the client; the server
 // prices via price_booking(). Only structural/contact inputs are validated here.
 
+export const genderEnum = z.enum(["male", "female", "other", "prefer_not_to_say"]);
+
 export const travellerSchema = z.object({
   full_name: z.string().trim().min(1, "Name is required.").max(120),
+  age: z.number().int().min(1).max(120).nullable().optional(),
+  gender: genderEnum.nullable().optional(),
   phone: z.string().trim().max(40).optional().or(z.literal("")).transform((v) => v || null),
   email: z.string().trim().max(200).optional().or(z.literal("")).transform((v) => v || null),
+  emergency_contact_phone: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || null),
   is_lead: z.boolean().default(false),
 });
 

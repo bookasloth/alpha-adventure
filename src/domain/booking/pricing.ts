@@ -9,6 +9,7 @@ export type AddonCatalogRow = { id: string; price: number; active: boolean; trek
 export type PricingInput = {
   trekId: string;
   basePrice: number; // treks.base_price (paise)
+  childPrice?: number | null; // treks.child_price (paise); null => adult rate
   priceOverride?: number | null; // trek_departures.price_override (paise)
   adults: number;
   children: number;
@@ -31,6 +32,7 @@ export function priceBooking(input: PricingInput): PriceSnapshot {
   const {
     trekId,
     basePrice,
+    childPrice,
     priceOverride,
     adults,
     children,
@@ -43,7 +45,7 @@ export function priceBooking(input: PricingInput): PriceSnapshot {
   if (!Number.isFinite(basePrice) || basePrice < 0) throw new Error("invalid base price");
 
   const unitAdult = priceOverride ?? basePrice;
-  const unitChild = unitAdult; // ponytail: no separate child rate in the catalog yet
+  const unitChild = childPrice ?? unitAdult; // child rate if set, else adult rate
 
   let addonsTotal = 0;
   for (const a of addons) {

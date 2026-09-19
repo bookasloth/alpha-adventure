@@ -55,3 +55,24 @@ export async function sendBookingPendingEmail(b: BookingEmail) {
     );
   }
 }
+
+// Sent after verified (here: mock) payment — the real confirmation.
+export async function sendBookingConfirmedEmail(b: BookingEmail) {
+  await send(
+    b.to,
+    `Booking confirmed ${b.reference} — Alpha Adventures`,
+    `<h2>You're confirmed! 🎉</h2>
+     <p><strong>${b.trekTitle}</strong>${b.departureDate ? ` on ${b.departureDate}` : ""}</p>
+     <p>Reference: <strong>${b.reference}</strong><br/>
+     Travellers: ${b.seats}<br/>
+     Paid: <strong>${rupees(b.total)}</strong></p>
+     <p>See you on the trail!</p>`,
+  );
+  if (adminTo) {
+    await send(
+      adminTo,
+      `Booking CONFIRMED ${b.reference}`,
+      `<p>${b.trekTitle} — ${b.seats} traveller(s) — ${rupees(b.total)} — ${b.to}</p>`,
+    );
+  }
+}

@@ -14,7 +14,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
 
   const { data: trek } = await supabase
     .from("treks")
-    .select("id,slug,title,base_price,status,deleted_at")
+    .select("id,slug,title,summary,location,state,base_price,child_price,status,deleted_at")
     .eq("slug", params.slug)
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
@@ -36,15 +36,17 @@ export default async function BookPage({ params }: { params: { slug: string } })
     .order("position", { ascending: true });
 
   return (
-    <section className="section">
-      <div className="container-px" style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px" }}>
-        <h1 className="section-title" style={{ marginBottom: 8 }}>Book {trek.title}</h1>
-        <BookingFlow
-          trek={{ id: trek.id, title: trek.title, base_price: trek.base_price ?? 0 }}
-          departures={departures ?? []}
-          addons={addons ?? []}
-        />
-      </div>
-    </section>
+    <BookingFlow
+      trek={{
+        id: trek.id,
+        title: trek.title,
+        summary: trek.summary,
+        base_price: trek.base_price ?? 0,
+        child_price: trek.child_price ?? null,
+        place: trek.location || trek.state || "India",
+      }}
+      departures={departures ?? []}
+      addons={addons ?? []}
+    />
   );
 }
