@@ -1,0 +1,200 @@
+<!-- Breadcrumb section Start-->
+    <div class="breadcrumb-section"
+        style="background-image: linear-gradient(270deg, rgba(17, 15, 15, 0.55) 0%, rgba(17, 15, 15, 0.55) 100%), url('assets/img/innerpages/breadcrumb-bg1.jpg');">
+        <div class="container">
+            <div class="banner-content">
+                <h1>Gallery</h1>
+                <ul class="breadcrumb-list">
+                    <li><a href="/">Home</a></li>
+                    <li>Gallery</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Breadcrumb section End-->
+
+    <!-- Gallery Section Start -->
+    <div class="gallery-section pt-80 mb-120">
+        <div class="container">
+            <!-- Title -->
+            <div class="section-title text-center mb-50">
+                <h2 class="mb-3">Beautiful moments from our amazing trekking adventures.</h2>
+                <p class="mx-auto" style="max-width: 600px; font-size: 16px; color: #6b7280;">These are memories created at Alpha Adventures</p>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="gallery-search-filter-container mb-50">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-4 col-md-12">
+                        <div class="search-input-group">
+                            <span class="search-icon"><i class="bi bi-search"></i></span>
+                            <input type="text" id="gallery-search-input" class="filter-input" placeholder="Search by trek name...">
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="select-group">
+                            <span class="select-icon"><i class="bi bi-grid"></i></span>
+                            <select id="gallery-category-select" class="filter-select">
+                                <option value="all">All Categories</option>
+                                                                    <option value="upcoming-treks">
+                                        Upcoming Treks                                    </option>
+                                                                    <option value="backpacking-trips">
+                                        Backpacking Trips                                    </option>
+                                                                    <option value="trips-near-nagpur">
+                                        Trips Near Nagpur                                    </option>
+                                                                    <option value="tour-packages">
+                                        Tour Packages                                    </option>
+                                                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="select-group">
+                            <span class="select-icon"><i class="bi bi-tags"></i></span>
+                            <select id="gallery-subcategory-select" class="filter-select" disabled>
+                                <option value="all">All Subcategories</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-12">
+                        <button id="gallery-reset-btn" class="btn btn-reset">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery Grid -->
+            <div class="row g-4" id="gallery-grid-row">
+                
+                <!-- Row 1, Column 1: Wide Image (Upcoming Treks) -->
+                <div class="col-lg-6 col-md-12 gallery-card-wrapper" data-category="upcoming-treks" data-subcategory="sahyadri-treks">
+                    <a href="gallery-detail.php?slug=kalsubai-peak-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/destination-dt-location-img7.jpg" alt="Kalsubai Peak Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Upcoming Treks</div>
+                            <div class="gallery-item-title">Kalsubai Peak Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 1, Column 2: Narrow Image (Upcoming Treks) -->
+                <div class="col-lg-3 col-md-6 gallery-card-wrapper" data-category="upcoming-treks" data-subcategory="sahyadri-treks">
+                    <a href="gallery-detail.php?slug=harishchandragad-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/destination-dt-location-img6.jpg" alt="Harishchandragad Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Upcoming Treks</div>
+                            <div class="gallery-item-title">Harishchandragad Peak Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 1, Column 3: Narrow Image (Upcoming Treks) -->
+                <div class="col-lg-3 col-md-6 gallery-card-wrapper" data-category="upcoming-treks" data-subcategory="sahyadri-treks">
+                    <a href="gallery-detail.php?slug=rajmachi-fort-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/destination-dt-location-img4.jpg" alt="Rajmachi Fort Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Upcoming Treks</div>
+                            <div class="gallery-item-title">Rajmachi Fort Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 2, Column 1: Equal Column (Backpacking Trips) -->
+                <div class="col-lg-4 col-md-6 gallery-card-wrapper" data-category="backpacking-trips" data-subcategory="himachal-pradesh">
+                    <a href="gallery-detail.php?slug=kedarkantha-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-320">
+                            <img src="assets/img/innerpages/destination-dt-location-img2.jpg" alt="Kedarkantha Winter Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Backpacking Trips</div>
+                            <div class="gallery-item-title">Kedarkantha Winter Expedition</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 2, Column 2: Equal Column (Backpacking Trips) -->
+                <div class="col-lg-4 col-md-6 gallery-card-wrapper" data-category="backpacking-trips" data-subcategory="himachal-pradesh">
+                    <a href="gallery-detail.php?slug=hampta-pass-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-320">
+                            <img src="assets/img/innerpages/destination-dt-location-img3.jpg" alt="Hampta Pass Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Backpacking Trips</div>
+                            <div class="gallery-item-title">Hampta Pass Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 2, Column 3: Equal Column (Backpacking Trips) -->
+                <div class="col-lg-4 col-md-12 gallery-card-wrapper" data-category="backpacking-trips" data-subcategory="himachal-pradesh">
+                    <a href="gallery-detail.php?slug=valley-of-flowers" class="gallery-item">
+                        <div class="gallery-img-wrapper height-320">
+                            <img src="assets/img/innerpages/destination-dt-location-img5.jpg" alt="Valley of Flowers Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Backpacking Trips</div>
+                            <div class="gallery-item-title">Valley of Flowers Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 3, Column 1: Wide Image (Trips Near Nagpur) -->
+                <div class="col-lg-6 col-md-12 gallery-card-wrapper" data-category="trips-near-nagpur" data-subcategory="seven-sisters-hill-trek">
+                    <a href="gallery-detail.php?slug=seven-sisters-hill-trek" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/about-video-img.jpg" alt="Seven Sisters Hill Trek" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Trips Near Nagpur</div>
+                            <div class="gallery-item-title">Seven Sisters Hill Trek</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 3, Column 2: Narrow Image (Trips Near Nagpur) -->
+                <div class="col-lg-3 col-md-6 gallery-card-wrapper" data-category="trips-near-nagpur" data-subcategory="silver-falls">
+                    <a href="gallery-detail.php?slug=silver-falls" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/tour-package-img4.jpg" alt="Silver Falls" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Trips Near Nagpur</div>
+                            <div class="gallery-item-title">Silver Falls Expedition</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Row 3, Column 3: Narrow Image (Tour Packages) -->
+                <div class="col-lg-3 col-md-6 gallery-card-wrapper" data-category="tour-packages" data-subcategory="">
+                    <a href="gallery-detail.php?slug=scenic-kerala-tour" class="gallery-item">
+                        <div class="gallery-img-wrapper height-380">
+                            <img src="assets/img/innerpages/tour-package-img2.jpg" alt="Scenic Kerala Tour" class="gallery-img">
+                        </div>
+                        <div class="gallery-overlay">
+                            <div class="gallery-item-badge">Tour Packages</div>
+                            <div class="gallery-item-title">Scenic Kerala Tour</div>
+                            <div class="gallery-item-link">View Gallery <i class="bi bi-arrow-right-short"></i></div>
+                        </div>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- Gallery Section End -->
+
+    

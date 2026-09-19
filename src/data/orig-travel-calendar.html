@@ -1,0 +1,243 @@
+
+    <!-- Breadcrumb section Start-->
+    <div class="breadcrumb-section"
+        style="background-image: linear-gradient(270deg, rgba(17, 15, 15, 0.55) 0%, rgba(17, 15, 15, 0.55) 100%), url('assets/img/innerpages/breadcrumb-bg1.jpg');">
+        <div class="container">
+            <div class="banner-content">
+                <h1>Travel Calendar</h1>
+                <ul class="breadcrumb-list">
+                    <li><a href="/">Home</a></li>
+                    <li>Travel Calendar</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Breadcrumb section End-->
+
+
+    <!-- Trek Calendar Section Start -->
+    <div class="calendar-page pt-80 mb-120">
+        <div class="container">
+            <div class="section-title text-center mb-50">
+                <h2>Upcoming Departures</h2>
+                <p>Plan your next adventure with our scheduled treks. Book early to secure your spot.</p>
+            </div>
+
+            <!-- Mobile Filter Toggle -->
+            <button type="button" class="mobile-filter-toggle d-lg-none" id="mobileFilterToggle">
+                <i class="bi bi-funnel"></i> Filters
+            </button>
+
+            <div class="calendar-layout">
+                <!-- Sidebar Filters -->
+                <aside class="calendar-sidebar" id="calendarSidebar">
+                    <div class="sidebar-header d-lg-none">
+                        <h5>Filters</h5>
+                        <button type="button" class="sidebar-close" id="sidebarClose"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <div class="sidebar-inner">
+                        <div class="filter-section">
+                            <label class="filter-label">Search</label>
+                            <div class="search-wrapper">
+                                <i class="bi bi-search"></i>
+                                <input type="text" id="trekSearch" placeholder="Trip name or destination...">
+                            </div>
+                        </div>
+                        <div class="filter-section">
+                            <label class="filter-label">Trip Category</label>
+                            <select id="categoryFilter" class="filter-select">
+                                <option value="all">All Trips</option>
+                                <option value="upcoming">Upcoming Treks</option>
+                                <option value="backpacking">Backpacking Trips</option>
+                                <option value="nagpur">Trips Near Nagpur</option>
+                            </select>
+                        </div>
+                        <div class="filter-section">
+                            <label class="filter-label">Duration</label>
+                            <select id="durationFilter" class="filter-select">
+                                <option value="all">Any Duration</option>
+                                <option value="1-2">1 – 2 Days</option>
+                                <option value="3-5">3 – 5 Days</option>
+                                <option value="6-8">6 – 8 Days</option>
+                                <option value="9-12">9 – 12 Days</option>
+                                <option value="13+">13+ Days</option>
+                            </select>
+                        </div>
+                        <div class="filter-section">
+                            <label class="filter-label">Budget Range (Per Person)</label>
+                            <div class="budget-range-wrapper">
+                                <input type="range" id="budgetMin" class="budget-range" min="0" max="50000" value="0" step="500">
+                                <input type="range" id="budgetMax" class="budget-range" min="0" max="50000" value="50000" step="500">
+                            </div>
+                            <div class="budget-range-labels">
+                                <span id="budgetMinLabel">₹0</span>
+                                <span class="budget-dash">—</span>
+                                <span id="budgetMaxLabel">₹50,000</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-reset-filters" id="resetFilters">Reset All</button>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="calendar-main">
+                    <!-- Month Chips -->
+                    <div class="month-chips" id="monthChips">
+                        <button type="button" class="month-chip active" data-month="all">All</button>
+                        <button type="button" class="month-chip" data-month="1">Jan</button>
+                        <button type="button" class="month-chip" data-month="2">Feb</button>
+                        <button type="button" class="month-chip" data-month="3">Mar</button>
+                        <button type="button" class="month-chip" data-month="4">Apr</button>
+                        <button type="button" class="month-chip" data-month="5">May</button>
+                        <button type="button" class="month-chip" data-month="6">Jun</button>
+                        <button type="button" class="month-chip" data-month="7">Jul</button>
+                        <button type="button" class="month-chip" data-month="8">Aug</button>
+                        <button type="button" class="month-chip" data-month="9">Sep</button>
+                        <button type="button" class="month-chip" data-month="10">Oct</button>
+                        <button type="button" class="month-chip" data-month="11">Nov</button>
+                        <button type="button" class="month-chip" data-month="12">Dec</button>
+                    </div>
+
+                    <!-- Trip Listing -->
+                    <div class="trek-list">
+                        <!-- 1. Kedarkantha Trek -->
+                        <div class="trek-card" data-category="upcoming" data-price="8500" data-month="1"
+                            data-destination="uttarakhand" data-duration="6"
+                            data-search="kedarkantha trek uttarakhand" data-date="2027-01-15">
+                            <div class="trek-card-img">
+                                <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=400&auto=format&fit=crop" alt="Kedarkantha Trek">
+                            </div>
+                            <div class="trek-card-body">
+                                <div class="trek-card-header">
+                                    <div class="trek-info">
+                                        <h6 class="trek-name">Kedarkantha Trek</h6>
+                                        <div class="trek-location"><i class="bi bi-geo-alt"></i> Uttarakhand</div>
+                                    </div>
+                                    <div class="trek-actions">
+                                        <a href="#" class="primary-btn1 btn-sm"><span>Book Now</span><span>Book Now</span></a>
+                                    </div>
+                                </div>
+                                <div class="trek-meta">
+                                    <div class="trek-meta-item"><i class="bi bi-calendar3"></i> 15 Jan – 20 Jan 2027</div>
+                                    <div class="trek-meta-item"><i class="bi bi-clock"></i> 6 Days</div>
+                                    <div class="trek-meta-item"><i class="bi bi-people"></i> 6 spots left</div>
+                                    <div class="trek-meta-item"><span class="badge-custom badge-easy">Easy to Moderate</span></div>
+                                </div>
+                                <div class="trek-price">
+                                    <span class="price-label">Starting From</span>
+                                    <span class="price-value">₹8,500 Onwards</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Brahmatal Trek -->
+                        <div class="trek-card" data-category="upcoming" data-price="7500" data-month="1"
+                            data-destination="uttarakhand" data-duration="6"
+                            data-search="brahmatal trek uttarakhand" data-date="2027-01-22">
+                            <div class="trek-card-img">
+                                <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400&auto=format&fit=crop" alt="Brahmatal Trek">
+                            </div>
+                            <div class="trek-card-body">
+                                <div class="trek-card-header">
+                                    <div class="trek-info">
+                                        <h6 class="trek-name">Brahmatal Trek</h6>
+                                        <div class="trek-location"><i class="bi bi-geo-alt"></i> Uttarakhand</div>
+                                    </div>
+                                    <div class="trek-actions">
+                                        <a href="#" class="primary-btn1 btn-sm"><span>Book Now</span><span>Book Now</span></a>
+                                    </div>
+                                </div>
+                                <div class="trek-meta">
+                                    <div class="trek-meta-item"><i class="bi bi-calendar3"></i> 22 Jan – 27 Jan 2027</div>
+                                    <div class="trek-meta-item"><i class="bi bi-clock"></i> 6 Days</div>
+                                    <div class="trek-meta-item"><i class="bi bi-people"></i> 2 spots left</div>
+                                    <div class="trek-meta-item"><span class="badge-custom badge-moderate">Moderate</span></div>
+                                </div>
+                                <div class="trek-price">
+                                    <span class="price-label">Starting From</span>
+                                    <span class="price-value">₹7,500 Onwards</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Chadar Trek -->
+                        <div class="trek-card" data-category="backpacking" data-price="35000" data-month="2"
+                            data-destination="ladakh" data-duration="9"
+                            data-search="chadar trek ladakh" data-date="2027-02-05">
+                            <div class="trek-card-img">
+                                <img src="https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=400&auto=format&fit=crop" alt="Chadar Trek">
+                            </div>
+                            <div class="trek-card-body">
+                                <div class="trek-card-header">
+                                    <div class="trek-info">
+                                        <h6 class="trek-name">Chadar Trek</h6>
+                                        <div class="trek-location"><i class="bi bi-geo-alt"></i> Ladakh</div>
+                                    </div>
+                                    <div class="trek-actions">
+                                        <a href="#" class="primary-btn1 btn-sm"><span>Book Now</span><span>Book Now</span></a>
+                                    </div>
+                                </div>
+                                <div class="trek-meta">
+                                    <div class="trek-meta-item"><i class="bi bi-calendar3"></i> 05 Feb – 13 Feb 2027</div>
+                                    <div class="trek-meta-item"><i class="bi bi-clock"></i> 9 Days</div>
+                                    <div class="trek-meta-item"><i class="bi bi-people"></i> 9 spots left</div>
+                                    <div class="trek-meta-item"><span class="badge-custom badge-difficult">Difficult</span></div>
+                                </div>
+                                <div class="trek-price">
+                                    <span class="price-label">Starting From</span>
+                                    <span class="price-value">₹35,000 Onwards</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Kuari Pass Trek -->
+                        <div class="trek-card" data-category="nagpur" data-price="9000" data-month="2"
+                            data-destination="uttarakhand" data-duration="6"
+                            data-search="kuari pass trek uttarakhand" data-date="2027-02-18">
+                            <div class="trek-card-img">
+                                <img src="https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?q=80&w=400&auto=format&fit=crop" alt="Kuari Pass Trek">
+                            </div>
+                            <div class="trek-card-body">
+                                <div class="trek-card-header">
+                                    <div class="trek-info">
+                                        <h6 class="trek-name">Kuari Pass Trek</h6>
+                                        <div class="trek-location"><i class="bi bi-geo-alt"></i> Uttarakhand</div>
+                                    </div>
+                                    <div class="trek-actions">
+                                        <a href="#" class="primary-btn1 btn-sm"><span>Book Now</span><span>Book Now</span></a>
+                                    </div>
+                                </div>
+                                <div class="trek-meta">
+                                    <div class="trek-meta-item"><i class="bi bi-calendar3"></i> 18 Feb – 23 Feb 2027</div>
+                                    <div class="trek-meta-item"><i class="bi bi-clock"></i> 6 Days</div>
+                                    <div class="trek-meta-item"><i class="bi bi-people"></i> 4 spots left</div>
+                                    <div class="trek-meta-item"><span class="badge-custom badge-moderate">Moderate</span></div>
+                                </div>
+                                <div class="trek-price">
+                                    <span class="price-label">Starting From</span>
+                                    <span class="price-value">₹9,000 Onwards</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-state-icon"><i class="bi bi-compass"></i></div>
+                        <h4 class="empty-state-title">No trips found</h4>
+                        <p class="empty-state-desc">Try adjusting your filters or search to find available trips.</p>
+                        <button type="button" class="btn-reset-filters" onclick="document.getElementById('resetFilters').click();">Reset Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Filter Overlay -->
+    <div class="filter-overlay" id="filterOverlay"></div>
+
+    
+    <!-- Trek Calendar Section End -->
+
+    <!-- Footer Section Start-->
+    

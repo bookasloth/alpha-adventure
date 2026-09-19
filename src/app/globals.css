@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-poppins: "Poppins", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-page text-[#525252] font-sans antialiased;
+}
+
+h1, h2, h3, h4, h5 {
+  @apply font-heading text-ink;
+}
+
+@layer components {
+  .container-px {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200;
+  }
+  .btn-primary {
+    @apply btn bg-btn-gradient text-white shadow-soft hover:brightness-105;
+  }
+  .btn-outline {
+    @apply btn border border-white/70 text-white hover:bg-white hover:text-ink;
+  }
+  .btn-dark {
+    @apply btn bg-ink text-white hover:bg-primary;
+  }
+  .section {
+    @apply py-16 sm:py-20;
+  }
+  .section-title {
+    @apply text-3xl sm:text-4xl font-bold text-ink;
+  }
+  .card {
+    @apply bg-white rounded-xl2 shadow-soft overflow-hidden border border-line/60;
+  }
+}

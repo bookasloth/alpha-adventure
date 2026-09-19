@@ -1,0 +1,777 @@
+    <!-- Header Section End-->
+
+    <!-- Dashboard Section Start -->
+    <div class="dashboard-section">
+        <div class="container">
+
+            <!-- Alert Banner -->
+                        
+            <div class="dashboard-wrapper">
+
+                <!-- Left Sidebar -->
+                <div class="dashboard-sidebar">
+                    <div class="sidebar-profile">
+                        <div class="profile-avatar">
+                            J                        </div>
+                        <h4 class="profile-name">
+                            John Doe                        </h4>
+                        <span class="profile-email">john.doe@example.com</span>
+                    </div>
+
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn active" data-target="#panel-overview">
+                                <i class="bi bi-grid-fill"></i> Overview
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn" data-target="#panel-profile">
+                                <i class="bi bi-person-fill"></i> Profile Details
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn" data-target="#panel-bookings">
+                                <i class="bi bi-journal-bookmark-fill"></i> My Bookings
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn" data-target="#panel-payments">
+                                <i class="bi bi-credit-card-2-front-fill"></i> Payment History
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn" data-target="#panel-fitness">
+                                <i class="bi bi-heart-pulse-fill"></i> Fitness & Medical
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-btn" data-target="#panel-security">
+                                <i class="bi bi-shield-lock-fill"></i> Change Password
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item" style="margin-top: 15px;">
+                            <a href="logout" class="sidebar-menu-btn logout-btn"
+                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                <i class="bi bi-box-arrow-right"></i> Log Out
+                            </a>
+                            <form id="logout-form" action="logout" method="POST" style="display: none;"></form>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Right Content Area -->
+                <div class="dashboard-content">
+
+                    <!-- Panel 1: Overview -->
+                    <div class="tab-panel active" id="panel-overview">
+                        <div class="content-header">
+                            <h2>Welcome back, John!
+                            </h2>
+                            <p>Here is a summary of your adventure statistics and bookings.</p>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="stats-grid">
+                            <div class="stats-card">
+                                <div class="stats-info">
+                                    <h4>2</h4>
+                                    <span>Completed Treks</span>
+                                </div>
+                                <div class="stats-icon blue">
+                                    <i class="bi bi-award-fill"></i>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-info">
+                                    <h4>0</h4>
+                                    <span>Upcoming Treks</span>
+                                </div>
+                                <div class="stats-icon orange">
+                                    <i class="bi bi-compass-fill"></i>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-info">
+                                    <h4>₹14,910</h4>
+                                    <span>Total Spent</span>
+                                </div>
+                                <div class="stats-icon green">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-info">
+                                    <h4>5,940</h4>
+                                    <span>Travel Points</span>
+                                </div>
+                                <div class="stats-icon" style="color: #6f42c1; background: rgba(111, 66, 193, 0.1);">
+                                    <i class="bi bi-star-fill"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Profile Summary card -->
+                        <div class="panel-card text-start">
+                            <h4
+                                style="font-size: 18px; font-weight: 700; color: var(--black-color, #110F0F); margin-bottom: 20px;">
+                                Profile Summary</h4>
+                            <div class="row gy-3">
+                                <div class="col-sm-6">
+                                    <div class="booking-detail-item">
+                                        <span>Full Name</span>
+                                        John Doe                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="booking-detail-item">
+                                        <span>Mobile Number</span>
+                                        +91 98765 43210                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="booking-detail-item">
+                                        <span>Date of Birth</span>
+                                        15 Aug 1995                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="booking-detail-item">
+                                        <span>Gender</span>
+                                        Male                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+                                <button class="btn-db-save"
+                                    onclick="$('.sidebar-menu-btn[data-target=\'#panel-profile\']').trigger('click');"
+                                    style="font-size: 13px; padding: 10px 20px;">
+                                    Edit Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Shortcuts & Guides Grid -->
+                        <div class="panel-card text-start" style="margin-top: 25px;">
+                            <h4
+                                style="font-size: 18px; font-weight: 700; color: var(--black-color, #110F0F); margin-bottom: 20px;">
+                                Trekker Guides & Shortcuts</h4>
+                            <div class="shortcuts-grid">
+                                <a href="packing-checklist" class="shortcut-card">
+                                    <div class="shortcut-icon"><i class="bi bi-list-check text-warning"></i></div>
+                                    <div class="shortcut-details">
+                                        <h5>Packing Checklist</h5>
+                                        <p>Check the gear and clothes required for your trek.</p>
+                                    </div>
+                                    <i class="bi bi-chevron-right shortcut-arrow"></i>
+                                </a>
+                                <a href="fitness-requirements" class="shortcut-card">
+                                    <div class="shortcut-icon"><i class="bi bi-heart-pulse text-danger"></i></div>
+                                    <div class="shortcut-details">
+                                        <h5>Fitness Requirements</h5>
+                                        <p>Understand physical preparation and safety guidelines.</p>
+                                    </div>
+                                    <i class="bi bi-chevron-right shortcut-arrow"></i>
+                                </a>
+                                <a href="travel-calendar" class="shortcut-card">
+                                    <div class="shortcut-icon"><i class="bi bi-calendar3 text-primary"></i></div>
+                                    <div class="shortcut-details">
+                                        <h5>Trek Calendar</h5>
+                                        <p>Browse upcoming schedules and choose new dates.</p>
+                                    </div>
+                                    <i class="bi bi-chevron-right shortcut-arrow"></i>
+                                </a>
+                                <a href="contact" class="shortcut-card">
+                                    <div class="shortcut-icon"><i class="bi bi-chat-left-text text-success"></i></div>
+                                    <div class="shortcut-details">
+                                        <h5>Help & Support</h5>
+                                        <p>Get in touch with trek coordinators or raise a query.</p>
+                                    </div>
+                                    <i class="bi bi-chevron-right shortcut-arrow"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Profile Details -->
+                    <div class="tab-panel" id="panel-profile">
+                        <div class="content-header">
+                            <h2>Profile Details</h2>
+                            <p>Update your personal information used for booking bookings and safety clearances.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <form method="POST" action="user-dashboard">
+                                <input type="hidden" name="action" value="update_profile">
+
+                                <div class="db-form-row">
+                                    <div class="db-form-group">
+                                        <label for="first_name">First Name</label>
+                                        <input type="text" name="first_name" id="first_name" class="db-control"
+                                            value="John"
+                                            required>
+                                    </div>
+                                    <div class="db-form-group">
+                                        <label for="last_name">Last Name</label>
+                                        <input type="text" name="last_name" id="last_name" class="db-control"
+                                            value="Doe"
+                                            required>
+                                    </div>
+                                </div>
+
+                                <div class="db-form-row">
+                                    <div class="db-form-group">
+                                        <label for="db_email">Email Address</label>
+                                        <input type="email" id="db_email" class="db-control"
+                                            value="john.doe@example.com" disabled>
+                                    </div>
+                                    <div class="db-form-group">
+                                        <label for="mobile_number">Mobile Number</label>
+                                        <input type="tel" name="mobile_number" id="mobile_number" class="db-control"
+                                            value="+91 98765 43210"
+                                            required>
+                                    </div>
+                                </div>
+
+                                <div class="db-form-row">
+                                    <div class="db-form-group">
+                                        <label for="dob">Date of Birth</label>
+                                        <input type="date" name="dob" id="dob" class="db-control"
+                                            value="1995-08-15">
+                                    </div>
+                                    <div class="db-form-group">
+                                        <label for="gender">Gender</label>
+                                        <select name="gender" id="gender" class="db-control">
+                                            <option value="">Select Gender</option>
+                                            <option value="male" selected>Male</option>
+                                            <option value="female" >Female</option>
+                                            <option value="other" >Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="db-form-group mb-4">
+                                    <label for="address">Postal Address</label>
+                                    <textarea name="address" id="address" class="db-control" rows="3"
+                                        placeholder="Enter your full street address">123 Adventure Lane, Nagpur, Maharashtra, India</textarea>
+                                </div>
+
+                                <div class="text-start">
+                                    <button type="submit" class="btn-db-save">
+                                        <span>Save Changes</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Panel 3: My Bookings -->
+                    <div class="tab-panel" id="panel-bookings">
+                        <div class="content-header">
+                            <h2>My Bookings</h2>
+                            <p>Track your upcoming trips and review your past adventures.</p>
+                        </div>
+
+                                                    <!-- Bookings Tab Filter Bar -->
+                            <div class="booking-filter-bar mb-4">
+                                <button type="button" class="booking-filter-btn active" data-filter="all">
+                                    All Bookings <span class="filter-count bg-secondary ms-1">3</span>
+                                </button>
+                                <button type="button" class="booking-filter-btn" data-filter="upcoming">
+                                    Upcoming <span
+                                        class="filter-count bg-warning ms-1">0</span>
+                                </button>
+                                <button type="button" class="booking-filter-btn" data-filter="past">
+                                    Past / Completed <span
+                                        class="filter-count bg-success ms-1">2</span>
+                                </button>
+                                <button type="button" class="booking-filter-btn" data-filter="cancelled">
+                                    Cancelled <span
+                                        class="filter-count bg-danger ms-1">1</span>
+                                </button>
+                            </div>
+
+                            <div class="booking-list">
+                                                                                                        <div class="booking-card item-booking-card" data-category="past">
+                                        <div class="booking-image">
+                                                                                            <img src="assets/img/innerpages/blog-st-img1.jpg"
+                                                    alt="Kalsubai Peak Trek">
+                                                                                    </div>
+                                        <div class="booking-card-body">
+                                            <div>
+                                                <div class="booking-card-header">
+                                                    <span
+                                                        class="booking-ref">AA-2026-X8B9DF</span>
+                                                    <span
+                                                        class="badge-status completed">completed</span>
+                                                </div>
+                                                <h3 class="booking-title">
+                                                    Kalsubai Peak Trek                                                </h3>
+
+                                                <div class="booking-details-grid">
+                                                    <div class="booking-detail-item">
+                                                        <span>Dates</span>
+                                                        10 Jul - 12 Jul 2026                                                    </div>
+                                                    <div class="booking-detail-item">
+                                                        <span>Participants</span>
+                                                        2 (2 Ad, 0 Ch)                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="booking-card-footer">
+                                                <div class="booking-price">
+                                                                                                            ₹3,675                                                        <span>Grand Total (Paid)</span>
+                                                                                                    </div>
+                                                <button type="button" class="btn-view-details"
+                                                    data-ref="AA-2026-X8B9DF"
+                                                    data-title="Kalsubai Peak Trek"
+                                                    data-dates="10 Jul - 12 Jul 2026"
+                                                    data-adults="2"
+                                                    data-children="0"
+                                                    data-price-adult="1500"
+                                                    data-price-child="1000"
+                                                    data-addons-total="500"
+                                                    data-subtotal="3500"
+                                                    data-gst="175"
+                                                    data-grand="3675"
+                                                    data-method="UPI"
+                                                    data-status="paid"
+                                                    data-addons-json='[{"addon_name":"Trek Gear Rental","quantity":2,"price":250}]'>
+                                                    View Invoice
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                                                        <div class="booking-card item-booking-card" data-category="past">
+                                        <div class="booking-image">
+                                                                                            <img src="assets/img/innerpages/blog-st-img2.jpg"
+                                                    alt="Valley of Flowers Expedition">
+                                                                                    </div>
+                                        <div class="booking-card-body">
+                                            <div>
+                                                <div class="booking-card-header">
+                                                    <span
+                                                        class="booking-ref">AA-2026-A2D3C4</span>
+                                                    <span
+                                                        class="badge-status completed">completed</span>
+                                                </div>
+                                                <h3 class="booking-title">
+                                                    Valley of Flowers Expedition                                                </h3>
+
+                                                <div class="booking-details-grid">
+                                                    <div class="booking-detail-item">
+                                                        <span>Dates</span>
+                                                        01 Jun - 07 Jun 2026                                                    </div>
+                                                    <div class="booking-detail-item">
+                                                        <span>Participants</span>
+                                                        1 (1 Ad, 0 Ch)                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="booking-card-footer">
+                                                <div class="booking-price">
+                                                                                                            ₹11,235                                                        <span>Grand Total (Paid)</span>
+                                                                                                    </div>
+                                                <button type="button" class="btn-view-details"
+                                                    data-ref="AA-2026-A2D3C4"
+                                                    data-title="Valley of Flowers Expedition"
+                                                    data-dates="01 Jun - 07 Jun 2026"
+                                                    data-adults="1"
+                                                    data-children="0"
+                                                    data-price-adult="9500"
+                                                    data-price-child="7000"
+                                                    data-addons-total="1200"
+                                                    data-subtotal="10700"
+                                                    data-gst="535"
+                                                    data-grand="11235"
+                                                    data-method="Credit Card"
+                                                    data-status="paid"
+                                                    data-addons-json='[{"addon_name":"Sleeping Bag Upgrade","quantity":1,"price":500},{"addon_name":"Personal Porter Service","quantity":1,"price":700}]'>
+                                                    View Invoice
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                                                        <div class="booking-card item-booking-card" data-category="cancelled">
+                                        <div class="booking-image">
+                                                                                            <img src="assets/img/innerpages/blog-st-img3.jpg"
+                                                    alt="Harishchandragad Peak Trek">
+                                                                                    </div>
+                                        <div class="booking-card-body">
+                                            <div>
+                                                <div class="booking-card-header">
+                                                    <span
+                                                        class="booking-ref">AA-2026-C9E8W2</span>
+                                                    <span
+                                                        class="badge-status cancelled">cancelled</span>
+                                                </div>
+                                                <h3 class="booking-title">
+                                                    Harishchandragad Peak Trek                                                </h3>
+
+                                                <div class="booking-details-grid">
+                                                    <div class="booking-detail-item">
+                                                        <span>Dates</span>
+                                                        15 Aug - 17 Aug 2026                                                    </div>
+                                                    <div class="booking-detail-item">
+                                                        <span>Participants</span>
+                                                        4 (3 Ad, 1 Ch)                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="booking-card-footer">
+                                                <div class="booking-price">
+                                                                                                                                                                    <span style="color: #6f42c1; font-weight: 700; font-size: 18px;">5,940 Pt</span>
+                                                        <span style="display: block; font-size: 12px; color: #64748b;">Credited to Wallet</span>
+                                                                                                    </div>
+                                                <button type="button" class="btn-view-details"
+                                                    data-ref="AA-2026-C9E8W2"
+                                                    data-title="Harishchandragad Peak Trek"
+                                                    data-dates="15 Aug - 17 Aug 2026"
+                                                    data-adults="3"
+                                                    data-children="1"
+                                                    data-price-adult="1800"
+                                                    data-price-child="1200"
+                                                    data-addons-total="0"
+                                                    data-subtotal="6600"
+                                                    data-gst="330"
+                                                    data-grand="6930"
+                                                    data-method="UPI"
+                                                    data-status="refunded"
+                                                    data-addons-json='[]'>
+                                                    View Invoice
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                            </div>
+
+                            <!-- Category-specific empty state -->
+                            <div class="booking-empty-state panel-card" style="display: none;">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-journal-x"></i>
+                                    </div>
+                                    <h5 class="empty-title">No bookings found</h5>
+                                    <p class="empty-desc">You don't have any bookings in this section.</p>
+                                    <a href="travel-calendar" class="btn-explore">Explore Treks</a>
+                                </div>
+                            </div>
+                                            </div>
+
+                    <!-- Panel 4: Payment History -->
+                    <div class="tab-panel" id="panel-payments">
+                        <div class="content-header">
+                            <h2>Payment History</h2>
+                            <p>Track your past payments, transaction reference IDs, and refunds.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="table-responsive">
+                                <table class="table db-payments-table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction ID</th>
+                                            <th>Booking Ref</th>
+                                            <th>Trek</th>
+                                            <th>Date & Time</th>
+                                            <th>Method</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                                                                    <tr>
+                                                <td class="fw-bold text-secondary text-nowrap">
+                                                    TXN-9823741829                                                </td>
+                                                <td><span
+                                                        class="badge bg-light text-dark fw-bold border">AA-2026-X8B9DF</span>
+                                                </td>
+                                                <td class="fw-semibold">Kalsubai Peak Trek</td>
+                                                <td class="text-nowrap">20 Jun 2026, 02:32 PM                                                </td>
+                                                <td>UPI (Google Pay)</td>
+                                                <td class="fw-bold">₹3,675</td>
+                                                <td>
+                                                                                                            <span class="payment-badge success"><i class="bi bi-check-circle"></i>
+                                                            Success</span>
+                                                                                                    </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <td class="fw-bold text-secondary text-nowrap">
+                                                    TXN-9812984712                                                </td>
+                                                <td><span
+                                                        class="badge bg-light text-dark fw-bold border">AA-2026-A2D3C4</span>
+                                                </td>
+                                                <td class="fw-semibold">Valley of Flowers Expedition</td>
+                                                <td class="text-nowrap">15 May 2026, 10:15 AM                                                </td>
+                                                <td>Credit Card (HDFC)</td>
+                                                <td class="fw-bold">₹11,235</td>
+                                                <td>
+                                                                                                            <span class="payment-badge success"><i class="bi bi-check-circle"></i>
+                                                            Success</span>
+                                                                                                    </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <td class="fw-bold text-secondary text-nowrap">
+                                                    TXN-9830198273                                                </td>
+                                                <td><span
+                                                        class="badge bg-light text-dark fw-bold border">AA-2026-C9E8W2</span>
+                                                </td>
+                                                <td class="fw-semibold">Harishchandragad Peak Trek</td>
+                                                <td class="text-nowrap">05 Jun 2026, 09:22 AM                                                </td>
+                                                <td>UPI (PhonePe)</td>
+                                                <td class="fw-bold">₹6,930</td>
+                                                <td>
+                                                                                                            <span class="payment-badge refunded"><i
+                                                                class="bi bi-arrow-counterclockwise"></i> Refunded</span>
+                                                                                                    </td>
+                                            </tr>
+                                                                            </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel 5: Fitness & Medical Details -->
+                    <div class="tab-panel" id="panel-fitness">
+                        <div class="content-header">
+                            <h2>Fitness & Medical Details</h2>
+                            <p>High-altitude trekking requires physical fitness clearance. Manage emergency contacts and
+                                certificates.</p>
+                        </div>
+
+                        <!-- Medical Status banner -->
+                        <div
+                            class="medical-status-banner pending mb-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="status-icon-wrap">
+                                                                            <i class="bi bi-shield-fill-exclamation"></i>
+                                                                    </div>
+                                <div>
+                                    <h5 class="mb-1">Medical Clearance Status: <span
+                                            class="status-text">Pending</span>
+                                    </h5>
+                                    <p class="mb-0">
+                                                                                    Action required: Please fill out your emergency contact information and upload
+                                            your doctor's certificate.
+                                                                            </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <!-- Emergency Contacts Form -->
+                            <div class="col-lg-7">
+                                <div class="panel-card h-100">
+                                    <h4 class="mb-4"
+                                        style="font-size: 18px; font-weight: 700; color: var(--black-color, #110F0F);">
+                                        Emergency Contact & Health Info</h4>
+
+                                    <form method="POST" action="user-dashboard">
+                                        <input type="hidden" name="action" value="update_medical">
+
+                                        <div class="db-form-row">
+                                            <div class="db-form-group">
+                                                <label for="emergency_name">Emergency Contact Name</label>
+                                                <input type="text" name="emergency_name" id="emergency_name"
+                                                    class="db-control"
+                                                    value="Jane Doe"
+                                                    placeholder="e.g. Parent / Spouse Name" required>
+                                            </div>
+                                            <div class="db-form-group">
+                                                <label for="emergency_phone">Emergency Contact Phone</label>
+                                                <input type="tel" name="emergency_phone" id="emergency_phone"
+                                                    class="db-control"
+                                                    value="+91 98765 00000"
+                                                    placeholder="e.g. +91 XXXXX XXXXX" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="db-form-row">
+                                            <div class="db-form-group">
+                                                <label for="blood_group">Blood Group</label>
+                                                <select name="blood_group" id="blood_group" class="db-control">
+                                                    <option value="">Select Blood Group</option>
+                                                    <option value='A+' >A+</option><option value='A-' >A-</option><option value='B+' >B+</option><option value='B-' >B-</option><option value='AB+' >AB+</option><option value='AB-' >AB-</option><option value='O+' selected>O+</option><option value='O-' >O-</option>                                                </select>
+                                            </div>
+                                            <div class="db-form-group">
+                                                <label for="medical_conditions">Known Medical Conditions /
+                                                    Allergies</label>
+                                                <input type="text" name="medical_conditions" id="medical_conditions"
+                                                    class="db-control"
+                                                    value="None"
+                                                    placeholder="e.g. Asthma, Penicillin allergy (or 'None')">
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn-db-save mt-3">Update Medical Info</button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Document Downloads & Upload Mock -->
+                            <div class="col-lg-5">
+                                <div class="panel-card h-100">
+                                    <h4 class="mb-3"
+                                        style="font-size: 18px; font-weight: 700; color: var(--black-color, #110F0F);">
+                                        Fitness Certificates</h4>
+                                    <p class="text-muted" style="font-size: 13px;">Download templates and upload scanned
+                                        copies.</p>
+
+                                    <!-- Download links -->
+                                    <div class="doc-download-list mb-4">
+                                        <div class="doc-item">
+                                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
+                                            <div class="flex-grow-1 ms-2">
+                                                <h6 class="mb-0" style="font-size: 14px; font-weight: 600;">Doctor's
+                                                    Certificate Template</h6>
+                                                <span class="text-muted" style="font-size: 12px;">PDF - 245 KB</span>
+                                            </div>
+                                            <a href="#" class="btn btn-sm btn-outline-secondary py-1"
+                                                onclick="event.preventDefault(); alert('Template download started! (Simulated)');"><i
+                                                    class="bi bi-download"></i></a>
+                                        </div>
+                                        <div class="doc-item mt-3">
+                                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
+                                            <div class="flex-grow-1 ms-2">
+                                                <h6 class="mb-0" style="font-size: 14px; font-weight: 600;">Self
+                                                    Declaration Checklist</h6>
+                                                <span class="text-muted" style="font-size: 12px;">PDF - 180 KB</span>
+                                            </div>
+                                            <a href="#" class="btn btn-sm btn-outline-secondary py-1"
+                                                onclick="event.preventDefault(); alert('Checklist download started! (Simulated)');"><i
+                                                    class="bi bi-download"></i></a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mock Upload box -->
+                                    <div class="mock-upload-box p-4 text-center rounded border border-dashed"
+                                        style="background-color: #f8fafc; cursor: pointer;"
+                                        onclick="alert('File selector opened! (Simulated)');">
+                                        <i class="bi bi-cloud-arrow-up-fill text-muted fs-2 mb-2 d-block"></i>
+                                        <span class="fw-semibold d-block" style="font-size: 14px; color: #334155;">Drag
+                                            & drop forms</span>
+                                        <span class="text-muted d-block" style="font-size: 12px;">PDF/JPG up to
+                                            5MB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel 4: Change Password -->
+                    <div class="tab-panel" id="panel-security">
+                        <div class="content-header">
+                            <h2>Change Password</h2>
+                            <p>Manage your password credentials to ensure your account security.</p>
+                        </div>
+
+                        <div class="panel-card">
+                            <form method="POST" action="user-dashboard" id="pwdForm">
+                                <input type="hidden" name="action" value="change_password">
+
+                                <div class="db-form-group mb-3">
+                                    <label for="old_password">Current Password</label>
+                                    <input type="password" name="old_password" id="old_password" class="db-control"
+                                        placeholder="••••••••" required>
+                                </div>
+
+                                <div class="db-form-group mb-3">
+                                    <label for="new_password">New Password</label>
+                                    <input type="password" name="new_password" id="new_password" class="db-control"
+                                        placeholder="••••••••" required>
+                                </div>
+
+                                <div class="db-form-group mb-4">
+                                    <label for="confirm_password">Confirm New Password</label>
+                                    <input type="password" name="confirm_password" id="confirm_password"
+                                        class="db-control" placeholder="••••••••" required>
+                                </div>
+
+                                <div class="text-start">
+                                    <button type="submit" class="btn-db-save">
+                                        <span>Change Password</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+    <!-- Dashboard Section End -->
+
+    <!-- Booking Details Modal -->
+    <div class="modal-overlay" id="detailsModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Booking Details</h3>
+                <button class="btn-modal-close" id="modalClose"><i class="bi bi-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-section">
+                    <div class="receipt-row">
+                        <span><strong>Booking Reference:</strong></span>
+                        <span id="m-ref"
+                            style="font-weight: 700; color: var(--primary-color1, #fe5100);">AA-2026-XXXXXX</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span><strong>Trek Title:</strong></span>
+                        <span id="m-title" style="font-weight: 600;">Adventure Trek Name</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span><strong>Trek Dates:</strong></span>
+                        <span id="m-dates">01 Jan - 05 Jan 2026</span>
+                    </div>
+                </div>
+
+                <div class="receipt-section">
+                    <h5 class="receipt-section-title">Participants & Base Cost</h5>
+                    <div class="receipt-row" id="m-adults-row">
+                        <span id="m-adults-label">Adults (0 x ₹0)</span>
+                        <span id="m-adults-cost">₹0</span>
+                    </div>
+                    <div class="receipt-row" id="m-children-row">
+                        <span id="m-children-label">Children (0 x ₹0)</span>
+                        <span id="m-children-cost">₹0</span>
+                    </div>
+                </div>
+
+                <div class="receipt-section" id="m-addons-section">
+                    <h5 class="receipt-section-title">Selected Add-ons</h5>
+                    <div id="m-addons-list">
+                        <!-- Addons injected dynamically -->
+                    </div>
+                    <div class="receipt-row" style="margin-top: 8px; font-weight: 600;">
+                        <span>Add-ons Total</span>
+                        <span id="m-addons-total">₹0</span>
+                    </div>
+                </div>
+
+                <div class="receipt-section">
+                    <h5 class="receipt-section-title">Payment Overview</h5>
+                    <div class="receipt-row">
+                        <span>Subtotal</span>
+                        <span id="m-subtotal">₹0</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span>GST (5%)</span>
+                        <span id="m-gst">₹0</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Payment Method</span>
+                        <span id="m-method" style="text-transform: capitalize;">Online</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Status</span>
+                        <span id="m-status" class="badge-status paid">Paid</span>
+                    </div>
+                    <div class="receipt-row total-row">
+                        <span>Grand Total</span>
+                        <span id="m-grand">₹0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section Start-->
+    

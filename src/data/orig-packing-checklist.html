@@ -1,0 +1,253 @@
+<!-- Breadcrumb section Start-->
+    <div class="breadcrumb-section"
+        style="background-image: linear-gradient(270deg, rgba(17, 15, 15, 0.55) 0%, rgba(17, 15, 15, 0.55) 100%), url('assets/img/innerpages/breadcrumb-bg1.jpg');">
+        <div class="container">
+            <div class="banner-content">
+                <h1>Packing Checklist</h1>
+                <ul class="breadcrumb-list">
+                    <li><a href="/">Home</a></li>
+                    <li>Packing Checklist</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Breadcrumb section End-->
+
+    <!-- Packing Checklist Section Start -->
+    <div class="packing-checklist-section">
+        <div class="container">
+
+            <!-- Print-Only Header Block -->
+            <div class="print-header d-none">
+                <h1>ALPHA ADVENTURES</h1>
+                <p class="text-center fw-medium mb-3">TREKKING PACKING CHECKLIST</p>
+                <div class="print-meta-grid">
+                    <div class="print-meta-item">
+                        <strong>Trek Name:</strong> <span id="print-meta-trek-name" class="print-meta-value"></span>
+                    </div>
+                    <div class="print-meta-item">
+                        <strong>Trek Date:</strong> <span id="print-meta-trek-date" class="print-meta-value"></span>
+                    </div>
+                    <div class="print-meta-item">
+                        <strong>Trekker Name:</strong> <span id="print-meta-trekker-name" class="print-meta-value"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Left Sidebar: Progress & Filters -->
+                <div class="col-lg-4 col-md-5">
+                    <div class="checklist-sidebar">
+
+                        <!-- Progress Card -->
+                        <div class="checklist-progress-card">
+                            <div class="checklist-progress-header">
+                                <h5 class="fw-bold mb-0 text-dark">Your Progress</h5>
+                                <span id="overall-progress-percentage" class="checklist-progress-percentage">0%</span>
+                            </div>
+                            <div class="checklist-progress-bar-container">
+                                <div id="overall-progress-bar" class="checklist-progress-bar"></div>
+                            </div>
+                            <p id="overall-progress-text" class="text-muted small mb-0">0 of 0 packed</p>
+                        </div>
+
+                        <!-- Print Meta Info Input (Pre-fill details for printout) -->
+                        <div class="checklist-progress-card">
+                            <h5 class="fw-bold mb-3 text-dark">Print Details</h5>
+                            <div class="mb-2">
+                                <label for="print-trekker-name-input" class="small text-muted mb-1">Trekker Name</label>
+                                <input type="text" id="print-trekker-name-input" class="form-control form-control-sm" placeholder="Your Name">
+                            </div>
+                            <div class="mb-2">
+                                <label for="print-trek-name-input" class="small text-muted mb-1">Trek Name</label>
+                                <input type="text" id="print-trek-name-input" class="form-control form-control-sm" placeholder="e.g. Kedarkantha Trek">
+                            </div>
+                            <div class="mb-3">
+                                <label for="print-trek-date-input" class="small text-muted mb-1">Departure Date</label>
+                                <input type="text" id="print-trek-date-input" class="form-control form-control-sm" placeholder="e.g. Dec 25, 2026">
+                            </div>
+                            <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i> These details will appear at the top of the printed checklist sheet.</p>
+                        </div>
+
+                        <!-- Filters Card -->
+                        <div class="checklist-filter-card">
+                            <h5 class="fw-bold mb-3 text-dark">Filters & Search</h5>
+
+                            <!-- Search -->
+                            <div class="checklist-search-wrapper">
+                                <i class="bi bi-search"></i>
+                                <input type="text" id="checklist-search" class="checklist-search-input" placeholder="Search items...">
+                            </div>
+
+                            <!-- Seasons -->
+                            <div class="season-filters">
+                                <span class="d-block small text-muted mb-2 fw-medium">TREK SEASON / TYPE</span>
+                                <button class="season-filter-btn active" data-season="all">
+                                    <i class="bi bi-grid-fill"></i> All Seasons
+                                </button>
+                                <button class="season-filter-btn" data-season="summer">
+                                    <i class="bi bi-sun-fill"></i> Summer Trek
+                                </button>
+                                <button class="season-filter-btn" data-season="winter">
+                                    <i class="bi bi-snowflake"></i> Winter Trek
+                                </button>
+                                <button class="season-filter-btn" data-season="monsoon">
+                                    <i class="bi bi-cloud-rain-fill"></i> Monsoon Trek
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Actions block -->
+                        <div class="mt-4">
+                            <button id="print-checklist-btn" class="checklist-action-btn btn-print-checklist">
+                                <i class="bi bi-printer-fill"></i> Print Checklist
+                            </button>
+                            <button id="reset-checklist-btn" class="checklist-action-btn btn-reset-checklist">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset Checklist
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right Content: Interactive Checklists by Category -->
+                <div class="col-lg-8 col-md-7">
+
+                    <!-- 1. Clothing -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-tag-fill theme-text-primary"></i> Clothing (Upper & Lower Body)
+                            </h3>
+                            <span id="progress-badge-clothing" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-clothing" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-clothing" class="add-custom-input" placeholder="Add custom clothing item..." onkeyup="handleCustomInputKey(event, 'clothing')">
+                            <button class="add-custom-btn" onclick="addCustomItem('clothing')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Footwear -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-cursor-fill theme-text-primary"></i> Footwear
+                            </h3>
+                            <span id="progress-badge-footwear" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-footwear" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-footwear" class="add-custom-input" placeholder="Add custom footwear item..." onkeyup="handleCustomInputKey(event, 'footwear')">
+                            <button class="add-custom-btn" onclick="addCustomItem('footwear')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Gear & Equipment -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-compass-fill theme-text-primary"></i> Gear & Equipment
+                            </h3>
+                            <span id="progress-badge-gear" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-gear" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-gear" class="add-custom-input" placeholder="Add custom gear item..." onkeyup="handleCustomInputKey(event, 'gear')">
+                            <button class="add-custom-btn" onclick="addCustomItem('gear')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. Toiletries -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-droplet-fill theme-text-primary"></i> Toiletries & Hygiene
+                            </h3>
+                            <span id="progress-badge-toiletries" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-toiletries" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-toiletries" class="add-custom-input" placeholder="Add custom toiletries item..." onkeyup="handleCustomInputKey(event, 'toiletries')">
+                            <button class="add-custom-btn" onclick="addCustomItem('toiletries')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 5. Medical Kit -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-heart-pulse-fill theme-text-primary"></i> First Aid & Medical Kit
+                            </h3>
+                            <span id="progress-badge-medical" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-medical" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-medical" class="add-custom-input" placeholder="Add custom medical item..." onkeyup="handleCustomInputKey(event, 'medical')">
+                            <button class="add-custom-btn" onclick="addCustomItem('medical')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 6. Documents & Cash -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-file-earmark-text-fill theme-text-primary"></i> Documents & Cash
+                            </h3>
+                            <span id="progress-badge-documents" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-documents" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-documents" class="add-custom-input" placeholder="Add custom document/cash item..." onkeyup="handleCustomInputKey(event, 'documents')">
+                            <button class="add-custom-btn" onclick="addCustomItem('documents')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 7. Miscellaneous -->
+                    <div class="checklist-card">
+                        <div class="checklist-category-header">
+                            <h3 class="checklist-category-title">
+                                <i class="bi bi-box-seam-fill theme-text-primary"></i> Miscellaneous
+                            </h3>
+                            <span id="progress-badge-miscellaneous" class="checklist-category-progress">0/0</span>
+                        </div>
+                        <div id="list-miscellaneous" class="checklist-items-list">
+                            <!-- Items populated dynamically by JS -->
+                        </div>
+                        <div class="add-custom-item-container">
+                            <input type="text" id="input-miscellaneous" class="add-custom-input" placeholder="Add custom item..." onkeyup="handleCustomInputKey(event, 'miscellaneous')">
+                            <button class="add-custom-btn" onclick="addCustomItem('miscellaneous')" title="Add item">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Packing Checklist Section End -->

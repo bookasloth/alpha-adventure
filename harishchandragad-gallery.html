@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Harishchandragad Trek Photo Gallery - Alpha Adventures</title>
+    <link rel="icon" href="assets/img/AALogo.png" type="image/gif" sizes="20x20">
+    <meta name="description" content="Explore Harishchandragad Trek through every season. Stunning photography of summer, monsoon, winter and spring adventures.">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ═══════════════════════ GLOBAL ═══════════════════════ */
+        :root {
+            --primary-color1: #e85d04;
+            --primary-color2: #fb923c;
+            --secondary-color: #1a1a2e;
+            --text-color: #555;
+            --heading-color: #1a1a2e;
+            --white: #fff;
+            --black: #000;
+            --body-bg: #f8f8f8;
+            --font-primary: 'Jost', sans-serif;
+            --font-secondary: 'Playfair Display', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-primary);
+            color: var(--text-color);
+            background: var(--body-bg);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        a { text-decoration: none; color: inherit; transition: .3s; }
+        ul { list-style: none; margin: 0; padding: 0; }
+        img { max-width: 100%; height: auto; display: block; }
+        button { cursor: pointer; border: none; outline: none; background: none; font-family: inherit; }
+
+        /* ═══════════════════════ TOPBAR ═══════════════════════ */
+        .topbar-area {
+            background: var(--white);
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .topbar-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .logo-and-search-area {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        .header-logo img { height: 45px; }
+        .search-area .form-inner {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            border-radius: 30px;
+            padding: 6px 16px;
+            width: 350px;
+            border: 1px solid #e0e0e0;
+        }
+        .search-area .form-inner button {
+            background: none;
+            border: none;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .search-area .form-inner input {
+            border: none;
+            background: transparent;
+            outline: none;
+            padding: 6px 10px;
+            width: 100%;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .support-and-language-area {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+        }
+        .support-and-language-area a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--secondary-color);
+            transition: .3s;
+        }
+        .support-and-language-area a:hover { color: var(--primary-color1); }
+        .primary-btn1 {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: .3s;
+            background: var(--primary-color1);
+            color: var(--white);
+        }
+        .primary-btn1:hover { background: var(--primary-color2); color: var(--white); }
+        .primary-btn1 svg { fill: currentColor; }
+
+        /* ═══════════════════════ HEADER / NAV ═══════════════════════ */
+        header.style-1 {
+            background: var(--secondary-color);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        header.style-1 .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .main-menu .menu-list {
+            display: flex;
+            gap: 0;
+        }
+        .main-menu .menu-list > li { position: relative; }
+        .main-menu .menu-list > li > a {
+            display: block;
+            padding: 14px 18px;
+            color: var(--white);
+            font-size: 15px;
+            font-weight: 500;
+            transition: .3s;
+        }
+        .main-menu .menu-list > li > a:hover,
+        .main-menu .menu-list > li > a.drop-down:hover {
+            color: var(--primary-color1);
+        }
+        .main-menu .menu-list > li > a i {
+            font-size: 10px;
+            margin-left: 4px;
+        }
+        .header-logo.d-lg-none { display: none; }
+
+        /* ═══════════════════════ GALLERY DETAIL - HERO ═══════════════════════ */
+        .gd-hero-img {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+        }
+        .gd-hero-img > img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .gd-hero-img-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,.35) 0%, rgba(0,0,0,.65) 100%);
+        }
+        .gd-hero-img-content {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            color: var(--white);
+            max-width: 650px;
+        }
+        .gd-hero-bc {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .gd-hero-bc a {
+            color: rgba(255,255,255,.8);
+            transition: .3s;
+        }
+        .gd-hero-bc a:hover { color: var(--primary-color1); }
+        .gd-hero-bc span { color: rgba(255,255,255,.5); }
+        .gd-hero-img-title {
+            font-family: var(--font-secondary);
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .gd-hero-img-sub {
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 6px;
+            color: rgba(255,255,255,.9);
+        }
+        .gd-hero-img-desc {
+            font-size: 15px;
+            color: rgba(255,255,255,.7);
+        }
+
+        /* ═══════════════════════ SEASON TABS BAR ═══════════════════════ */
+        .gd-tabs-bar {
+            background: var(--white);
+            border-bottom: 1px solid #e8e8e8;
+            position: sticky;
+            top: 48px;
+            z-index: 998;
+            padding: 0;
+        }
+        .gd-tabs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+        .gd-tab {
+            padding: 16px 30px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+            transition: .3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .gd-tab i { font-size: 18px; }
+        .gd-tab:hover { color: var(--primary-color1); }
+        .gd-tab.active {
+            color: var(--primary-color1);
+        }
+        .gd-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-color1);
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* ═══════════════════════ GALLERY AREA ═══════════════════════ */
+        .gd-gallery-area {
+            padding: 0 0 60px;
+        }
+        .gd-panel {
+            display: none;
+            animation: fadeIn .4s ease;
+        }
+        .gd-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gd-panel-head {
+            text-align: center;
+            padding: 40px 20px 30px;
+        }
+        .gd-label {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--primary-color1);
+            background: rgba(232,93,4,.08);
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+        .gd-heading {
+            font-family: var(--font-secondary);
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--heading-color);
+            margin-bottom: 8px;
+        }
+        .gd-subtext {
+            font-size: 16px;
+            color: var(--text-color);
+            margin-bottom: 14px;
+        }
+        .gd-accent-line {
+            width: 60px;
+            height: 3px;
+            background: var(--primary-color1);
+            border-radius: 2px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════ GALLERY GRID ═══════════════════════ */
+        .gd-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 0 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .gd-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 4/3;
+            transition: transform .3s, box-shadow .3s;
+        }
+        .gd-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0,0,0,.15);
+        }
+        .gd-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .4s;
+        }
+        .gd-item:hover img {
+            transform: scale(1.06);
+        }
+        .gd-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,.35) 0%, transparent 50%);
+            opacity: 0;
+            transition: .3s;
+        }
+        .gd-item:hover::after { opacity: 1; }
+
+        .gd-item.gd-hidden {
+            display: none;
+        }
+
+        /* ═══════════════════════ CTA / VIEW ALL ═══════════════════════ */
+        .gd-cta-wrap {
+            text-align: center;
+            padding: 30px 20px 0;
+        }
+        .gd-view-btn,
+        .gd-less-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: .3s;
+        }
+        .gd-view-btn {
+            background: var(--primary-color1);
+            color: var(--white);
+        }
+        .gd-view-btn:hover {
+            background: var(--primary-color2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(232,93,4,.3);
+        }
+        .gd-less-btn {
+            background: transparent;
+            color: var(--primary-color1);
+            border: 2px solid var(--primary-color1);
+            margin-left: 12px;
+        }
+        .gd-less-btn:hover {
+            background: var(--primary-color1);
+            color: var(--white);
+        }
+
+        /* ═══════════════════════ LIGHTBOX ═══════════════════════ */
+        .gd-lb {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        .gd-lb.active { display: flex; }
+        .gd-lb-bg {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,.92);
+        }
+        .gd-lb-x {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            color: var(--white);
+            font-size: 36px;
+            z-index: 10002;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,.1);
+            transition: .3s;
+        }
+        .gd-lb-x:hover { background: rgba(255,255,255,.2); }
+        .gd-lb-prev,
+        .gd-lb-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--white);
+            font-size: 30px;
+            z-index: 10002;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,.1);
+            transition: .3s;
+        }
+        .gd-lb-prev { left: 20px; }
+        .gd-lb-next { right: 20px; }
+        .gd-lb-prev:hover,
+        .gd-lb-next:hover { background: rgba(255,255,255,.25); }
+        .gd-lb-stage {
+            position: relative;
+            z-index: 10001;
+            max-width: 85vw;
+            max-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gd-lb-img {
+            max-width: 85vw;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .gd-lb-count {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,.7);
+            font-size: 15px;
+            font-weight: 500;
+            z-index: 10002;
+            background: rgba(0,0,0,.5);
+            padding: 6px 18px;
+            border-radius: 20px;
+        }
+
+        /* ═══════════════════════ FOOTER ═══════════════════════ */
+        .footer-section {
+            background: var(--secondary-color);
+            color: rgba(255,255,255,.7);
+            padding-top: 60px;
+        }
+        .footer-contact-wrap {
+            margin-bottom: 40px;
+        }
+        .footer-contact-wrap .contact-area {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+        .single-contact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .single-contact .icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .single-contact .icon svg,
+        .single-contact .icon img { width: 22px; height: 22px; }
+        .single-contact .content span {
+            display: block;
+            font-size: 13px;
+            color: rgba(255,255,255,.5);
+        }
+        .single-contact .content a {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--white);
+        }
+        .single-contact .content a:hover { color: var(--primary-color1); }
+        .footer-section .divider {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        .footer-section .divider path {
+            fill: rgba(255,255,255,.15);
+        }
+        .footer-menu-wrap { margin-bottom: 40px; }
+        .footer-logo-and-addition-info .footer-logo img {
+            height: 45px;
+            margin-bottom: 16px;
+            filter: brightness(0) invert(1);
+        }
+        .address-area span {
+            display: block;
+            font-size: 14px;
+            color: rgba(255,255,255,.6);
+        }
+        .address-area a {
+            font-size: 14px;
+            color: rgba(255,255,255,.6);
+        }
+        .address-area a:hover { color: var(--primary-color1); }
+        .social-list {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .social-list li a {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 16px;
+            transition: .3s;
+        }
+        .social-list li a:hover {
+            background: var(--primary-color1);
+            color: var(--white);
+        }
+        .footer-widget .widget-title h5 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 18px;
+        }
+        .footer-widget .widget-list li {
+            margin-bottom: 8px;
+        }
+        .footer-widget .widget-list li a {
+            font-size: 14px;
+            color: rgba(255,255,255,.6);
+            transition: .3s;
+        }
+        .footer-widget .widget-list li a:hover {
+            color: var(--primary-color1);
+            padding-left: 4px;
+        }
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,.1);
+            padding: 18px 0;
+        }
+        .copyright-and-payment-method-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .copyright-and-payment-method-area p {
+            font-size: 13px;
+            color: rgba(255,255,255,.5);
+            margin: 0;
+        }
+        .copyright-and-payment-method-area p a {
+            color: rgba(255,255,255,.6);
+        }
+        .copyright-and-payment-method-area p a:hover {
+            color: var(--primary-color1);
+        }
+        .payment-method-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .payment-method-area span {
+            font-size: 13px;
+            color: rgba(255,255,255,.5);
+        }
+        .payment-method-area ul {
+            display: flex;
+            gap: 8px;
+        }
+        .payment-method-area ul li img {
+            height: 24px;
+            opacity: .6;
+        }
+
+        /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+        @media (max-width: 991px) {
+            .topbar-area { display: none !important; }
+            header.style-1 .container { justify-content: space-between; }
+            .main-menu .menu-list { display: none; }
+            .header-logo.d-lg-none { display: block !important; }
+            .gd-hero-img { height: 350px; }
+            .gd-hero-img-title { font-size: 30px; }
+            .gd-grid { grid-template-columns: repeat(3, 1fr); padding: 0 20px; }
+            .gd-tab { padding: 14px 18px; font-size: 13px; }
+        }
+        @media (max-width: 767px) {
+            .gd-hero-img { height: 280px; }
+            .gd-hero-img-content { left: 20px; bottom: 24px; }
+            .gd-hero-img-title { font-size: 24px; }
+            .gd-hero-img-sub { font-size: 15px; }
+            .gd-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 0 16px; }
+            .gd-heading { font-size: 28px; }
+            .gd-tabs { flex-wrap: wrap; }
+            .gd-tab { padding: 10px 14px; font-size: 12px; }
+            .footer-contact-wrap .contact-area { flex-direction: column; align-items: center; }
+            .copyright-and-payment-method-area { flex-direction: column; text-align: center; }
+        }
+        @media (max-width: 480px) {
+            .gd-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════ TOPBAR ═══════════════════════ -->
+    <div class="topbar-area d-lg-block d-none">
+        <div class="container">
+            <div class="topbar-wrap">
+                <div class="logo-and-search-area">
+                    <a href="/" class="header-logo">
+                        <img src="assets/img/logo/logo.png" alt="Alpha Adventures">
+                    </a>
+                    <form class="search-area" autocomplete="off">
+                        <div class="form-inner">
+                            <button type="submit">
+                                <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                    <g>
+                                        <path d="M15.8044 14.8855L13.0544 12.198L12.99 12.1002C12.8688 11.9807 12.7055 11.9137 12.5353 11.9137C12.3651 11.9137 12.2018 11.9807 12.0806 12.1002C9.74343 14.2443 6.14312 14.3605 3.66561 12.3724C1.18811 10.3843 0.604677 6.90645 2.30061 4.24832C3.99655 1.5902 7.44655 0.573637 10.3631 1.87332C13.2797 3.17301 14.755 6.38739 13.8125 9.38239C13.7793 9.48905 13.7753 9.60268 13.8011 9.71137C13.8269 9.82007 13.8815 9.91983 13.9591 10.0002C14.0375 10.082 14.1358 10.1421 14.2443 10.1746C14.3528 10.2071 14.4679 10.211 14.5784 10.1858C14.6883 10.1616 14.79 10.109 14.8732 10.0332C14.9564 9.95744 15.0182 9.86113 15.0525 9.75395C16.1775 6.19989 14.4781 2.37489 11.0525 0.75395C7.62686 -0.866988 3.50468 0.200824 1.35124 3.26864C-0.802198 6.33645 -0.34001 10.4818 2.43905 13.0239C5.21811 15.5661 9.47968 15.7408 12.4687 13.4377L14.9037 15.8183C15.026 15.9358 15.1889 16.0014 15.3584 16.0014C15.5279 16.0014 15.6909 15.9358 15.8131 15.8183C15.8728 15.7599 15.9201 15.6902 15.9525 15.6133C15.9848 15.5363 16.0015 15.4537 16.0015 15.3702C16.0015 15.2867 15.9848 15.2041 15.9525 15.1271C15.9201 15.0502 15.8728 14.9805 15.8131 14.9221L15.8044 14.8855Z"/>
+                                    </g>
+                                </svg>
+                            </button>
+                            <input type="text" placeholder="Find Your Perfect Tour Package" autocomplete="off">
+                        </div>
+                    </form>
+                </div>
+                <div class="topbar-right">
+                    <div class="support-and-language-area">
+                        <a href="shop">Shop</a>
+                        <a href="travel-calendar"><i class="bi bi-calendar3" style="color:var(--primary-color1)"></i> Travel Calendar</a>
+                        <a href="gallery">Gallery</a>
+                        <a href="about-us">Why Us</a>
+                        <a href="contact">Need Help?</a>
+                    </div>
+                    <a href="user-dashboard" class="primary-btn1">
+                        <span>
+                            <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path d="M7.50105 7.78913C9.64392 7.78913 11.3956 6.03744 11.3956 3.89456C11.3956 1.75169 9.64392 0 7.50105 0C5.35818 0 3.60652 1.75169 3.60652 3.89456C3.60652 6.03744 5.35821 7.78913 7.50105 7.78913ZM14.1847 10.9014C14.0827 10.6463 13.9467 10.4082 13.7936 10.1871C13.0113 9.0306 11.8038 8.2653 10.4433 8.07822C10.2732 8.06123 10.0861 8.09522 9.95007 8.19727C9.23578 8.72448 8.38546 8.99658 7.50108 8.99658C6.61671 8.99658 5.76638 8.72448 5.05209 8.19727C4.91603 8.09522 4.72895 8.04421 4.5589 8.07822C3.19835 8.2653 1.97387 9.0306 1.20857 10.1871C1.05551 10.4082 0.919443 10.6633 0.817424 10.9014C0.766415 11.0034 0.783407 11.1225 0.834416 11.2245C0.970484 11.4626 1.14054 11.7007 1.2936 11.9048C1.53168 12.2279 1.78679 12.517 2.07592 12.7891C2.31401 13.0272 2.58611 13.2483 2.85824 13.4694C4.20177 14.4728 5.81742 15 7.48409 15C9.15076 15 10.7664 14.4728 12.1099 13.4694C12.382 13.2653 12.6541 13.0272 12.8923 12.7891C13.1644 12.517 13.4365 12.2279 13.6746 11.9048C13.8446 11.6837 13.9977 11.4626 14.1338 11.2245C14.2188 11.1225 14.2358 11.0034 14.1847 10.9014Z"/>
+                                </g>
+                            </svg>
+                            Dashboard
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+    <header class="style-1">
+        <div class="container">
+            <a href="/" class="header-logo d-lg-none">
+                <img src="assets/img/logo/logo.png" alt="Alpha Adventures">
+            </a>
+            <nav class="main-menu">
+                <ul class="menu-list">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="treks/upcoming-treks" class="drop-down">Upcoming Treks <i class="bi bi-caret-down-fill"></i></a></li>
+                    <li><a href="treks/backpacking-trips" class="drop-down">Backpacking Trips <i class="bi bi-caret-down-fill"></i></a></li>
+                    <li><a href="treks/trips-near-nagpur" class="drop-down">Trips Near Nagpur <i class="bi bi-caret-down-fill"></i></a></li>
+                    <li><a href="tour-packages">Tour Packages</a></li>
+                    <li><a href="corporate-programmes">Corporate Programmes</a></li>
+                    <li><a href="student-programmes">Student Programmes</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════ HERO ═══════════════════════ -->
+    <section class="gd-hero-img">
+        <img src="assets/img/innerpages/destination-dt-location-img6.jpg" alt="Harishchandragad Trek - Mountain summit landscape">
+        <div class="gd-hero-img-overlay"></div>
+        <div class="gd-hero-img-content">
+            <nav class="gd-hero-bc">
+                <a href="/">Home</a>
+                <span>/</span>
+                <a href="/gallery">Gallery</a>
+                <span>/</span>
+                <span>Harishchandragad Trek</span>
+            </nav>
+            <h1 class="gd-hero-img-title">Harishchandragad Trek</h1>
+            <p class="gd-hero-img-sub">Explore Harishchandragad Trek through every season</p>
+            <p class="gd-hero-img-desc">Discover the landscapes, trails, views and experiences across different seasons.</p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ SEASON TABS ═══════════════════════ -->
+    <section class="gd-tabs-bar" id="gd-tabs-bar">
+        <div class="container">
+            <div class="gd-tabs">
+                <button class="gd-tab active" data-season="summer"><i class="bi bi-sun"></i> Summer</button>
+                <button class="gd-tab" data-season="monsoon"><i class="bi bi-cloud-rain"></i> Monsoon</button>
+                <button class="gd-tab" data-season="winter"><i class="bi bi-snow"></i> Winter</button>
+                <button class="gd-tab" data-season="spring"><i class="bi bi-flower1"></i> Spring</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════ GALLERY PANELS ═══════════════════════ -->
+    <main class="gd-gallery-area">
+
+        <!-- SUMMER -->
+        <section class="gd-panel active" id="panel-summer">
+            <div class="gd-panel-head">
+                <span class="gd-label">Summer</span>
+                <h2 class="gd-heading">Summer</h2>
+                <p class="gd-subtext">Clear skies, warm trails & panoramic mountain views</p>
+                <div class="gd-accent-line"></div>
+            </div>
+            <div class="gd-grid" id="grid-summer">
+                <div class="gd-item" data-index="0"><img src="assets/img/home2/destination-img4.jpg" alt="Kalsubai Peak summit view"></div>
+                <div class="gd-item" data-index="1"><img src="assets/img/home2/destination-img1.jpg" alt="Rajgad Fort trail"></div>
+                <div class="gd-item" data-index="2"><img src="assets/img/home2/destination-img2.jpg" alt="Torna Fort ridge"></div>
+                <div class="gd-item" data-index="3"><img src="assets/img/innerpages/destination-dt-location-img1.jpg" alt="Mountain panorama"></div>
+                <div class="gd-item" data-index="4"><img src="assets/img/home2/destination-img3.jpg" alt="Harishchandragad peak"></div>
+                <div class="gd-item" data-index="5"><img src="assets/img/innerpages/destination-dt-location-img2.jpg" alt="Trekking trail"></div>
+                <div class="gd-item" data-index="6"><img src="assets/img/home2/destination-img5.jpg" alt="Lohagad Fort approach"></div>
+                <div class="gd-item" data-index="7"><img src="assets/img/innerpages/destination-dt-location-img3.jpg" alt="Valley view"></div>
+                <div class="gd-item" data-index="8"><img src="assets/img/home2/destination-img6.jpg" alt="Visapur Fort landscape"></div>
+                <div class="gd-item" data-index="9"><img src="assets/img/innerpages/destination-dt-location-img4.jpg" alt="Rocky summit"></div>
+                <div class="gd-item gd-hidden" data-index="10"><img src="assets/img/home2/gallery-img2-big.jpg" alt="Mountain camp"></div>
+                <div class="gd-item gd-hidden" data-index="11"><img src="assets/img/innerpages/destination-dt-location-img5.jpg" alt="Panoramic viewpoint"></div>
+            </div>
+            <div class="gd-cta-wrap">
+                <button class="gd-view-btn" data-season="summer">View All Summer Photos <i class="bi bi-arrow-right"></i></button>
+                <button class="gd-less-btn" data-season="summer" style="display:none;">Show Less &uarr;</button>
+            </div>
+        </section>
+
+        <!-- MONSOON -->
+        <section class="gd-panel" id="panel-monsoon">
+            <div class="gd-panel-head">
+                <span class="gd-label">Monsoon</span>
+                <h2 class="gd-heading">Monsoon</h2>
+                <p class="gd-subtext">Lush green trails, misty mountains & dramatic waterfalls</p>
+                <div class="gd-accent-line"></div>
+            </div>
+            <div class="gd-grid" id="grid-monsoon">
+                <div class="gd-item" data-index="0"><img src="assets/img/innerpages/destination-img1.jpg" alt="Misty mountain landscape"></div>
+                <div class="gd-item" data-index="1"><img src="assets/img/home2/destination-img3.jpg" alt="Harishchandragad in monsoon"></div>
+                <div class="gd-item" data-index="2"><img src="assets/img/innerpages/destination-img2.jpg" alt="Green monsoon valley"></div>
+                <div class="gd-item" data-index="3"><img src="assets/img/innerpages/destination-img3.jpg" alt="Waterfall on trail"></div>
+                <div class="gd-item" data-index="4"><img src="assets/img/home2/destination-img7.jpg" alt="Sinhagad in mist"></div>
+                <div class="gd-item" data-index="5"><img src="assets/img/innerpages/destination-img4.jpg" alt="Wet rocks and green trail"></div>
+                <div class="gd-item" data-index="6"><img src="assets/img/innerpages/destination-img5.jpg" alt="Monsoon trek route"></div>
+                <div class="gd-item" data-index="7"><img src="assets/img/home2/destination-img8.jpg" alt="Cloud-covered peaks"></div>
+                <div class="gd-item" data-index="8"><img src="assets/img/innerpages/destination-img6.jpg" alt="Lush green hills"></div>
+                <div class="gd-item" data-index="9"><img src="assets/img/home2/gallery-img6-big.jpg" alt="Monsoon panorama"></div>
+                <div class="gd-item gd-hidden" data-index="10"><img src="assets/img/innerpages/destination-dt-location-img6.jpg" alt="Misty trail"></div>
+                <div class="gd-item gd-hidden" data-index="11"><img src="assets/img/home2/gallery-img3-big.jpg" alt="Fog over valley"></div>
+            </div>
+            <div class="gd-cta-wrap">
+                <button class="gd-view-btn" data-season="monsoon">View All Monsoon Photos <i class="bi bi-arrow-right"></i></button>
+                <button class="gd-less-btn" data-season="monsoon" style="display:none;">Show Less &uarr;</button>
+            </div>
+        </section>
+
+        <!-- WINTER -->
+        <section class="gd-panel" id="panel-winter">
+            <div class="gd-panel-head">
+                <span class="gd-label">Winter</span>
+                <h2 class="gd-heading">Winter</h2>
+                <p class="gd-subtext">Cool mountain air, crisp trails & spectacular views</p>
+                <div class="gd-accent-line"></div>
+            </div>
+            <div class="gd-grid" id="grid-winter">
+                <div class="gd-item" data-index="0"><img src="assets/img/home2/destination-img4.jpg" alt="Kalsubai Peak in winter clarity"></div>
+                <div class="gd-item" data-index="1"><img src="assets/img/innerpages/tour-package-img1.jpg" alt="Clear morning trek start"></div>
+                <div class="gd-item" data-index="2"><img src="assets/img/innerpages/tour-package-img2.jpg" alt="Dry winter trail"></div>
+                <div class="gd-item" data-index="3"><img src="assets/img/home2/destination-img1.jpg" alt="Rajgad Fort winter view"></div>
+                <div class="gd-item" data-index="4"><img src="assets/img/innerpages/tour-package-img3.jpg" alt="Crisp mountain air"></div>
+                <div class="gd-item" data-index="5"><img src="assets/img/innerpages/tour-package-img4.jpg" alt="Panoramic summit view"></div>
+                <div class="gd-item" data-index="6"><img src="assets/img/home2/destination-img2.jpg" alt="Torna Fort ridge"></div>
+                <div class="gd-item" data-index="7"><img src="assets/img/innerpages/tour-package-img5.jpg" alt="Group at summit"></div>
+                <div class="gd-item" data-index="8"><img src="assets/img/home2/gallery-img2-big.jpg" alt="Wide winter landscape"></div>
+                <div class="gd-item gd-hidden" data-index="9"><img src="assets/img/innerpages/tour-package-img6.jpg" alt="Early dawn trek"></div>
+                <div class="gd-item gd-hidden" data-index="10"><img src="assets/img/home2/destination-img5.jpg" alt="Lohagad in winter"></div>
+            </div>
+            <div class="gd-cta-wrap">
+                <button class="gd-view-btn" data-season="winter">View All Winter Photos <i class="bi bi-arrow-right"></i></button>
+                <button class="gd-less-btn" data-season="winter" style="display:none;">Show Less &uarr;</button>
+            </div>
+        </section>
+
+        <!-- SPRING -->
+        <section class="gd-panel" id="panel-spring">
+            <div class="gd-panel-head">
+                <span class="gd-label">Spring</span>
+                <h2 class="gd-heading">Spring</h2>
+                <p class="gd-subtext">Fresh landscapes, blooming trails & vibrant greenery</p>
+                <div class="gd-accent-line"></div>
+            </div>
+            <div class="gd-grid" id="grid-spring">
+                <div class="gd-item" data-index="0"><img src="assets/img/home2/destination-img4.jpg" alt="Kalsubai with spring greenery"></div>
+                <div class="gd-item" data-index="1"><img src="assets/img/home2/gallery-img1-big.jpg" alt="Fresh green landscape"></div>
+                <div class="gd-item" data-index="2"><img src="assets/img/innerpages/destination-dt-location-img5.jpg" alt="Valley of Flowers trail"></div>
+                <div class="gd-item" data-index="3"><img src="assets/img/home2/destination-img6.jpg" alt="Visapur Fort spring"></div>
+                <div class="gd-item" data-index="4"><img src="assets/img/innerpages/destination-dt-location-img2.jpg" alt="Spring sunrise trek"></div>
+                <div class="gd-item" data-index="5"><img src="assets/img/innerpages/destination-dt-location-img3.jpg" alt="Village landscape"></div>
+                <div class="gd-item" data-index="6"><img src="assets/img/home2/gallery-img5-big.jpg" alt="Panoramic trail view"></div>
+                <div class="gd-item" data-index="7"><img src="assets/img/innerpages/destination-dt-location-img1.jpg" alt="Trekking through hills"></div>
+                <div class="gd-item" data-index="8"><img src="assets/img/home2/destination-img7.jpg" alt="Sinhagad spring"></div>
+                <div class="gd-item" data-index="9"><img src="assets/img/innerpages/destination-dt-location-img7.jpg" alt="Kalsubai Peak spring"></div>
+                <div class="gd-item gd-hidden" data-index="10"><img src="assets/img/home2/gallery-img4-big.jpg" alt="Spring meadow"></div>
+            </div>
+            <div class="gd-cta-wrap">
+                <button class="gd-view-btn" data-season="spring">View All Spring Photos <i class="bi bi-arrow-right"></i></button>
+                <button class="gd-less-btn" data-season="spring" style="display:none;">Show Less &uarr;</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════════════ LIGHTBOX ═══════════════════════ -->
+    <div class="gd-lb" id="gd-lb">
+        <div class="gd-lb-bg" id="gd-lb-bg"></div>
+        <button class="gd-lb-x" id="gd-lb-x" aria-label="Close">&times;</button>
+        <button class="gd-lb-prev" id="gd-lb-prev" aria-label="Previous"><i class="bi bi-chevron-left"></i></button>
+        <button class="gd-lb-next" id="gd-lb-next" aria-label="Next"><i class="bi bi-chevron-right"></i></button>
+        <div class="gd-lb-stage">
+            <img class="gd-lb-img" id="gd-lb-img" src="" alt="">
+        </div>
+        <div class="gd-lb-count" id="gd-lb-count">1 / 1</div>
+    </div>
+
+    <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+    <footer class="footer-section">
+        <div class="container">
+            <div class="footer-contact-wrap">
+                <ul class="contact-area">
+                    <li class="single-contact">
+                        <div class="icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" fill="#25D366"/>
+                            </svg>
+                        </div>
+                        <div class="content">
+                            <span>WhatsApp</span>
+                            <a href="https://wa.me/918180001597">+91 8180001597</a>
+                        </div>
+                    </li>
+                    <li class="single-contact">
+                        <div class="icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="rgba(255,255,255,.7)" stroke-width="2" fill="none"/>
+                                <path d="M22 6l-10 7L2 6" stroke="rgba(255,255,255,.7)" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <div class="content">
+                            <span>Mail Us</span>
+                            <a href="mailto:info@alphaadventures.in">info@alphaadventures.in</a>
+                        </div>
+                    </li>
+                    <li class="single-contact">
+                        <div class="icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="rgba(255,255,255,.7)" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <div class="content">
+                            <span>Call Us</span>
+                            <a href="tel:+918180001597">+91 8180001597</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <svg class="divider" width="100%" height="6" viewBox="0 0 1320 6" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 2.5L0 0.113249V5.88675L5 3.5V2.5ZM1315 3.5L1320 5.88675V0.113249L1315 2.5V3.5ZM4.5 3.5H1315.5V2.5H4.5V3.5Z"/>
+            </svg>
+            <div class="footer-menu-wrap">
+                <div class="row gy-md-4 gy-5">
+                    <div class="col-lg-3 col-md-4 col-sm-6">
+                        <div class="footer-logo-and-addition-info">
+                            <a href="/" class="footer-logo">
+                                <img src="assets/img/logo/logo.png" alt="Alpha Adventures">
+                            </a>
+                            <div class="address-area">
+                                <span>Alpha Adventure Travel Agency</span>
+                                <a href="#">Nagpur, Maharashtra, India</a>
+                            </div>
+                            <ul class="social-list">
+                                <li><a href="https://www.facebook.com/"><i class="bx bxl-facebook"></i></a></li>
+                                <li><a href="https://www.youtube.com/"><i class="bx bxl-youtube"></i></a></li>
+                                <li><a href="https://www.instagram.com/"><i class="bx bxl-instagram-alt"></i></a></li>
+                            </ul>
+                            <p style="margin-top:10px;font-size:14px;">
+                                4.8/5 rating from 5000+ trekkers<br>
+                                6+ years of trekking experience
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-md-end">
+                        <div class="footer-widget">
+                            <div class="widget-title"><h5>Explore Adventures</h5></div>
+                            <ul class="widget-list">
+                                <li><a href="treks/upcoming-treks">Upcoming Treks</a></li>
+                                <li><a href="treks/upcoming-treks/weekend-treks">Weekend Treks</a></li>
+                                <li><a href="treks/upcoming-treks/sahyadri-treks">Sahyadri Treks</a></li>
+                                <li><a href="treks/upcoming-treks/himalayan-treks">Himalayan Treks</a></li>
+                                <li><a href="treks/central-india-treks">Central India Treks</a></li>
+                                <li><a href="treks/backpacking-trips">Backpacking Trips</a></li>
+                                <li><a href="treks/trips-near-nagpur">Trips Near Nagpur</a></li>
+                                <li><a href="tour-packages">Tour Packages</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-md-end">
+                        <div class="footer-widget">
+                            <div class="widget-title"><h5>Plan Your Trek</h5></div>
+                            <ul class="widget-list">
+                                <li><a href="trek-calendar">Trek Calendar</a></li>
+                                <li><a href="fitness-requirements">Fitness Requirements</a></li>
+                                <li><a href="packing-checklist">Packing Checklist</a></li>
+                                <li><a href="beginner-trek-guide">Beginner Trek Guide</a></li>
+                                <li><a href="corporate-treks">Corporate Treks</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-6 d-flex justify-content-lg-end">
+                        <div class="footer-widget">
+                            <div class="widget-title"><h5>Help & Support</h5></div>
+                            <ul class="widget-list">
+                                <li><a href="about-us">About Alpha Adventures</a></li>
+                                <li><a href="responsible-travel">Responsible Travel</a></li>
+                                <li><a href="safety-guidelines">Safety Guidelines</a></li>
+                                <li><a href="cancellation-policy">Cancellation Policy</a></li>
+                                <li><a href="terms-and-conditions">Terms & Conditions</a></li>
+                                <li><a href="contact">Contact Us</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container">
+                <div class="copyright-and-payment-method-area">
+                    <p>
+                        &copy; 2026 Alpha Adventures |
+                        <a href="privacy-policy">Privacy</a> |
+                        <a href="terms-and-conditions">Terms</a> |
+                        <a href="cancellation-policy">Cancellation</a> |
+                        <a href="trek-disclaimer">Responsible Travel</a>
+                    </p>
+                    <div class="payment-method-area">
+                        <span>Accepted Payment Methods :</span>
+                        <ul>
+                            <li><img src="assets/img/home1/icon/mastar-card-icon.svg" alt="MasterCard"></li>
+                            <li><img src="assets/img/home1/icon/visa-icon.svg" alt="Visa"></li>
+                            <li><img src="assets/img/home1/icon/paypal-icon.svg" alt="PayPal"></li>
+                            <li><img src="assets/img/home1/icon/gpay-icon.svg" alt="GPay"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ═══════════════════════ GALLERY DETAIL JS ═══════════════════════ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        /* ──── SEASON TAB SWITCHING ──── */
+        const tabs = document.querySelectorAll('.gd-tab');
+        const panels = document.querySelectorAll('.gd-panel');
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var season = this.getAttribute('data-season');
+
+                tabs.forEach(function (t) { t.classList.remove('active'); });
+                this.classList.add('active');
+
+                panels.forEach(function (p) { p.classList.remove('active'); });
+                var target = document.getElementById('panel-' + season);
+                if (target) target.classList.add('active');
+            });
+        });
+
+        /* ──── VIEW ALL / SHOW LESS ──── */
+        var viewBtns = document.querySelectorAll('.gd-view-btn');
+        var lessBtns = document.querySelectorAll('.gd-less-btn');
+
+        viewBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var season = this.getAttribute('data-season');
+                var grid = document.getElementById('grid-' + season);
+                if (!grid) return;
+                var hidden = grid.querySelectorAll('.gd-hidden');
+                hidden.forEach(function (el) { el.classList.remove('gd-hidden'); });
+                this.style.display = 'none';
+                var lessBtn = grid.parentElement.querySelector('.gd-less-btn');
+                if (lessBtn) lessBtn.style.display = 'inline-flex';
+            });
+        });
+
+        lessBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var season = this.getAttribute('data-season');
+                var grid = document.getElementById('grid-' + season);
+                if (!grid) return;
+                var items = grid.querySelectorAll('.gd-item');
+                items.forEach(function (item, i) {
+                    if (i >= 10) item.classList.add('gd-hidden');
+                });
+                this.style.display = 'none';
+                var viewBtn = grid.parentElement.querySelector('.gd-view-btn');
+                if (viewBtn) viewBtn.style.display = 'inline-flex';
+            });
+        });
+
+        /* ──── LIGHTBOX ──── */
+        var lb = document.getElementById('gd-lb');
+        var lbBg = document.getElementById('gd-lb-bg');
+        var lbX = document.getElementById('gd-lb-x');
+        var lbPrev = document.getElementById('gd-lb-prev');
+        var lbNext = document.getElementById('gd-lb-next');
+        var lbImg = document.getElementById('gd-lb-img');
+        var lbCount = document.getElementById('gd-lb-count');
+        var currentItems = [];
+        var currentIndex = 0;
+
+        function openLightbox(items, index) {
+            currentItems = items;
+            currentIndex = index;
+            showImage();
+            lb.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            lb.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function showImage() {
+            if (currentItems.length === 0) return;
+            var img = currentItems[currentIndex].querySelector('img');
+            if (img) {
+                lbImg.src = img.src;
+                lbImg.alt = img.alt;
+            }
+            lbCount.textContent = (currentIndex + 1) + ' / ' + currentItems.length;
+        }
+
+        function nextImage() {
+            currentIndex = (currentIndex + 1) % currentItems.length;
+            showImage();
+        }
+
+        function prevImage() {
+            currentIndex = (currentIndex - 1 + currentItems.length) % currentItems.length;
+            showImage();
+        }
+
+        lbX.addEventListener('click', closeLightbox);
+        lbBg.addEventListener('click', closeLightbox);
+        lbNext.addEventListener('click', nextImage);
+        lbPrev.addEventListener('click', prevImage);
+
+        document.addEventListener('keydown', function (e) {
+            if (!lb.classList.contains('active')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') nextImage();
+            if (e.key === 'ArrowLeft') prevImage();
+        });
+
+        /* Attach click to all gd-item elements */
+        document.querySelectorAll('.gd-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+                var grid = this.closest('.gd-grid');
+                if (!grid) return;
+                var items = Array.from(grid.querySelectorAll('.gd-item'));
+                var idx = items.indexOf(this);
+                openLightbox(items, idx >= 0 ? idx : 0);
+            });
+        });
+
+    });
+    </script>
+
+    <!-- BoxIcons (for social icons in footer) -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+
+</body>
+</html>
