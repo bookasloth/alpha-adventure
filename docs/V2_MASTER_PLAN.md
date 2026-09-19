@@ -47,11 +47,17 @@ dynamic. Detail: [V2_PROPOSAL.md §3](V2_PROPOSAL.md#3-nextjs-architecture-propo
 
 ## 5. Database strategy
 Supabase/PostgreSQL, RLS on every table, public read only for `status=published`,
-writes server-side. Content tables (treks, batches, itinerary, tours, categories,
-tags, pages, blog, testimonials, faqs, media, galleries, navigation,
-site_settings, seo_meta) + transactional tables (profiles, leads, bookings,
-orders, payments, email_log, audit_log). Full schema, keys, indexes, buckets,
-triggers, RPC (seat-hold): [V2_PROPOSAL.md §4](V2_PROPOSAL.md#4-supabase-architecture-proposed).
+writes server-side. **As-built (migrations 0001–0005):** content tables (treks +
+trek_sections/itinerary/departures/addons/media/tags, destinations, categories,
+tags, pages, posts, testimonials, **reviews**, **faqs**, media, site_settings,
+**seo_meta**) + transactional/identity tables (profiles, **user_roles**, leads,
+lead_notes, bookings, booking_travellers/addons, payments, refunds,
+payment_webhook_events, points_ledger, partners, **notifications**, audit_log).
+No `orders` (shop deferred); no `galleries`/`navigation` tables (nav lives in
+site_settings). Roles via `user_roles` + `has_role()` helpers, not
+`profiles.role`; email/SMS/WhatsApp logged in `notifications`, not `email_log`.
+Full schema, keys, indexes, buckets, triggers, RPC (seat-hold):
+[DATABASE_ARCHITECTURE.md](DATABASE_ARCHITECTURE.md).
 
 ## 6. Dynamic content strategy
 Migrate `src/data/*` and `orig-*.html` into the DB; keep the existing helper-
@@ -65,8 +71,9 @@ testimonials/faqs/media/nav/settings/SEO/leads/bookings/orders/users.
 [V2_PROPOSAL.md §5](V2_PROPOSAL.md#5-admin--cms-system-proposed).
 
 ## 8. Authentication
-Supabase Auth; `profiles.role`; three-layer authorization (middleware + action +
-RLS). Replace the mock dashboard with a real account area.
+Supabase Auth; roles via `user_roles` + `has_role()`/`is_staff()`/`is_admin()`;
+three-layer authorization (middleware + action + RLS). Replace the mock dashboard
+with a real account area.
 [V2_PROPOSAL.md §14](V2_PROPOSAL.md#14-security-architecture-proposed) ·
 [V2_DECISIONS.md](V2_DECISIONS.md).
 

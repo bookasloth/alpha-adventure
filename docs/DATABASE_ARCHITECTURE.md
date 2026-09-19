@@ -541,3 +541,40 @@ Edge Functions / server actions.
 `supabase/migrations/*` in the order Identity → Catalog → Media → Schedules →
 Bookings → Payments → Loyalty → Leads → Content → Notifications → Audit, then RLS,
 types, seed, tests, and the §43 companion docs.*
+
+---
+
+## Addendum — Decisions applied 2026-09-19 (migration `0005_decisions.sql`)
+
+Open Questions above are now resolved. This section is authoritative where it
+conflicts with earlier text; earlier deviations from the original plan are
+intentional and listed here.
+
+**Reconciled deviations (schema was kept, plan text corrected):**
+- **Roles** use a `user_roles` join table + `app_role` enum, resolved via
+  security-definer `has_role()`/`is_staff()`/`is_admin()` — NOT `profiles.role`.
+  (Supabase-recommended; avoids RLS recursion, allows multi-role.)
+- **Notifications** use one multi-channel `notifications` outbox
+  (`email`/`sms`/`whatsapp`/`in_app`), NOT a single-purpose `email_log`.
+- **No `navigation` table** — navigation lives in `site_settings` JSON.
+
+**Decisions locked with the client:**
+1. **Payments = both full and deposit.** Added to `bookings`: `deposit_amount`
+   (null ⇒ full required), `amount_paid`, `balance_due` (generated =
+   `greatest(grand_total - amount_paid, 0)`), `balance_due_date`. Added
+   `payments.kind` ∈ {`full`,`deposit`,`balance`} and booking state
+   `deposit_paid`. Deposit *flow* (balance initiation, reminders, partial-refund
+   rules) is Phase 6.
+2. **Shop deferred** — no `orders`/products/cart schema. Bookings/payments/refunds
+   cover trek transactions.
+3. **CMS = core + content** — added `seo_meta` (per-entity SEO/JSON-LD) and
+   `faqs`. Galleries + visual nav editor deferred.
+4. **Reviews = verified** — added `reviews`: one per `booking_id` (unique),
+   `rating` 1–5, `draft→published` moderation, created via Server Action.
+   `testimonials` stays for admin-curated marketing quotes.
+
+All four new/changed tables have RLS enabled with read/staff policies and
+`set_updated_at()` triggers matching the `0003`/`0002` conventions.
+
+**Still outstanding (not blocking schema):** PhonePe merchant + GSTIN details,
+needed before the payment/invoice fields finalize in Phase 6.

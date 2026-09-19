@@ -79,9 +79,14 @@ PhonePe callback, provider webhooks, health checks.
 
 ## Decision: Authentication & authorization
 ### Recommended Standard
-Supabase Auth for identity. Roles in `profiles.role`. Authorization checked in
-**both** middleware (route gate) and each privileged action (defense in depth),
-plus **RLS** at the DB. UI hiding is never the security boundary.
+Supabase Auth for identity. Roles live in a **`user_roles` join table**
+(`app_role` enum: `customer`/`staff`/`admin`), checked via security-definer
+helpers `has_role()`/`is_staff()`/`is_admin()` — NOT a `profiles.role` column
+(the join-table pattern avoids RLS recursion and supports multiple roles per
+user). Authorization checked in **both** middleware (route gate) and each
+privileged action (defense in depth), plus **RLS** at the DB. UI hiding is never
+the security boundary. At launch only `admin` is provisioned; `staff` is
+available in the enum for later delegation.
 ### Why
 Three independent layers; RLS is the backstop even if app code is wrong.
 ### Applies To
@@ -134,8 +139,11 @@ None.
 
 ## Decision: All email is transactional, server-side, logged, non-blocking
 ### Recommended Standard
-Send via Resend from server code only; log every send in `email_log`; email
-failures never block the primary transaction; sends are idempotent.
+Send via Resend from server code only; log every send in the **`notifications`
+outbox** (multi-channel: `email`/`sms`/`whatsapp`/`in_app` — replaces the
+originally-planned single-purpose `email_log`, and future-proofs the WhatsApp
+add-on); email failures never block the primary transaction; sends are
+idempotent.
 ### Why
 Reliability + auditability; a failed email must not fail a booking.
 ### Applies To
@@ -248,3 +256,67 @@ V1's single point of failure; removes availability + supply-chain risk.
 All assets and third-party libs.
 ### Exceptions
 CDN-hosted fonts via a documented, pinned source.
+
+---
+
+## Decision: Booking payment supports BOTH full and deposit (2026-09-19)
+### Recommended Standard
+A booking can be confirmed by **full payment** or by a **deposit** with the
+balance due later. `bookings` carries `deposit_amount` (null = full required),
+`amount_paid`, `balance_due` (generated), and `balance_due_date`; `payments.kind`
+is `full`/`deposit`/`balance`; booking state `deposit_paid` sits between
+`pending_payment` and `confirmed`. Schema support lands now (migration `0005`);
+the deposit **flow** (balance-payment initiation, reminder notifications,
+partial-refund rules) ships in Phase 6 with payments.
+### Why
+Client wants both options. Cheap to add the columns now; expensive to migrate the
+`bookings` table later.
+### Applies To
+Bookings, payments, reconciliation.
+### Exceptions
+None.
+
+---
+
+## Decision: Shop is deferred (2026-09-19)
+### Recommended Standard
+No products/orders/cart/inventory schema in V2 launch. The shop is a later add-on
+module (proposal item 11). No `orders` table exists — bookings/payments/refunds
+cover trek transactions.
+### Why
+Focus launch on the core booking business; shop is low-value relative to build cost.
+### Applies To
+Data model, admin, roadmap.
+### Exceptions
+Revisit as a scoped add-on after launch.
+
+---
+
+## Decision: CMS scope at launch = core + content (2026-09-19)
+### Recommended Standard
+Admin manages treks/departures/bookings/leads/site-settings **plus** pages, blog
+(`posts`), testimonials, **FAQs (`faqs`)**, and **per-entity SEO (`seo_meta`)**.
+Galleries and a visual navigation editor are deferred — navigation lives in
+`site_settings` JSON; standalone galleries reuse `media`/page blocks.
+### Why
+Matches the proposal's content-editable promise without the extra build of a
+gallery/nav CMS that a small site rarely needs.
+### Applies To
+Admin/CMS, SEO, content tables.
+### Exceptions
+Add a `galleries` table / nav editor only if a concrete need appears.
+
+---
+
+## Decision: Reviews are verified (booking-linked), moderated (2026-09-19)
+### Recommended Standard
+Trek reviews come only from real completed bookings: `reviews` table, one row per
+`booking_id` (unique), `rating` 1–5, `status` draft→published moderation, created
+via a Server Action. Admin-curated marketing quotes stay in `testimonials` (a
+separate concern).
+### Why
+Trust: on-page ratings must reflect actual customers, not free-form input.
+### Applies To
+Trek pages, account area, admin moderation.
+### Exceptions
+Testimonials remain free-form and admin-authored.
