@@ -42,7 +42,7 @@ export default function ContactFormScripts() {
           setStatus("Thanks! We've received your message and will get back to you soon.", true);
           form.reset();
         } else {
-          setStatus(data.error || "Something went wrong. Please try again.", false);
+          setStatus(data?.error?.message || "Something went wrong. Please try again.", false);
         }
       } catch {
         setStatus("Network error. Please try again or WhatsApp us.", false);

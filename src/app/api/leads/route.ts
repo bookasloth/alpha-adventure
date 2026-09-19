@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { validateLead, type LeadInput } from "@/utils/lead";
+import { jsonOk, jsonFail } from "@/utils/http";
 
 // POST /api/leads — persist a contact/enquiry submission.
 // ponytail: a Route Handler (not a Server Action) because the contact form is
@@ -13,28 +13,24 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as LeadInput;
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+    return jsonFail("Invalid request.", "invalid_json");
   }
 
   const result = validateLead(body, "contact");
-  if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
-  }
-  if (result.bot) {
-    // Honeypot tripped: pretend success, store nothing.
-    return NextResponse.json({ ok: true });
-  }
+  if (!result.ok) return jsonFail(result.error, "validation");
+  if (result.bot) return jsonOk(null); // honeypot tripped: pretend success, store nothing
 
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("leads").insert(result.value);
 
   if (error) {
     console.error("[leads] insert failed:", error.message);
-    return NextResponse.json(
-      { ok: false, error: "Could not save your message. Please try again or WhatsApp us." },
-      { status: 500 }
+    return jsonFail(
+      "Could not save your message. Please try again or WhatsApp us.",
+      "db_error",
+      500
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return jsonOk(null);
 }
