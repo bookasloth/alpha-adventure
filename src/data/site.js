@@ -48,11 +48,6 @@ export const navLinks = [
       {
         label: "Himalayan Treks",
         href: "/treks/upcoming-treks/himalayan-treks",
-        children: [
-          { label: "Maharashtra", href: "/treks/upcoming-treks/himalayan-treks/maharashtra" },
-          { label: "Gujarat", href: "/treks/upcoming-treks/himalayan-treks/gujarat" },
-          { label: "Madhya Pradesh", href: "/treks/upcoming-treks/himalayan-treks/madhya-pradesh" },
-        ],
       },
       {
         label: "Central India Treks",
@@ -63,29 +58,19 @@ export const navLinks = [
   {
     label: "Backpacking Trips",
     href: "/treks/backpacking-trips",
+    // Per-region backpacking routes don't exist yet (Phase 3 adds filtering);
+    // point each region at the real backpacking listing so no link dead-ends.
     children: [
-      {
-        label: "Maharashtra",
-        href: "/treks/backpacking-trips/maharashtra",
-        children: [
-          { label: "Malvan-Tarkarli", href: "/treks/backpacking-trips/maharashtra/malvan-tarkarli" },
-        ],
-      },
-      { label: "Gujarat", href: "/treks/backpacking-trips/gujarat" },
-      { label: "Madhya Pradesh", href: "/treks/backpacking-trips/madhya-pradesh" },
-      {
-        label: "Rajasthan",
-        href: "/treks/backpacking-trips/rajasthan",
-        children: [
-          { label: "Jodhpur-Jaisalmer", href: "/treks/backpacking-trips/rajasthan/jodhpur-jaisalmer" },
-        ],
-      },
+      { label: "Maharashtra", href: "/treks/backpacking-trips" },
+      { label: "Gujarat", href: "/treks/backpacking-trips" },
+      { label: "Madhya Pradesh", href: "/treks/backpacking-trips" },
+      { label: "Rajasthan", href: "/treks/backpacking-trips" },
       {
         label: "Himachal Pradesh",
-        href: "/treks/backpacking-trips/himachal-pradesh",
-        children: [{ label: "Spiti Valley", href: "/treks/backpacking-trips/himachal-pradesh/spiti-valley" }],
+        href: "/treks/backpacking-trips",
+        children: [{ label: "Spiti Valley", href: "/backpacking-trips/detail/spiti-backpacking-trip" }],
       },
-      { label: "Ladakh", href: "/treks/backpacking-trips/ladakh" },
+      { label: "Ladakh", href: "/treks/backpacking-trips" },
     ],
   },
   {
@@ -119,11 +104,11 @@ export const footerColumns = [
   {
     title: "Plan Your Trek",
     links: [
-      { label: "Trek Calendar", href: "/trek-calendar" },
+      { label: "Trek Calendar", href: "/travel-calendar" },
       { label: "Fitness Requirements", href: "/fitness-requirements" },
       { label: "Packing Checklist", href: "/packing-checklist" },
       { label: "Beginner Trek Guide", href: "/beginner-trek-guide" },
-      { label: "Corporate Treks", href: "/corporate-treks" },
+      { label: "Corporate Treks", href: "/corporate-programmes" },
     ],
   },
   {
@@ -140,10 +125,10 @@ export const footerColumns = [
 ];
 
 export const footerLegal = [
-  { label: "Privacy", href: "/privacy-policy" },
+  // Privacy page doesn't exist yet — add in the CMS phase, then restore this link.
   { label: "Terms", href: "/terms-and-conditions" },
   { label: "Cancellation", href: "/cancellation-policy" },
-  { label: "Responsible Travel", href: "/trek-disclaimer" },
+  { label: "Responsible Travel", href: "/responsible-travel" },
 ];
 
 export const copyright = "© 2026 Alpha Adventures";
