@@ -1,3 +1,8 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -8,17 +13,11 @@ const nextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: "/assets/:path*",
-        destination: "https://alpha.thegreyhawks.com/assets/:path*",
-      },
-      {
-        source: "/Admin/uploads/:path*",
-        destination: "https://alpha.thegreyhawks.com/Admin/uploads/:path*",
-      },
-    ];
+  // `@/` alias defined here (not only in tsconfig) so it survives Next's
+  // tsconfig auto-rewrites and works for both JS and TS files.
+  webpack: (config) => {
+    config.resolve.alias["@"] = path.resolve(__dirname, "src");
+    return config;
   },
 };
 

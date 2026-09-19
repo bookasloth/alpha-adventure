@@ -35,7 +35,7 @@ const TREKS = [
   },
 ];
 
-const IMG_BASE = "https://alpha.thegreyhawks.com/assets/img";
+const IMG_BASE = "/assets/img";
 const DEFAULT_BANNER = IMG_BASE + "/home2/banner-img1.jpg";
 
 export default function BackpackingTripsClient() {

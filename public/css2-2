@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <base href="/">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/jquery-ui.css" rel="stylesheet">
+    <!-- Bootstrap Icon CSS -->
+    <link href="assets/css/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSS -->
+    <link href="assets/css/animate.min.css" rel="stylesheet">
+    <!-- FancyBox CSS -->
+    <link href="assets/css/jquery.fancybox.min.css" rel="stylesheet">
+    <!-- Swiper slider CSS -->
+    <link rel="stylesheet" href="assets/css/swiper-bundle.min.css">
+    <!-- Slick slider CSS -->
+    <link rel="stylesheet" href="assets/css/slick.css">
+    <link rel="stylesheet" href="assets/css/slick-theme.css">
+    <link rel="stylesheet" href="assets/css/daterangepicker.css">
+    <!-- BoxIcon  CSS -->
+    <link href="assets/css/boxicons.min.css" rel="stylesheet">
+    <!--  Style CSS  -->
+    <link rel="stylesheet" href="assets/css/style.css?v=1789826097">
+    <!-- Card custom styles (media-first gallery) -->
+    <link rel="stylesheet" href="assets/css/card-custom.css">
+    <!-- Search Bar custom styling -->
+    <link rel="stylesheet" href="assets/css/search.css?v=1789826097">
+    <!-- Title -->
+    <title>Treks | Alpha Adventures</title>
+    <link rel="icon" href="assets/img/AALogo.png" type="image/gif" sizes="20x20">
+
+    
+    
+    
+    
+    
+    
+    
+    </head>
+<body class="tt-magic-cursor category-treks-page">
+
+    <div id="magic-cursor">
+    <div id="ball"></div>
+</div>    <div class="progress-wrap">
+    <svg class="progress-circle svg-content" width="100%" height="100%" viewbox="-1 -1 102 102">
+        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"></path>
+    </svg>
+    <svg class="arrow" width="22" height="25" viewbox="0 0 24 23" xmlns="http://www.w3.org/2000/svg">
+        <path
+            d="M0.556131 11.4439L11.8139 0.186067L13.9214 2.29352L13.9422 20.6852L9.70638 20.7061L9.76793 8.22168L3.6064 14.4941L0.556131 11.4439Z">
+        </path>
+        <path d="M23.1276 11.4999L16.0288 4.40105L15.9991 10.4203L20.1031 14.5243L23.1276 11.4999Z"></path>
+    </svg>
+</div>    <div class="topbar-area three d-lg-block d-none">
+    <div class="container">
+        <div class="topbar-wrap">
+            <div class="logo-and-search-area">
+                <a href="/" class="header-logo">
+                    <img src="assets/img/logo/logo.png" alt="">
+                </a>
+                <form class="search-area" id="desktop-search-form" autocomplete="off">
+                    <div class="form-inner">
+                        <button type="submit">
+                            <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M15.8044 14.8855L13.0544 12.198L12.99 12.1002C12.8688 11.9807 12.7055 11.9137 12.5353 11.9137C12.3651 11.9137 12.2018 11.9807 12.0806 12.1002C9.74343 14.2443 6.14312 14.3605 3.66561 12.3724C1.18811 10.3843 0.604677 6.90645 2.30061 4.24832C3.99655 1.5902 7.44655 0.573637 10.3631 1.87332C13.2797 3.17301 14.755 6.38739 13.8125 9.38239C13.7793 9.48905 13.7753 9.60268 13.8011 9.71137C13.8269 9.82007 13.8815 9.91983 13.9591 10.0002C14.0375 10.082 14.1358 10.1421 14.2443 10.1746C14.3528 10.2071 14.4679 10.211 14.5784 10.1858C14.6883 10.1616 14.79 10.109 14.8732 10.0332C14.9564 9.95744 15.0182 9.86113 15.0525 9.75395C16.1775 6.19989 14.4781 2.37489 11.0525 0.75395C7.62686 -0.866988 3.50468 0.200824 1.35124 3.26864C-0.802198 6.33645 -0.34001 10.4818 2.43905 13.0239C5.21811 15.5661 9.47968 15.7408 12.4687 13.4377L14.9037 15.8183C15.026 15.9358 15.1889 16.0014 15.3584 16.0014C15.5279 16.0014 15.6909 15.9358 15.8131 15.8183C15.8728 15.7599 15.9201 15.6902 15.9525 15.6133C15.9848 15.5363 16.0015 15.4537 16.0015 15.3702C16.0015 15.2867 15.9848 15.2041 15.9525 15.1271C15.9201 15.0502 15.8728 14.9805 15.8131 14.9221L15.8044 14.8855Z" />
+                                </g>
+                            </svg>
+                        </button>
+                        <input type="text" id="desktop-search-input" placeholder="Find Your Perfect Tour Package"
+                            autocomplete="off">
+                    </div>
+                </form>
+            </div>
+            <div class="topbar-right">
+                <div class="support-and-language-area">
+                    <a href="shop">Shop</a>
+                    <a href="travel-calendar"><i class="bi bi-calendar3" style="color:var(--primary-color1)"></i> Travel
+                        Calendar</a>
+                    <a href="gallery">Gallery</a>
+                    <a href="about-us">Why Us</a>
+                    <a href="contact">Need Help?</a>
+                </div>
+                                    <a href="user-dashboard" class="primary-btn1 four transparent">
+                        <span>
+                            <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M7.50105 7.78913C9.64392 7.78913 11.3956 6.03744 11.3956 3.89456C11.3956 1.75169 9.64392 0 7.50105 0C5.35818 0 3.60652 1.75169 3.60652 3.89456C3.60652 6.03744 5.35821 7.78913 7.50105 7.78913ZM14.1847 10.9014C14.0827 10.6463 13.9467 10.4082 13.7936 10.1871C13.0113 9.0306 11.8038 8.2653 10.4433 8.07822C10.2732 8.06123 10.0861 8.09522 9.95007 8.19727C9.23578 8.72448 8.38546 8.99658 7.50108 8.99658C6.61671 8.99658 5.76638 8.72448 5.05209 8.19727C4.91603 8.09522 4.72895 8.04421 4.5589 8.07822C3.19835 8.2653 1.97387 9.0306 1.20857 10.1871C1.05551 10.4082 0.919443 10.6633 0.817424 10.9014C0.766415 11.0034 0.783407 11.1225 0.834416 11.2245C0.970484 11.4626 1.14054 11.7007 1.2936 11.9048C1.53168 12.2279 1.78679 12.517 2.07592 12.7891C2.31401 13.0272 2.58611 13.2483 2.85824 13.4694C4.20177 14.4728 5.81742 15 7.48409 15C9.15076 15 10.7664 14.4728 12.1099 13.4694C12.382 13.2653 12.6541 13.0272 12.8923 12.7891C13.1644 12.517 13.4365 12.2279 13.6746 11.9048C13.8446 11.6837 13.9977 11.4626 14.1338 11.2245C14.2188 11.1225 14.2358 11.0034 14.1847 10.9014Z" />
+                                </g>
+                            </svg>
+                            Dashboard
+                        </span>
+                        <span>
+                            <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M7.50105 7.78913C9.64392 7.78913 11.3956 6.03744 11.3956 3.89456C11.3956 1.75169 9.64392 0 7.50105 0C5.35818 0 3.60652 1.75169 3.60652 3.89456C3.60652 6.03744 5.35821 7.78913 7.50105 7.78913ZM14.1847 10.9014C14.0827 10.6463 13.9467 10.4082 13.7936 10.1871C13.0113 9.0306 11.8038 8.2653 10.4433 8.07822C10.2732 8.06123 10.0861 8.09522 9.95007 8.19727C9.23578 8.72448 8.38546 8.99658 7.50108 8.99658C6.61671 8.99658 5.76638 8.72448 5.05209 8.19727C4.91603 8.09522 4.72895 8.04421 4.5589 8.07822C3.19835 8.2653 1.97387 9.0306 1.20857 10.1871C1.05551 10.4082 0.919443 10.6633 0.817424 10.9014C0.766415 11.0034 0.783407 11.1225 0.834416 11.2245C0.970484 11.4626 1.14054 11.7007 1.2936 11.9048C1.53168 12.2279 1.78679 12.517 2.07592 12.7891C2.31401 13.0272 2.58611 13.2483 2.85824 13.4694C4.20177 14.4728 5.81742 15 7.48409 15C9.15076 15 10.7664 14.4728 12.1099 13.4694C12.382 13.2653 12.6541 13.0272 12.8923 12.7891C13.1644 12.517 13.4365 12.2279 13.6746 11.9048C13.8446 11.6837 13.9977 11.4626 14.1338 11.2245C14.2188 11.1225 14.2358 11.0034 14.1847 10.9014Z" />
+                                </g>
+                            </svg>
+                            Dashboard
+                        </span>
+                    </a>
+                            </div>
+        </div>
+    </div>
+</div>
+<header class="style-1 three">
+    <div class="container d-flex flex-nowrap align-items-center justify-content-lg-center justify-content-between">
+        <a href="/" class="header-logo d-lg-none d-block">
+            <img src="assets/img/logo/logo.png" alt="">
+        </a>
+        <div class="main-menu">
+            <div class="mobile-logo-area d-lg-none d-flex align-items-center justify-content-between">
+                <a href="/" class="mobile-logo-wrap">
+                    <img src="assets/img/logo/logo.png" alt="">
+                </a>
+                <div class="menu-close-btn">
+                    <i class="bi bi-x"></i>
+                </div>
+            </div>
+            <ul class="menu-list">
+                <!-- Home -->
+                <li class="">
+                    <a href="/">Home</a>
+                </li>
+
+                <!-- Static menu items with mega menu panels -->
+                <li class="mega-trigger ">
+                    <a href="treks/upcoming-treks" class="drop-down">
+                        Upcoming Treks <i class="bi bi-caret-down-fill"></i>
+                    </a>
+                    <div class="aa-mega-panel" data-mega="upcoming-treks">
+                        <div class="mega-col mega-cats">
+                            <a href="treks/upcoming-treks" class="mega-cat-link active" data-target="upcoming-sahyadri">
+                                <i class="bi bi-geo-alt"></i> Sahyadri Treks
+                            </a>
+                            <a href="treks/upcoming-treks/himalayan-treks" class="mega-cat-link" data-target="upcoming-himalayan">
+                                <i class="bi bi-geo-alt"></i> Himalayan Treks
+                            </a>
+                            <a href="treks/upcoming-treks/central-india-treks" class="mega-cat-link" data-target="upcoming-central">
+                                <i class="bi bi-geo-alt"></i> Central India Treks
+                            </a>
+                        </div>
+                        <div class="mega-col mega-items">
+                            <!-- Sahyadri Treks -->
+                            <div class="mega-sub-panel active" id="upcoming-sahyadri">
+                                <div class="mega-panel-heading">
+                                    <h5>Sahyadri Treks</h5>
+                                    <p class="mega-panel-desc">Explore the rugged beauty of the Western Ghats with treks through ancient forts, lush valleys, and cascading waterfalls.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/upcoming-treks/sahyadri-treks/kalsubai" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg1.jpg" alt="Kalsubai" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Kalsubai Peak</span>
+                                            <span class="mega-dest-brief">Highest peak in Maharashtra</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/sahyadri-treks/harishchandragad" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg2.jpg" alt="Harishchandragad" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Harishchandragad</span>
+                                            <span class="mega-dest-brief">Ancient fort with Konkan Kada cliff</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/sahyadri-treks/ratangad" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg3.jpg" alt="Ratangad" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Ratangad Fort</span>
+                                            <span class="mega-dest-brief">400-year-old fort with natural rock hole</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/sahyadri-treks/rajgad" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg4.jpg" alt="Rajgad" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Rajgad Fort</span>
+                                            <span class="mega-dest-brief">Former capital of Maratha Empire</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/upcoming-treks/sahyadri-treks" class="mega-panel-cta">Explore all Sahyadri treks <span>&rarr;</span></a>
+                            </div>
+                            <!-- Himalayan Treks -->
+                            <div class="mega-sub-panel" id="upcoming-himalayan">
+                                <div class="mega-panel-heading">
+                                    <h5>Himalayan Treks</h5>
+                                    <p class="mega-panel-desc">Journey through towering peaks, alpine meadows, and sacred high-altitude trails across the Himalayas.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/upcoming-treks/himalayan-treks/maharashtra" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg5.jpg" alt="Maharashtra Himalayas" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Maharashtra</span>
+                                            <span class="mega-dest-brief">Western Himalayan foothills</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/himalayan-treks/gujarat" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg6.jpg" alt="Gujarat Himalayas" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Gujarat</span>
+                                            <span class="mega-dest-brief">Gujarat mountain trails</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/himalayan-treks/madhya-pradesh" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg7.jpg" alt="MP Himalayas" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Madhya Pradesh</span>
+                                            <span class="mega-dest-brief">Central highland treks</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/upcoming-treks/himalayan-treks" class="mega-panel-cta">Explore all Himalayan treks <span>&rarr;</span></a>
+                            </div>
+                            <!-- Central India Treks -->
+                            <div class="mega-sub-panel" id="upcoming-central">
+                                <div class="mega-panel-heading">
+                                    <h5>Central India Treks</h5>
+                                    <p class="mega-panel-desc">Discover wilderness trails, ancient heritage sites, and untamed forests across the heart of India.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/upcoming-treks/central-india-treks/pachmarhi" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg8.png" alt="Pachmarhi" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pachmarhi</span>
+                                            <span class="mega-dest-brief">Queen of Satpura with ancient caves</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/central-india-treks/amarkantak" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg9.jpg" alt="Amarkantak" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Amarkantak</span>
+                                            <span class="mega-dest-brief">Source of Narmada river</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/upcoming-treks/central-india-treks" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img1.jpg" alt="Central India" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">All Central India Treks</span>
+                                            <span class="mega-dest-brief">View complete collection</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/upcoming-treks/central-india-treks" class="mega-panel-cta">Explore all Central India treks <span>&rarr;</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="mega-trigger ">
+                    <a href="treks/backpacking-trips" class="drop-down">
+                        Backpacking Trips <i class="bi bi-caret-down-fill"></i>
+                    </a>
+                    <div class="aa-mega-panel" data-mega="backpacking-trips">
+                        <div class="mega-col mega-cats">
+                            <a href="treks/backpacking-trips/maharashtra" class="mega-cat-link active" data-target="bp-maharashtra">
+                                <i class="bi bi-geo-alt"></i> Maharashtra
+                            </a>
+                            <a href="treks/backpacking-trips/gujarat" class="mega-cat-link" data-target="bp-gujarat">
+                                <i class="bi bi-geo-alt"></i> Gujarat
+                            </a>
+                            <a href="treks/backpacking-trips/madhya-pradesh" class="mega-cat-link" data-target="bp-mp">
+                                <i class="bi bi-geo-alt"></i> Madhya Pradesh
+                            </a>
+                            <a href="treks/backpacking-trips/rajasthan" class="mega-cat-link" data-target="bp-rajasthan">
+                                <i class="bi bi-geo-alt"></i> Rajasthan
+                            </a>
+                            <a href="treks/backpacking-trips/himachal-pradesh" class="mega-cat-link" data-target="bp-hp">
+                                <i class="bi bi-geo-alt"></i> Himachal Pradesh
+                            </a>
+                            <a href="treks/backpacking-trips/ladakh" class="mega-cat-link" data-target="bp-ladakh">
+                                <i class="bi bi-geo-alt"></i> Ladakh
+                            </a>
+                        </div>
+                        <div class="mega-col mega-items">
+                            <!-- Maharashtra -->
+                            <div class="mega-sub-panel active" id="bp-maharashtra">
+                                <div class="mega-panel-heading">
+                                    <h5>Maharashtra</h5>
+                                    <p class="mega-panel-desc">Coastal escapes, hill stations, and Western Ghats adventures across Maharashtra.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/maharashtra/malvan-tarkarli" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img1.jpg" alt="Malvan-Tarkarli" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Malvan–Tarkarli</span>
+                                            <span class="mega-dest-brief">Crystal waters & beach shacks</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/maharashtra/mahabaleshwar" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img2.jpg" alt="Mahabaleshwar" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Mahabaleshwar</span>
+                                            <span class="mega-dest-brief">Strawberry farms & viewpoints</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/maharashtra/lavasa" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img3.jpg" alt="Lavasa" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Lavasa</span>
+                                            <span class="mega-dest-brief">India's planned hill city</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/maharashtra" class="mega-panel-cta">Explore all Maharashtra trips <span>&rarr;</span></a>
+                            </div>
+                            <!-- Gujarat -->
+                            <div class="mega-sub-panel" id="bp-gujarat">
+                                <div class="mega-panel-heading">
+                                    <h5>Gujarat</h5>
+                                    <p class="mega-panel-desc">White desert landscapes, ancient temples, and vibrant cultural circuits.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/gujarat/rann-of-kutch" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img4.jpg" alt="Rann of Kutch" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Rann of Kutch</span>
+                                            <span class="mega-dest-brief">Vast white salt desert</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/gujarat/saputara" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img5.jpg" alt="Saputara" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Saputara</span>
+                                            <span class="mega-dest-brief">Hill station of Gujarat</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/gujarat/diu" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img6.jpg" alt="Diu" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Diu</span>
+                                            <span class="mega-dest-brief">Island fort & beaches</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/gujarat" class="mega-panel-cta">Explore all Gujarat trips <span>&rarr;</span></a>
+                            </div>
+                            <!-- Madhya Pradesh -->
+                            <div class="mega-sub-panel" id="bp-mp">
+                                <div class="mega-panel-heading">
+                                    <h5>Madhya Pradesh</h5>
+                                    <p class="mega-panel-desc">Tribal heartlands, forest trails, and UNESCO heritage monuments.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/madhya-pradesh/pachmarhi" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img1.jpg" alt="Pachmarhi" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pachmarhi</span>
+                                            <span class="mega-dest-brief">Satpura's crown jewel</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/madhya-pradesh/orchha" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img2.jpg" alt="Orchha" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Orchha</span>
+                                            <span class="mega-dest-brief">Medieval Bundela architecture</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/madhya-pradesh/khajuraho" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img3.jpg" alt="Khajuraho" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Khajuraho</span>
+                                            <span class="mega-dest-brief">Iconic temple sculptures</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/madhya-pradesh" class="mega-panel-cta">Explore all Madhya Pradesh trips <span>&rarr;</span></a>
+                            </div>
+                            <!-- Rajasthan -->
+                            <div class="mega-sub-panel" id="bp-rajasthan">
+                                <div class="mega-panel-heading">
+                                    <h5>Rajasthan</h5>
+                                    <p class="mega-panel-desc">Desert citadels, palace circuits, and timeless Rajputana heritage.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/rajasthan/jodhpur-jaisalmer" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img4.jpg" alt="Jodhpur-Jaisalmer" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Jodhpur–Jaisalmer</span>
+                                            <span class="mega-dest-brief">Blue city & golden fort</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/rajasthan/udaipur" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img5.jpg" alt="Udaipur" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Udaipur</span>
+                                            <span class="mega-dest-brief">City of lakes & palaces</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/rajasthan/jaipur" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img6.jpg" alt="Jaipur" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Jaipur</span>
+                                            <span class="mega-dest-brief">Pink city & Amber Fort</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/rajasthan" class="mega-panel-cta">Explore all Rajasthan trips <span>&rarr;</span></a>
+                            </div>
+                            <!-- Himachal Pradesh -->
+                            <div class="mega-sub-panel" id="bp-hp">
+                                <div class="mega-panel-heading">
+                                    <h5>Himachal Pradesh</h5>
+                                    <p class="mega-panel-desc">Snow-capped peaks, pine forests, and mountain valley journeys.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/himachal-pradesh/spiti-valley" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img7.jpg" alt="Spiti Valley" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Spiti Valley</span>
+                                            <span class="mega-dest-brief">Cold desert mountain valley</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/himachal-pradesh/kasol" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg5.jpg" alt="Kasol" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Kasol</span>
+                                            <span class="mega-dest-brief">Mini Israel of India</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/himachal-pradesh/manali" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg6.jpg" alt="Manali" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Manali</span>
+                                            <span class="mega-dest-brief">Adventure capital of Himachal</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/himachal-pradesh" class="mega-panel-cta">Explore all Himachal trips <span>&rarr;</span></a>
+                            </div>
+                            <!-- Ladakh -->
+                            <div class="mega-sub-panel" id="bp-ladakh">
+                                <div class="mega-panel-heading">
+                                    <h5>Ladakh</h5>
+                                    <p class="mega-panel-desc">High-altitude passes, pristine lakes, and Buddhist monasteries.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/backpacking-trips/ladakh/pangong" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg7.jpg" alt="Pangong Lake" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pangong Lake</span>
+                                            <span class="mega-dest-brief">Color-changing high-altitude lake</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/ladakh/nubra-valley" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg8.png" alt="Nubra Valley" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Nubra Valley</span>
+                                            <span class="mega-dest-brief">Valley of flowers & Bactrian camels</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/backpacking-trips/ladakh/leh" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/breadcrumb-bg9.jpg" alt="Leh" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Leh</span>
+                                            <span class="mega-dest-brief">Gateway to Ladakh</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/backpacking-trips/ladakh" class="mega-panel-cta">Explore all Ladakh trips <span>&rarr;</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="mega-trigger ">
+                    <a href="treks/trips-near-nagpur" class="drop-down">
+                        Trips Near Nagpur <i class="bi bi-caret-down-fill"></i>
+                    </a>
+                    <div class="aa-mega-panel" data-mega="trips-near-nagpur">
+                        <div class="mega-col mega-cats">
+                            <a href="treks/trips-near-nagpur/seven-sisters-hill-trek" class="mega-cat-link active" data-target="nagpur-seven-sisters">
+                                <i class="bi bi-geo-alt"></i> Seven Sisters Hill Trek
+                            </a>
+                            <a href="treks/trips-near-nagpur/silver-falls" class="mega-cat-link" data-target="nagpur-silver">
+                                <i class="bi bi-geo-alt"></i> Silver Falls
+                            </a>
+                            <a href="treks/trips-near-nagpur/karwaan-camping" class="mega-cat-link" data-target="nagpur-karwaan">
+                                <i class="bi bi-geo-alt"></i> Karwaan Camping
+                            </a>
+                        </div>
+                        <div class="mega-col mega-items">
+                            <!-- Seven Sisters Hill Trek -->
+                            <div class="mega-sub-panel active" id="nagpur-seven-sisters">
+                                <div class="mega-panel-heading">
+                                    <h5>Seven Sisters Hill Trek</h5>
+                                    <p class="mega-panel-desc">A scenic weekend getaway from Nagpur through rolling hills and tribal villages.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/trips-near-nagpur/seven-sisters-hill-trek" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img4.jpg" alt="Seven Sisters" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Trek Overview</span>
+                                            <span class="mega-dest-brief">Full trek details & photos</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/seven-sisters-hill-trek#itinerary" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img5.jpg" alt="Itinerary" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Itinerary</span>
+                                            <span class="mega-dest-brief">Day-by-day plan</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/seven-sisters-hill-trek#pricing" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img6.jpg" alt="Pricing" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pricing</span>
+                                            <span class="mega-dest-brief">Packages & inclusions</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/trips-near-nagpur/seven-sisters-hill-trek" class="mega-panel-cta">View full trek details <span>&rarr;</span></a>
+                            </div>
+                            <!-- Silver Falls -->
+                            <div class="mega-sub-panel" id="nagpur-silver">
+                                <div class="mega-panel-heading">
+                                    <h5>Silver Falls</h5>
+                                    <p class="mega-panel-desc">Nature's hidden cascade nestled in the lush forests near Nagpur.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/trips-near-nagpur/silver-falls" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img1.jpg" alt="Silver Falls" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Trek Overview</span>
+                                            <span class="mega-dest-brief">Full trek details & photos</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/silver-falls#itinerary" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img2.jpg" alt="Itinerary" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Itinerary</span>
+                                            <span class="mega-dest-brief">Day-by-day plan</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/silver-falls#pricing" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/destination-img3.jpg" alt="Pricing" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pricing</span>
+                                            <span class="mega-dest-brief">Packages & inclusions</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/trips-near-nagpur/silver-falls" class="mega-panel-cta">View full trek details <span>&rarr;</span></a>
+                            </div>
+                            <!-- Karwaan Camping -->
+                            <div class="mega-sub-panel" id="nagpur-karwaan">
+                                <div class="mega-panel-heading">
+                                    <h5>Karwaan Camping</h5>
+                                    <p class="mega-panel-desc">Riverside camping with bonfire nights and stargazing under clear skies.</p>
+                                    <div class="mega-accent-bar"></div>
+                                </div>
+                                <div class="mega-dest-grid">
+                                    <a href="treks/trips-near-nagpur/karwaan-camping" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img4.jpg" alt="Karwaan" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Camping Overview</span>
+                                            <span class="mega-dest-brief">Full camping details</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/karwaan-camping#activities" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img5.jpg" alt="Activities" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Activities</span>
+                                            <span class="mega-dest-brief">What's included</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                    <a href="treks/trips-near-nagpur/karwaan-camping#pricing" class="mega-dest-card">
+                                        <img src="assets/img/innerpages/tour-package-img6.jpg" alt="Pricing" class="mega-dest-thumb">
+                                        <div class="mega-dest-info">
+                                            <span class="mega-dest-name">Pricing</span>
+                                            <span class="mega-dest-brief">Packages & slots</span>
+                                        </div>
+                                        <span class="mega-dest-arrow">&rarr;</span>
+                                    </a>
+                                </div>
+                                <a href="treks/trips-near-nagpur/karwaan-camping" class="mega-panel-cta">View full camping details <span>&rarr;</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <li class="">
+                    <a href="tour-packages">Tour Packages</a>
+                </li>
+
+                <!-- Pinned last — Corporate Programmes & Student Programmes -->
+                <li class=""><a
+                        href="corporate-programmes">Corporate Programmes</a></li>
+                <li class=""><a
+                        href="student-programmes">Student Programmes</a></li>
+            </ul>
+            <div class="language-and-login-area d-lg-none d-block">
+                <div class="language-area">
+                    <div class="language-btn">
+                        <div class="icon-and-content">
+                            <svg width="14" height="14" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M7 14C5.13023 14 3.37239 13.2719 2.05023 11.9498C0.728137 10.6276 0 8.86977 0 7C0 5.13023 0.728137 3.37239 2.05023 2.05023C3.37239 0.728137 5.13023 0 7 0C8.86977 0 10.6276 0.728137 11.9498 2.05023C13.2719 3.37239 14 5.13023 14 7C14 8.86977 13.2719 10.6276 11.9498 11.9498C10.6276 13.2719 8.86977 14 7 14ZM7 0.583324C3.46183 0.583324 0.583324 3.46183 0.583324 7C0.583324 10.5382 3.46183 13.4166 7 13.4166C10.5382 13.4166 13.4166 10.5382 13.4166 7C13.4166 3.46183 10.5382 0.583324 7 0.583324Z">
+                                    </path>
+                                    <path
+                                        d="M7 14C5.90297 14 4.8854 13.2486 4.13468 11.8841C3.41431 10.5747 3.01758 8.84018 3.01758 7C3.01758 5.15982 3.41431 3.42527 4.13468 2.11589C4.8854 0.751433 5.90297 0 7 0C8.09704 0 9.11461 0.751433 9.8653 2.11589C10.5857 3.42527 10.9824 5.15982 10.9824 7C10.9824 8.84018 10.5857 10.5747 9.8653 11.8841C9.11461 13.2486 8.09704 14 7 14ZM7 0.583324C6.12536 0.583324 5.2893 1.22746 4.64579 2.39709C3.97198 3.62179 3.6009 5.25645 3.6009 7C3.6009 8.74355 3.97198 10.3782 4.64576 11.6029C5.28927 12.7725 6.12533 13.4166 6.99998 13.4166C7.87462 13.4166 8.71068 12.7725 9.35419 11.6029C10.028 10.3782 10.3991 8.74355 10.3991 7C10.3991 5.25645 10.028 3.62179 9.35419 2.39709C8.71071 1.22746 7.87462 0.583324 7 0.583324Z">
+                                    </path>
+                                    <path
+                                        d="M6.99968 13.9573C6.8386 13.9573 6.70801 13.8267 6.70801 13.6657V0.334156C6.70801 0.173074 6.83857 0.0424805 6.99968 0.0424805C7.16077 0.0424805 7.29136 0.173074 7.29136 0.334156V13.6657C7.29136 13.8267 7.16077 13.9573 6.99968 13.9573Z">
+                                    </path>
+                                    <path
+                                        d="M13.6661 7.29147H0.334644C0.173562 7.29147 0.0429688 7.16088 0.0429688 6.99979C0.0429688 6.83871 0.173562 6.70812 0.334644 6.70812H13.6661C13.8272 6.70812 13.9578 6.83868 13.9578 6.99979C13.9578 7.16088 13.8272 7.29147 13.6661 7.29147ZM12.7022 3.81187H1.29862C1.13754 3.81187 1.00695 3.6813 1.00695 3.52019C1.00695 3.35908 1.13751 3.22852 1.29862 3.22852H12.7022C12.8633 3.22852 12.9939 3.35908 12.9939 3.52019C12.9939 3.6813 12.8632 3.81187 12.7022 3.81187ZM12.7022 10.771H1.29862C1.13754 10.771 1.00695 10.6404 1.00695 10.4794C1.00695 10.3183 1.13751 10.1877 1.29862 10.1877H12.7022C12.8633 10.1877 12.9939 10.3183 12.9939 10.4794C12.9939 10.6404 12.8632 10.771 12.7022 10.771Z">
+                                    </path>
+                                </g>
+                            </svg>
+                            <span>EN</span>
+                        </div>
+                        <i class="bi bi-caret-down-fill"></i>
+                    </div>
+                    <ul class="language-list">
+                        <li><a href="#"><img src="assets/img/home1/england-flag.png" alt="">English</a></li>
+                        <li><a href="#"><img src="assets/img/home1/netherlands-flag.png" alt="">Dutch</a></li>
+                        <li><a href="#"><img src="assets/img/home1/japan-flag.png" alt="">Japanese</a></li>
+                        <li><a href="#"><img src="assets/img/home1/korea-flag.png" alt="">Korean</a></li>
+                        <li><a href="#"><img src="assets/img/home1/china-flag.png" alt="">Chinese</a></li>
+                    </ul>
+                </div>
+                                    <a href="user-dashboard" class="primary-btn1 four transparent">
+                        <span>
+                            <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M7.50105 7.78913C9.64392 7.78913 11.3956 6.03744 11.3956 3.89456C11.3956 1.75169 9.64392 0 7.50105 0C5.35818 0 3.60652 1.75169 3.60652 3.89456C3.60652 6.03744 5.35821 7.78913 7.50105 7.78913ZM14.1847 10.9014C14.0827 10.6463 13.9467 10.4082 13.7936 10.1871C13.0113 9.0306 11.8038 8.2653 10.4433 8.07822C10.2732 8.06123 10.0861 8.09522 9.95007 8.19727C9.23578 8.72448 8.38546 8.99658 7.50108 8.99658C6.61671 8.99658 5.76638 8.72448 5.05209 8.19727C4.91603 8.09522 4.72895 8.04421 4.5589 8.07822C3.19835 8.2653 1.97387 9.0306 1.20857 10.1871C1.05551 10.4082 0.919443 10.6633 0.817424 10.9014C0.766415 11.0034 0.783407 11.1225 0.834416 11.2245C0.970484 11.4626 1.14054 11.7007 1.2936 11.9048C1.53168 12.2279 1.78679 12.517 2.07592 12.7891C2.31401 13.0272 2.58611 13.2483 2.85824 13.4694C4.20177 14.4728 5.81742 15 7.48409 15C9.15076 15 10.7664 14.4728 12.1099 13.4694C12.382 13.2653 12.6541 13.0272 12.8923 12.7891C13.1644 12.517 13.4365 12.2279 13.6746 11.9048C13.8446 11.6837 13.9977 11.4626 14.1338 11.2245C14.2188 11.1225 14.2358 11.0034 14.1847 10.9014Z" />
+                                </g>
+                            </svg>
+                            Dashboard
+                        </span>
+                        <span>
+                            <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg">
+                                <g>
+                                    <path
+                                        d="M7.50105 7.78913C9.64392 7.78913 11.3956 6.03744 11.3956 3.89456C11.3956 1.75169 9.64392 0 7.50105 0C5.35818 0 3.60652 1.75169 3.60652 3.89456C3.60652 6.03744 5.35821 7.78913 7.50105 7.78913ZM14.1847 10.9014C14.0827 10.6463 13.9467 10.4082 13.7936 10.1871C13.0113 9.0306 11.8038 8.2653 10.4433 8.07822C10.2732 8.06123 10.0861 8.09522 9.95007 8.19727C9.23578 8.72448 8.38546 8.99658 7.50108 8.99658C6.61671 8.99658 5.76638 8.72448 5.05209 8.19727C4.91603 8.09522 4.72895 8.04421 4.5589 8.07822C3.19835 8.2653 1.97387 9.0306 1.20857 10.1871C1.05551 10.4082 0.919443 10.6633 0.817424 10.9014C0.766415 11.0034 0.783407 11.1225 0.834416 11.2245C0.970484 11.4626 1.14054 11.7007 1.2936 11.9048C1.53168 12.2279 1.78679 12.517 2.07592 12.7891C2.31401 13.0272 2.58611 13.2483 2.85824 13.4694C4.20177 14.4728 5.81742 15 7.48409 15C9.15076 15 10.7664 14.4728 12.1099 13.4694C12.382 13.2653 12.6541 13.0272 12.8923 12.7891C13.1644 12.517 13.4365 12.2279 13.6746 11.9048C13.8446 11.6837 13.9977 11.4626 14.1338 11.2245C14.2188 11.1225 14.2358 11.0034 14.1847 10.9014Z" />
+                                </g>
+                            </svg>
+                            Dashboard
+                        </span>
+                    </a>
+                            </div>
+        </div>
+        <div class="nav-right">
+            <div class="search-bar d-lg-none d-block">
+                <div class="search-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <g>
+                            <path
+                                d="M15.7417 14.6098L13.486 12.3621C14.7088 10.8514 15.3054 8.9291 15.1526 6.99153C14.9998 5.05396 14.1093 3.24888 12.6648 1.94851C11.2203 0.648146 9.33193 -0.0483622 7.38901 0.00261294C5.44609 0.0535881 3.59681 0.84816 2.22248 2.22248C0.84816 3.59681 0.0535881 5.44609 0.00261294 7.38901C-0.0483622 9.33193 0.648146 11.2203 1.94851 12.6648C3.24888 14.1093 5.05396 14.9998 6.99153 15.1526C8.9291 15.3054 10.8514 14.7088 12.3621 13.486L14.6098 15.7417C14.6839 15.8164 14.7721 15.8757 14.8692 15.9161C14.9664 15.9566 15.0705 15.9774 15.1758 15.9774C15.281 15.9774 15.3852 15.9566 15.4823 15.9161C15.5794 15.8757 15.6676 15.8164 15.7417 15.7417C15.8164 15.6676 15.8757 15.5794 15.9161 15.4823C15.9566 15.3852 15.9774 15.281 15.9774 15.1758C15.9774 15.0705 15.9566 14.9664 15.9161 14.8692C15.8757 14.7721 15.8164 14.6839 15.7417 14.6098ZM1.62572 7.60368C1.62572 6.42135 1.97632 5.26557 2.63319 4.2825C3.29005 3.29943 4.22368 2.53322 5.31601 2.08076C6.40834 1.62831 7.61031 1.50992 8.76992 1.74058C9.92953 1.97124 10.9947 2.54059 11.8307 3.37662C12.6668 4.21266 13.2361 5.27783 13.4668 6.43744C13.6974 7.59705 13.579 8.79902 13.1266 9.89134C12.6741 10.9837 11.9079 11.9173 10.9249 12.5742C9.94178 13.231 8.78601 13.5816 7.60368 13.5816C6.01822 13.5816 4.49771 12.9518 3.37662 11.8307C2.25554 10.7096 1.62572 9.18913 1.62572 7.60368Z" />
+                        </g>
+                    </svg>
+                </div>
+                <div class="search-input">
+                    <div class="search-close"></div>
+                    <form id="mobile-search-form" autocomplete="off">
+                        <div class="search-group">
+                            <div class="form-inner2">
+                                <input type="text" id="mobile-search-input" placeholder="Enter your keywords"
+                                    autocomplete="off">
+                                <button type="submit"><i class="bi bi-search"></i></button>
+                            </div>
+                        </div>
+                        <div class="quick-search">
+                            <ul>
+                                <li>Quick Search :</li>
+                                <li><a href="travel-package-01.html">Thailand Tour,</a></li>
+                                <li><a href="travel-package-01.html">Philippines Tour,</a></li>
+                                <li><a href="travel-package-01.html">Bali Tour,</a></li>
+                                <li><a href="travel-package-01.html">Hawaii, USA Tour,</a></li>
+                                <li><a href="travel-package-01.html">Switzerland Tour,</a></li>
+                                <li><a href="travel-package-01.html">Maldives Tour,</a></li>
+                                <li><a href="travel-package-01.html">Paris Tour,</a></li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="sidebar-button mobile-menu-btn">
+                <svg width="20" height="18" viewBox="0 0 20 18" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M1.29445 2.8421H10.5237C11.2389 2.8421 11.8182 2.2062 11.8182 1.42105C11.8182 0.635903 11.2389 0 10.5237 0H1.29445C0.579249 0 0 0.635903 0 1.42105C0 2.2062 0.579249 2.8421 1.29445 2.8421Z">
+                    </path>
+                    <path
+                        d="M1.23002 10.421H18.77C19.4496 10.421 20 9.78506 20 8.99991C20 8.21476 19.4496 7.57886 18.77 7.57886H1.23002C0.550421 7.57886 0 8.21476 0 8.99991C0 9.78506 0.550421 10.421 1.23002 10.421Z">
+                    </path>
+                    <path
+                        d="M18.8052 15.1579H10.2858C9.62563 15.1579 9.09094 15.7938 9.09094 16.5789C9.09094 17.3641 9.62563 18 10.2858 18H18.8052C19.4653 18 20 17.3641 20 16.5789C20 15.7938 19.4653 15.1579 18.8052 15.1579Z">
+                    </path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+    <!-- Breadcrumb / Hero section -->
+    <div class="breadcrumb-section two">
+        <div class="swiper home2-banner-slider">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                    <div class="banner-bg category-hero-bg hero-skeleton" id="category-hero-bg"></div>
+                </div>
+            </div>
+        </div>
+        <div class="banner-content-wrap">
+            <div class="container">
+                <div class="banner-content text-center">
+                    <div class="batch mb-3 d-flex justify-content-center">
+                        <span id="hero-breadcrumb">
+                            Loading&hellip;
+                        </span>
+                    </div>
+                    <h1 class="text-white mb-3" id="hero-title">
+                        <span class="skeleton-box" style="display:inline-block;width:300px;height:48px;">&nbsp;</span>
+                    </h1>
+                    <p class="text-light mx-auto" id="hero-desc">
+                        <span class="skeleton-box" style="display:inline-block;width:500px;height:22px;">&nbsp;</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Hero End -->
+
+    <!-- Subcategories (dynamically loaded) -->
+    <div class="container subcategory-grid mb-80">
+        <div class="row g-4 justify-content-center" id="subcategory-list">
+            <!-- Skeleton chips -->
+                        <div class="col-lg-3 col-md-4 col-sm-6 subcategory-chip-skeleton-wrap">
+                <div class="subcategory-chip-skeleton">
+                    <span class="skeleton-box" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;"></span>
+                    <div style="flex:1;">
+                        <span class="skeleton-box" style="display:block;height:16px;width:80%;margin-bottom:8px;"></span>
+                        <span class="skeleton-box" style="display:block;height:12px;width:50%;"></span>
+                    </div>
+                </div>
+            </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 subcategory-chip-skeleton-wrap">
+                <div class="subcategory-chip-skeleton">
+                    <span class="skeleton-box" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;"></span>
+                    <div style="flex:1;">
+                        <span class="skeleton-box" style="display:block;height:16px;width:80%;margin-bottom:8px;"></span>
+                        <span class="skeleton-box" style="display:block;height:12px;width:50%;"></span>
+                    </div>
+                </div>
+            </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 subcategory-chip-skeleton-wrap">
+                <div class="subcategory-chip-skeleton">
+                    <span class="skeleton-box" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;"></span>
+                    <div style="flex:1;">
+                        <span class="skeleton-box" style="display:block;height:16px;width:80%;margin-bottom:8px;"></span>
+                        <span class="skeleton-box" style="display:block;height:12px;width:50%;"></span>
+                    </div>
+                </div>
+            </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 subcategory-chip-skeleton-wrap">
+                <div class="subcategory-chip-skeleton">
+                    <span class="skeleton-box" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;"></span>
+                    <div style="flex:1;">
+                        <span class="skeleton-box" style="display:block;height:16px;width:80%;margin-bottom:8px;"></span>
+                        <span class="skeleton-box" style="display:block;height:12px;width:50%;"></span>
+                    </div>
+                </div>
+            </div>
+                    </div>
+    </div>
+    <!-- Subcategories End -->
+
+    <!-- Treks Listing -->
+    <section class="pt-0 mb-100">
+        <div class="container">
+
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="fs-5 fw-bold text-dark" id="trek-count-label">
+                    <span class="skeleton-box" style="display:inline-block;width:140px;height:22px;">&nbsp;</span>
+                </div>
+
+                <div class="filter-controls flex-wrap">
+                    <div>
+                        <label for="trekDifficulty">Difficulty:</label>
+                        <select id="trekDifficulty" class="form-select-sm">
+                            <option value="">Any Difficulty</option>
+                            <option value="easy">Easy / Beginner</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="difficult">Difficult</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="trekLocation">Location:</label>
+                        <select id="trekLocation" class="form-select-sm">
+                            <option value="">Any Location</option>
+                            <option value="maharashtra">Maharashtra</option>
+                            <option value="himachal pradesh">Himachal Pradesh</option>
+                            <option value="ladakh">Ladakh</option>
+                            <option value="uttarakhand">Uttarakhand</option>
+                            <option value="gujarat">Gujarat</option>
+                            <option value="madhya pradesh">Madhya Pradesh</option>
+                            <option value="rajasthan">Rajasthan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="trekDuration">Duration:</label>
+                        <select id="trekDuration" class="form-select-sm">
+                            <option value="">Any Duration</option>
+                            <option value="short">1-3 Days</option>
+                            <option value="medium">4-6 Days</option>
+                            <option value="long">7+ Days</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="trekSort">Sort by:</label>
+                        <select id="trekSort" class="form-select-sm">
+                            <option value="featured">Featured</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="duration_asc">Duration: Short to Long</option>
+                        </select>
+                    </div>
+                    <div class="ms-md-2">
+                        <button type="button" id="resetFilters" class="btn btn-sm btn-outline-secondary d-flex align-items-center" style="border-radius: 6px; padding: 6px 12px; font-weight: 500; font-size: 13px; gap: 5px;">
+                            <i class="bi bi-x-circle"></i>Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Treks Grid -->
+            <div class="row g-4" id="treks-grid">
+                <!-- Skeleton cards while loading -->
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                                <div class="col-lg-4 col-md-6 trek-skeleton-col">
+                    <div class="skeleton-card">
+                        <div class="sk-img skeleton-box"></div>
+                        <div class="sk-body">
+                            <div class="sk-line sk-title skeleton-box"></div>
+                            <div class="sk-line sk-loc skeleton-box"></div>
+                            <div class="sk-tags">
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                                <span class="sk-tag skeleton-box"></span>
+                            </div>
+                            <div class="sk-foot">
+                                <span class="sk-price skeleton-box"></span>
+                                <span class="sk-btn skeleton-box"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                            </div>
+        </div>
+    </section>
+    <!-- Treks Listing End -->
+
+    <!-- SEO / Category Description (populated dynamically) -->
+    <div class="seo-content-area" id="seo-content-area" style="display:none;">
+        <div class="container">
+            <div class="seo-content-wrap" id="seo-content-wrap">
+                <!-- populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-section">
+    <div class="container">
+        <div class="footer-contact-wrap">
+            <ul class="contact-area justify-content-around m-auto">
+                <li class="single-contact">
+                    <div class="icon">
+                        <img src="assets/img/home1/icon/whatsapp-icon2.svg" alt="">
+                    </div>
+                    <div class="content">
+                        <span>WhatsApp</span>
+                        <a href="https://wa.me/918180001597">+91 8180001597</a>
+                    </div>
+                </li>
+                <li class="single-contact">
+                    <div class="icon">
+                        <img src="assets/img/home1/icon/mail-icon2.svg" alt="">
+                    </div>
+                    <div class="content">
+                        <span>Mail Us</span>
+                        <a href="mailto:info@alphaadventures.in"><span class="__cf_email__"
+                                data-cfemail="96fff8f0f9d6f3eef7fbe6faf3b8f5f9fb">info@alphaadventures.in</span></a>
+                    </div>
+                </li>
+                <li class="single-contact">
+                    <div class="icon">
+                        <img src="assets/img/home1/icon/call-icon.svg" alt="">
+                    </div>
+                    <div class="content">
+                        <span>Call Us</span>
+                        <a href="tel:+918180001597">+91 8180001597</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <svg class="divider" width="1320" height="6" viewbox="0 0 1320 6" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M5 2.5L0 0.113249V5.88675L5 3.5V2.5ZM1315 3.5L1320 5.88675V0.113249L1315 2.5V3.5ZM4.5 3.5H1315.5V2.5H4.5V3.5Z">
+            </path>
+        </svg>
+        <div class="footer-menu-wrap">
+            <div class="row gy-md-4 gy-5">
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="footer-logo-and-addition-info">
+                        <a href="/"
+                            class="footer-logo">
+                            <img src="assets/img/logo/logo.png" alt="">
+                        </a>
+                        <div class="address-area">
+                            <span>Alpha Adventure Travel Agency</span>
+                            <a href="#">Nagpur, Maharashtra, India</a>
+                        </div>
+                        <ul class="social-list">
+                            <li><a href="https://www.facebook.com/"><i class="bx bxl-facebook"></i></a></li>
+                            <li><a href="https://www.youtube.com/"><i class="bx bxl-youtube"></i></a></li>
+                            <li><a href="https://www.instagram.com/"><i class="bx bxl-instagram-alt"></i></a></li>
+                        </ul>
+                        <p style="margin-top:10px;font-size:14px;">
+                            ⭐ 4.8/5 rating from 5000+ trekkers <br>
+                            6+ years of trekking experience
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-md-end">
+                    <div class="footer-widget">
+                        <div class="widget-title">
+                            <h5>Explore Adventures</h5>
+                        </div>
+                        <ul class="widget-list">
+                            <li><a href="treks/upcoming-treks">Upcoming Treks</a></li>
+                            <li><a href="treks/upcoming-treks/weekend-treks">Weekend Treks</a></li>
+                            <li><a href="treks/upcoming-treks/sahyadri-treks">Sahyadri Treks</a></li>
+                            <li><a href="treks/upcoming-treks/himalayan-treks">Himalayan Treks</a></li>
+                            <li><a href="treks/central-india-treks">Central India Treks</a></li>
+                            <li><a href="treks/backpacking-trips">Backpacking Trips</a></li>
+                            <li><a href="treks/trips-near-nagpur">Trips Near Nagpur</a></li>
+                            <li><a href="tour-packages">Tour Packages</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-sm-6 d-flex justify-content-md-end">
+                    <div class="footer-widget">
+                        <div class="widget-title">
+                            <h5>Plan Your Trek</h5>
+                        </div>
+                        <ul class="widget-list">
+                            <li><a href="trek-calendar">Trek Calendar</a></li>
+                            <li><a href="fitness-requirements">Fitness Requirements</a></li>
+                            <li><a href="packing-checklist">Packing Checklist</a></li>
+                            <li><a href="beginner-trek-guide">Beginner Trek Guide</a></li>
+                            <li><a href="corporate-treks">Corporate Treks</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-sm-6 d-flex justify-content-lg-end">
+                    <div class="footer-widget">
+                        <div class="widget-title">
+                            <h5>Help & Support</h5>
+                        </div>
+                        <ul class="widget-list">
+                            <li><a href="about-us">About Alpha Adventures</a></li>
+                            <li><a href="responsible-travel">Responsible Travel</a></li>
+                            <li><a href="safety-guidelines">Safety Guidelines</a></li>
+                            <li><a href="cancellation-policy">Cancellation Policy</a></li>
+                            <li><a href="terms-and-conditions">Terms & Conditions</a></li>
+                            <li><a href="contact">Contact Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <div class="container">
+            <div class="copyright-and-payment-method-area">
+                <p>
+                    © 2026 Alpha Adventures |
+                    <a href="privacy-policy">Privacy</a> |
+                    <a href="terms-and-conditions">Terms</a> |
+                    <a href="cancellation-policy">Cancellation</a> |
+                    <a href="trek-disclaimer">Responsible Travel</a>
+                </p>
+                <div class="payment-method-area">
+                    <span>Accepted Payment Methods :</span>
+                    <ul>
+                        <li><img src="assets/img/home1/icon/mastar-card-icon.svg" alt=""></li>
+                        <li><img src="assets/img/home1/icon/visa-icon.svg" alt=""></li>
+                        <li><img src="assets/img/home1/icon/paypal-icon.svg" alt=""></li>
+                        <li><img src="assets/img/home1/icon/gpay-icon.svg" alt=""></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+    <script>
+    (function () {
+        'use strict';
+
+        /* ============================================================
+         * CONFIG — derive admin API base from current page location
+         * Matches the same discovery pattern used in Helpers.php
+         * ============================================================ */
+        const PAGE_SLUG = "css2-2";
+        const APP_BASE  = "\/";
+
+        // Build admin API base: same host + APP_BASE + /Admin/api
+        function buildApiBase() {
+            const origin = window.location.origin;
+            const base   = APP_BASE === '/' ? '' : APP_BASE;
+            return origin + base + '/Admin/api';
+        }
+
+        const API_BASE = buildApiBase();
+
+        /* ============================================================
+         * HELPERS
+         * ============================================================ */
+        function formatPrice(val) {
+            if (!val || val <= 0) return null;
+            return '₹' + Number(val).toLocaleString('en-IN');
+        }
+
+        function difficultyBadgeClass(difficulty) {
+            if (!difficulty) return '';
+            const d = difficulty.toLowerCase();
+            if (d === 'easy')      return 'badge-easy';
+            if (d === 'difficult') return 'badge-difficult';
+            return 'badge-moderate';
+        }
+
+        function buildImageSrc(bannerImage) {
+            if (!bannerImage) return 'assets/img/home2/banner-img1.jpg';
+            // If it's already a full URL or absolute path, use as-is
+            if (bannerImage.startsWith('http') || bannerImage.startsWith('/')) return bannerImage;
+            // Files uploaded from admin are stored in Admin/Public/uploads/treks/
+            return 'Admin/Public/uploads/treks/' + bannerImage;
+        }
+
+        /* ============================================================
+         * FETCH HELPERS
+         * ============================================================ */
+        async function apiFetch(path) {
+            const url = API_BASE + path;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        /* ============================================================
+         * RENDERERS
+         * ============================================================ */
+
+        /**
+         * Render hero section with real category data
+         */
+        function renderHero(cat) {
+            // Background image
+            const heroBg = document.getElementById('category-hero-bg');
+            if (heroBg) {
+                heroBg.classList.remove('hero-skeleton');
+                if (cat.image) {
+                    heroBg.style.backgroundImage =
+                        'linear-gradient(rgba(17,24,39,0.4),rgba(17,24,39,0.6)), url("' + buildImageSrc(cat.image) + '")';
+                } else {
+                    heroBg.style.backgroundImage =
+                        "linear-gradient(rgba(17,24,39,0.4),rgba(17,24,39,0.6)), url('assets/img/home2/banner-img1.jpg')";
+                }
+            }
+
+            // Breadcrumb
+            const breadcrumbEl = document.getElementById('hero-breadcrumb');
+            if (breadcrumbEl) {
+                const homeHref = APP_BASE === '/' ? '/' : APP_BASE;
+                if (cat.breadcrumb && cat.breadcrumb.length > 0) {
+                    let html = `<a href="${homeHref}">Home</a>`;
+                    cat.breadcrumb.forEach((b, i) => {
+                        const path = cat.breadcrumb.slice(0, i + 1).map(x => x.slug).join('/');
+                        const href = (APP_BASE === '/' ? '' : APP_BASE) + '/' + path;
+                        html += ` › <a href="${href}">${b.name}</a>`;
+                    });
+                    breadcrumbEl.innerHTML = html;
+                } else {
+                    breadcrumbEl.innerHTML = `<a href="${homeHref}">Home</a> › Treks › ${cat.name}`;
+                }
+            }
+
+            // Title
+            const titleEl = document.getElementById('hero-title');
+            if (titleEl) {
+                titleEl.textContent = cat.name || 'Treks';
+                document.title     = cat.seo_title || (cat.name + ' | Alpha Adventures');
+            }
+
+            // Description
+            const descEl = document.getElementById('hero-desc');
+            if (descEl) {
+                descEl.textContent = cat.description || '';
+            }
+
+            // SEO section
+            if (cat.description) {
+                const seoArea = document.getElementById('seo-content-area');
+                const seoWrap = document.getElementById('seo-content-wrap');
+                if (seoArea && seoWrap) {
+                    seoWrap.innerHTML =
+                        '<h2>' + (cat.name || 'About This Category') + '</h2>' +
+                        '<p>' + cat.description.replace(/\n/g, '</p><p>') + '</p>';
+                    seoArea.style.display = '';
+                }
+            }
+        }
+
+        /**
+         * Render subcategory chips
+         */
+        function renderSubcategories(subcategories, currentCat) {
+            const container = document.getElementById('subcategory-list');
+            if (!container) return;
+
+            // Remove skeleton chips
+            container.querySelectorAll('.subcategory-chip-skeleton-wrap').forEach(el => el.remove());
+
+            if (!subcategories || subcategories.length === 0) return;
+
+            // Build hierarchical path prefix from current category's breadcrumb
+            let pathPrefix = '';
+            if (currentCat && currentCat.breadcrumb && currentCat.breadcrumb.length > 0) {
+                pathPrefix = currentCat.breadcrumb.map(b => b.slug).join('/');
+            } else {
+                pathPrefix = PAGE_SLUG;
+            }
+
+            subcategories.forEach(sub => {
+                const col = document.createElement('div');
+                col.className = 'col-lg-3 col-md-4 col-sm-6';
+
+                // Build pretty hierarchical URL path
+                const href = (APP_BASE === '/' ? '' : APP_BASE) + '/' + pathPrefix + '/' + encodeURIComponent(sub.slug);
+                col.innerHTML =
+                    '<a href="' + href + '" class="subcategory-card">' +
+                        '<i class="bi bi-geo-alt"></i>' +
+                        '<div>' +
+                            '<h6>' + sub.name + '</h6>' +
+                            '<span>' + (sub.subcategories ? sub.subcategories.length : '') + '</span>' +
+                        '</div>' +
+                    '</a>';
+                container.appendChild(col);
+            });
+        }
+
+        /**
+         * Render a single trek card HTML string
+         */
+        function renderTrekCard(trek) {
+            const displayPrice   = trek.discount_price > 0 ? trek.discount_price : trek.original_price;
+            const originalPrice  = trek.discount_price > 0 ? trek.original_price : null;
+            const priceStr       = formatPrice(displayPrice);
+            const origPriceStr   = formatPrice(originalPrice);
+
+            const difficulty     = trek.difficulty || '';
+            let badgeClass       = difficultyBadgeClass(difficulty);
+            let badgeLabel       = difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : '';
+
+            // Override badge if subcategory exists
+            if (trek.subcategory && trek.subcategory.name) {
+                badgeLabel = trek.subcategory.name;
+                // Optional: You could use a neutral class like 'badge-primary' or 'badge-info' 
+                // but re-using badgeClass or falling back to 'badge-moderate' for styling
+                badgeClass = 'badge-moderate'; // Or any distinct CSS class if preferred
+            }
+
+            const duration       = trek.nights + 'N/' + trek.days + 'D';
+            const altitude       = trek.highest_altitude ? trek.highest_altitude : null;
+            const location       = trek.location || (trek.category ? trek.category.name : '');
+            const imgSrc         = buildImageSrc(trek.banner_image);
+            const categoryPath   = (trek.category && trek.category.path) ? trek.category.path : 'upcoming-treks';
+            const detailUrl      = (APP_BASE === '/' ? '' : APP_BASE) + '/' + categoryPath + '/detail/' + encodeURIComponent(trek.slug);
+
+            return '<div class="trek-card">' +
+                '<div class="trek-card-img-wrap">' +
+                    (badgeLabel ? '<span class="trek-badge ' + badgeClass + '">' + badgeLabel + '</span>' : '') +
+                    '<a href="' + detailUrl + '">' +
+                        '<img src="' + imgSrc + '" alt="' + trek.title + '" loading="lazy" ' +
+                             'onerror="this.src=\'assets/img/home2/banner-img1.jpg\'">' +
+                    '</a>' +
+                '</div>' +
+                '<div class="trek-card-content">' +
+                    '<a href="' + detailUrl + '" class="trek-title">' + trek.title + '</a>' +
+                    '<div class="trek-location">' +
+                        '<i class="bi bi-geo-alt-fill text-primary"></i> ' + (location || '&mdash;') +
+                    '</div>' +
+                    '<div class="trek-stats">' +
+                        '<span class="trek-stat-item"><i class="bi bi-clock"></i> ' + duration + '</span>' +
+                        (badgeLabel ? '<span class="trek-stat-item"><i class="bi bi-activity"></i> ' + badgeLabel + '</span>' : '') +
+                        (altitude   ? '<span class="trek-stat-item"><i class="bi bi-triangle"></i> ' + altitude + '</span>' : '') +
+                    '</div>' +
+                    '<div class="trek-card-footer">' +
+                        '<div>' +
+                            '<span class="trek-price-label">Starting from</span>' +
+                            '<span class="trek-price-value">' +
+                                (origPriceStr ? '<span class="trek-price-original">' + origPriceStr + '</span>' : '') +
+                                (priceStr || 'Contact Us') +
+                            '</span>' +
+                        '</div>' +
+                        '<a href="' + detailUrl + '" class="btn-view-trek">View Trek</a>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        /**
+         * Render the treks grid
+         */
+        function renderTreks(treks) {
+            const grid     = document.getElementById('treks-grid');
+            const countLbl = document.getElementById('trek-count-label');
+            if (!grid) return;
+
+            // Remove skeleton columns
+            grid.querySelectorAll('.trek-skeleton-col').forEach(el => el.remove());
+
+            if (!treks || treks.length === 0) {
+                grid.innerHTML =
+                    '<div class="col-12">' +
+                        '<div class="treks-empty-state">' +
+                            '<i class="bi bi-compass"></i>' +
+                            '<h5>No treks found</h5>' +
+                            '<p>Try adjusting your filters or explore another category.</p>' +
+                        '</div>' +
+                    '</div>';
+                if (countLbl) countLbl.textContent = '0 Treks Found';
+                return;
+            }
+
+            if (countLbl) countLbl.textContent = treks.length + ' Trek' + (treks.length !== 1 ? 's' : '') + ' Found';
+
+            // Clear the grid to remove previous results, empty states, or loaders
+            grid.innerHTML = '';
+
+            treks.forEach(trek => {
+                const col = document.createElement('div');
+                col.className = 'col-lg-4 col-md-6';
+                col.innerHTML = renderTrekCard(trek);
+                grid.appendChild(col);
+            });
+        }
+
+        /**
+         * Show an error state in the treks grid
+         */
+        function showTreksError(msg) {
+            const grid = document.getElementById('treks-grid');
+            if (!grid) return;
+            grid.querySelectorAll('.trek-skeleton-col').forEach(el => el.remove());
+            grid.innerHTML =
+                '<div class="col-12">' +
+                    '<div class="treks-empty-state">' +
+                        '<i class="bi bi-exclamation-circle"></i>' +
+                        '<h5>Could not load treks</h5>' +
+                        '<p>' + (msg || 'Please try again later.') + '</p>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        /**
+         * Show an error in the hero area
+         */
+        function showHeroError() {
+            const heroBg = document.getElementById('category-hero-bg');
+            if (heroBg) {
+                heroBg.classList.remove('hero-skeleton');
+                heroBg.style.backgroundImage =
+                    "linear-gradient(rgba(17,24,39,0.4),rgba(17,24,39,0.6)), url('assets/img/home2/banner-img1.jpg')";
+            }
+            const titleEl = document.getElementById('hero-title');
+            if (titleEl) titleEl.textContent = 'Treks';
+            const breadcrumbEl = document.getElementById('hero-breadcrumb');
+            if (breadcrumbEl) breadcrumbEl.textContent = 'Home › Treks';
+            const descEl = document.getElementById('hero-desc');
+            if (descEl) descEl.textContent = '';
+
+            // Clear subcategory skeletons silently
+            const container = document.getElementById('subcategory-list');
+            if (container) container.querySelectorAll('.subcategory-chip-skeleton-wrap').forEach(el => el.remove());
+        }
+
+        /* ============================================================
+         * TREK FETCH (with filter + sort params)
+         * ============================================================ */
+        function buildTreksPath(difficulty, location, duration, sort) {
+            let path = '/v1/treks/';
+            const qs = [];
+            if (PAGE_SLUG)   qs.push('category_slug=' + encodeURIComponent(PAGE_SLUG));
+            if (difficulty)  qs.push('difficulty='    + encodeURIComponent(difficulty));
+            if (location)    qs.push('location='      + encodeURIComponent(location));
+            if (duration)    qs.push('duration='      + encodeURIComponent(duration));
+            if (sort && sort !== 'featured') qs.push('sort='  + encodeURIComponent(sort));
+            if (qs.length)   path += '?' + qs.join('&');
+            return path;
+        }
+
+        async function fetchAndRenderTreks(difficulty, location, duration, sort) {
+            try {
+                const json = await apiFetch(buildTreksPath(difficulty, location, duration, sort));
+                const treks = (json.success && Array.isArray(json.data)) ? json.data : [];
+                renderTreks(treks);
+            } catch (err) {
+                console.error('[CategoryTreks] Trek fetch error:', err);
+                showTreksError('Failed to load treks. Please refresh the page.');
+            }
+        }
+
+        /* ============================================================
+         * CATEGORY FETCH
+         * ============================================================ */
+        async function fetchCategory() {
+            if (!PAGE_SLUG) {
+                showHeroError();
+                return;
+            }
+            try {
+                const json = await apiFetch('/v1/treks/categories/' + encodeURIComponent(PAGE_SLUG));
+                if (!json.success || !json.data) {
+                    showHeroError();
+                    return;
+                }
+                const cat = json.data;
+                renderHero(cat);
+                renderSubcategories(cat.subcategories || [], cat);
+            } catch (err) {
+                console.error('[CategoryTreks] Category fetch error:', err);
+                showHeroError();
+            }
+        }
+
+        /* ============================================================
+         * FILTER / SORT CONTROLS
+         * ============================================================ */
+        function bindFilterControls() {
+            const difficultySelect = document.getElementById('trekDifficulty');
+            const locationSelect   = document.getElementById('trekLocation');
+            const durationSelect   = document.getElementById('trekDuration');
+            const sortSelect       = document.getElementById('trekSort');
+            const resetBtn         = document.getElementById('resetFilters');
+
+            if (!difficultySelect || !locationSelect || !durationSelect || !sortSelect) return;
+
+            function onFilterChange() {
+                // Re-remove any remaining trek cards to show loading state again
+                const grid = document.getElementById('treks-grid');
+                if (grid) {
+                    // Clear all previous results, empty states, and errors (leave skeleton cols if still present)
+                    Array.from(grid.children).forEach(child => {
+                        if (!child.classList.contains('trek-skeleton-col')) {
+                            child.remove();
+                        }
+                    });
+
+                    // Show a minimal loading indicator
+                    const loadingRow = document.createElement('div');
+                    loadingRow.className = 'col-12 text-center py-5 filter-loading-col';
+                    loadingRow.innerHTML = '<div class="spinner-border text-warning" role="status"></div>';
+                    grid.appendChild(loadingRow);
+                }
+
+                const difficulty = difficultySelect.value;
+                const location   = locationSelect.value;
+                const duration   = durationSelect.value;
+                const sort       = sortSelect.value;
+
+                fetchAndRenderTreks(difficulty, location, duration, sort).then(() => {
+                    const loader = document.querySelector('.filter-loading-col');
+                    if (loader) loader.remove();
+                });
+            }
+
+            difficultySelect.addEventListener('change', onFilterChange);
+            locationSelect.addEventListener('change', onFilterChange);
+            durationSelect.addEventListener('change', onFilterChange);
+            sortSelect.addEventListener('change', onFilterChange);
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    difficultySelect.value = '';
+                    locationSelect.value   = '';
+                    durationSelect.value   = '';
+                    sortSelect.value       = 'featured';
+                    onFilterChange();
+                });
+            }
+        }
+
+        /* ============================================================
+         * INIT — run on DOMContentLoaded
+         * ============================================================ */
+        document.addEventListener('DOMContentLoaded', function () {
+            // Fire both fetches in parallel
+            Promise.all([
+                fetchCategory(),
+                fetchAndRenderTreks('', '', '', 'featured')
+            ]).catch(function (e) {
+                console.error('[CategoryTreks] Init error:', e);
+            });
+
+            bindFilterControls();
+        });
+
+    })();
+    </script>
+
+</body>
+
+</html>

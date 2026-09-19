@@ -9,7 +9,7 @@ const slides = [
     title: "Trekking In The Sahyadris Made Easy.",
     text: "Curated treks across Maharashtra with batches, guides, stays and transport sorted in one place.",
     type: "video",
-    media: "https://alpha.thegreyhawks.com/assets/video/home2-banner-video.mp4",
+    media: "/assets/video/home2-banner-video.mp4",
   },
   {
     title: "Book Your Next Weekend Trek.",
