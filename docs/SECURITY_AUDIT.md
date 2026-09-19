@@ -103,9 +103,9 @@ handles.
 - **If multi-vendor is ever intended** (the brief implies a generic booking
   platform), it is **NOT supported**: there is no tenant key on treks/departures/
   bookings/payments, and RLS has no tenant predicate. Retrofitting tenancy later
-  is expensive. **Decision needed:** is Alpha the sole operator (assume yes per
-  the repo), or a marketplace? See [AUDIT_ACTION_PLAN.md](AUDIT_ACTION_PLAN.md).
-  **NOT VERIFIED** — no evidence of multi-tenant intent in code or schema.
+  is expensive. **DECISION LOCKED (2026-09-19): single-operator** — Alpha is the
+  sole seller. No `vendor_id`/tenant boundary will be added; the cross-vendor
+  leakage class stays N/A.
 
 ## 5. Secrets (Part 15) — see [CODEBASE_AUDIT.md §4](CODEBASE_AUDIT.md)
 - No secrets committed. Only public Supabase URL + publishable key in the client.

@@ -68,9 +68,10 @@ Needs: `draft_token` index; a booking-intent server action; OTP wiring; an
 account-link step; abandoned-draft expiry (below). See
 [TARGET_ARCHITECTURE.md](TARGET_ARCHITECTURE.md).
 
-**OTP: NOT VERIFIED** whether Supabase Auth phone/email OTP is enabled on the
-project (dashboard setting; not visible via SQL). No OTP table exists (Supabase
-Auth manages OTP internally — a custom table is usually unnecessary).
+**OTP (LOCKED: email):** identity = email; use Supabase Auth **email OTP / magic
+link** (`signInWithOtp({email})`). **No SMS provider needed.** Whether email OTP
+is enabled on the project is a dashboard setting — **verify there** (not visible
+via SQL). No custom OTP table needed (Supabase Auth manages OTP internally).
 
 ## 9. Concurrency & double-booking (Part 9)
 

@@ -6,6 +6,14 @@
 > flow, identity dedupe, seat/expiry wiring, server-side pricing) — it does not
 > propose a rewrite.
 
+**DECISIONS LOCKED (2026-09-19):**
+1. **Single-operator** — Alpha Adventures is the only seller. No multi-vendor /
+   `vendor_id` / tenant boundary. The current schema already fits this.
+2. **Email is the canonical customer identity** — sign-in/verification is by
+   **email OTP (or magic link)**; a verified email = the account. Phone is
+   optional secondary contact data, **not** the identity. **No SMS provider
+   required for auth.**
+
 ## Part 4 — auth.users ↔ customer identity (answers)
 
 | # | Question | Answer (declared schema) |
@@ -26,22 +34,22 @@
 | 14 | Same person, different email/phone combos? | Creates **separate** accounts today — no linking |
 | 15 | Duplicate accounts possible? | **Yes** — this is the main identity risk |
 
-### Recommended identity architecture (design only)
-- **Pick ONE canonical identifier for customers: phone (E.164)**, since the flow
-  is OTP-first and Indian trekkers book by phone. Configure Supabase Auth **phone
-  OTP** as the primary sign-in; treat verified phone as the identity.
+### Recommended identity architecture (LOCKED: email canonical)
+- **Canonical identifier = email.** Configure Supabase Auth **email OTP / magic
+  link** as the primary sign-in; a **verified email** is the account. No SMS
+  provider needed. Phone is collected as optional contact data on
+  `profiles.phone` / `bookings.contact_phone`, not as identity.
 - **`auth.users` = identity; `profiles` = app profile (1:1).** Keep the existing
-  trigger.
-- **Enforce uniqueness on the verified identifier:** rely on `auth.users`
-  uniqueness for phone; optionally add a partial unique index on
-  `profiles.phone` for verified rows. Store email as secondary/optional.
-- **Dedupe rule:** OTP verify → look up `auth.users` by phone → if exists, link
-  the pending booking to that profile; else the sign-up creates it. This makes
-  "existing vs new customer" deterministic and **prevents duplicates** for the
-  primary identifier.
-- **Roles stay in `user_roles`** (already correct). Do not put roles in JWT
-  metadata as the source of truth.
-- Changing phone/email = an authenticated, re-verified flow later.
+  `handle_new_user()` trigger (note: `profiles=0` live → it is **untested against
+  a real signup**; verify it fires on the first email OTP signup).
+- **Uniqueness:** `auth.users.email` is unique — rely on it. Optionally a partial
+  unique index on `profiles.email` for defence in depth.
+- **Dedupe rule:** OTP verify → look up `auth.users` by email → if exists, link
+  the pending booking to that profile; else the signup creates it. Deterministic
+  "existing vs new customer"; **prevents duplicates** on the canonical email.
+- **Roles stay in `user_roles`** (already correct). Do not treat JWT metadata as
+  the source of truth for roles.
+- Changing email = an authenticated, re-verified flow later.
 
 ## Part 20 — target architecture
 
@@ -63,8 +71,8 @@ guest picks trek+departure+pax
   → [server action, service role] create booking(status=draft, user_id=null,
        draft_token, contact_*, priced from DB not client)   ← server owns price
   → collect customer details onto draft
-  → OTP (Supabase Auth phone): signInWithOtp → verifyOtp
-  → verified: auth.users (new or existing) → profile via trigger
+  → OTP (Supabase Auth EMAIL): signInWithOtp({email}) → verifyOtp
+  → verified: auth.users (new or existing, keyed by email) → profile via trigger
        → link booking.user_id = profile.id; clear draft_token
   → [server] reserve_departure_seats() inside txn; set status=pending_payment,
        expires_at=now()+N min
@@ -139,9 +147,11 @@ re-query. Booking state derives from payment state, never the reverse.
 pricing (compute from catalog, snapshot onto booking at creation); seat counts
 (only on `trek_departures`); role truth (only `user_roles`).
 
-## Confirmations still required (NOT VERIFIED)
-1. Single-operator vs multi-vendor (assume single).
-2. Phone-OTP as canonical identity (recommended).
-3. Supabase Auth OTP provider enabled + SMS provider configured.
-4. PhonePe API contract + credentials.
-5. Live schema == migrations (introspection SQL).
+## Confirmations
+1. Single-operator — **RESOLVED: single-operator (locked).**
+2. Canonical identity — **RESOLVED: email (locked).**
+3. Supabase Auth **email OTP / magic link** enabled — **verify in the Auth
+   dashboard** (SMS provider NOT needed).
+4. PhonePe API contract + credentials — **still required** before payment build.
+5. Live schema == migrations — **RESOLVED: verified** (one drift: `rls_auto_enable`
+   event trigger to capture in a migration).

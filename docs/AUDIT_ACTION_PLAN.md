@@ -24,10 +24,12 @@ auth settings**. Not a rewrite — a build-on.
 
 | Issue | Evidence | Risk | Required Action |
 |---|---|---|---|
-| Live DB & Auth settings unverified | MCP `permission denied` on `rkzfezshvzszeykgrsdx`; OTP provider not inspectable via SQL | Building on assumptions; RLS/OTP may be off in prod | Run the introspection SQL; confirm every table has RLS on and phone/email OTP + SMS provider are enabled in the Auth dashboard |
+| Auth settings unverified | Live schema verified ✅. **Only** the Supabase **Auth email-OTP** config is not inspectable via SQL | OTP phase can't work if email OTP / magic link isn't enabled | Confirm **email OTP / magic link** is enabled in the Auth dashboard (identity = email, locked). **No SMS provider needed.** |
+| Migration drift: `rls_auto_enable` | Live has an event-trigger function not in migrations `0001–0005` | A rebuild from migrations won't auto-enable RLS on new tables | Capture `rls_auto_enable` + its event trigger in a migration; adopt CLI governance |
 
-*(No P0 data-corruption or exposed-secret findings — secrets are clean, RLS
-design is sound. The only true blocker is verification.)*
+*(Live schema is now VERIFIED and matches migrations. No data-corruption or
+exposed-secret P0s — DB is a clean slate: `profiles=0`, `bookings=0`; RLS design
+is sound. Remaining P0s are Auth-config confirmation + the one drift.)*
 
 ## P1 Before Booking Engine
 
@@ -36,7 +38,7 @@ design is sound. The only true blocker is verification.)*
 | Booking money is client-writable | `bookings_insert`/`bookings_update_draft` don't restrict amount columns (`0003`) | Price tampering → underpayment | Server-computed pricing via RPC/service role; do not trust client amounts; consider revoking direct customer INSERT/UPDATE on `bookings` |
 | Guest booking flow absent | anon blocked by RLS (correct); `draft_token`/`user_id null` present but no code; no index | Core "book before account" can't work | Build server-side (service-role) booking-intent keyed by `draft_token`; link `user_id` after OTP; add `draft_token` index |
 | OTP + account link not built | no OTP/auth code anywhere | No verification/identity | Wire Supabase phone-OTP; on verify, resolve/create profile and link the draft booking |
-| Duplicate-customer risk | `profiles.phone/email` non-unique; no phone↔email linking (`0002`) | Multiple accounts per person | Choose phone as canonical identity; dedupe on verified phone at OTP; (partial) unique on verified phone |
+| Duplicate-customer risk | `profiles.phone/email` non-unique (live-confirmed) | Multiple accounts per person | **Email is canonical (locked)**: dedupe on verified email at OTP (rely on `auth.users.email` uniqueness); optional partial unique on `profiles.email` |
 | Seat reservation & expiry unwired | `reserve_departure_seats()`/`expires_at` exist but nothing calls them (`0002`) | Oversell; abandoned drafts hold seats | Reserve seats in the payment txn; scheduled job to expire drafts + release seats |
 | No generated DB types | no `Database` types in repo | Untyped queries → runtime bugs | `supabase gen types` → `src/types/database.ts`; use in all DB code |
 | No app auth/session | no middleware/login (`CODEBASE_AUDIT`) | Nothing in front of RLS; no customer dashboard | Implement Supabase Auth session + protected routes before booking |
@@ -108,5 +110,5 @@ design is sound. The only true blocker is verification.)*
 1. Verify live schema + enable/confirm Auth OTP & RLS (P0).
 2. Server-owned pricing; lock booking money columns (P1).
 3. Guest booking + OTP + account-link server flow; `draft_token` index (P1).
-4. Prevent duplicate customers (canonical phone identity) (P1).
+4. Prevent duplicate customers (canonical **email** identity — locked) (P1).
 5. Wire seat reservation + expiry; generated DB types; app auth/session (P1).
