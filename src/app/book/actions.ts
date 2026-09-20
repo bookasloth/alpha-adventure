@@ -5,11 +5,24 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, otpSchema } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "@/domain/booking/service";
-import { sendBookingPendingEmail, sendBookingConfirmedEmail } from "@/lib/email";
+import { sendBookingPendingEmail, sendBookingConfirmedEmail, sendOtpEmail } from "@/lib/email";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DRAFT_COOKIE = "aa_draft";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+
+// Mint an email OTP without using Supabase's own email delivery: ensure the
+// user exists (idempotent, pre-confirmed so magiclink works), ask Supabase to
+// generate the link/OTP, then email the code ourselves via SMTP.
+// verifyOtp(type:"email") on the other side validates this same code.
+async function mintAndSendOtp(admin: SupabaseClient, email: string) {
+  await admin.auth.admin.createUser({ email, email_confirm: true }).catch(() => {});
+  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  const code = data?.properties?.email_otp;
+  if (error || !code) throw new Error("mint failed");
+  await sendOtpEmail(email, code);
+}
 
 function setDraftCookie(token: string) {
   cookies().set(DRAFT_COOKIE, token, {
@@ -56,9 +69,11 @@ export async function sendBookingOtp(bookingId: string, rawEmail: unknown, token
 
   await admin.from("bookings").update({ contact_email: parsed.data, status: "pending_auth" }).eq("id", bookingId);
 
-  const supabase = createClient(cookies());
-  const { error } = await supabase.auth.signInWithOtp({ email: parsed.data, options: { shouldCreateUser: true } });
-  if (error) return { ok: false, error: "Could not send the code. Please try again." };
+  try {
+    await mintAndSendOtp(admin, parsed.data);
+  } catch {
+    return { ok: false, error: "Could not send the code. Please try again." };
+  }
   return { ok: true };
 }
 
@@ -109,12 +124,11 @@ export async function verifyBookingOtp(
 export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
   const parsed = emailSchema.safeParse(rawEmail);
   if (!parsed.success) return { ok: false, error: "Invalid email." };
-  const supabase = createClient(cookies());
-  const { error } = await supabase.auth.signInWithOtp({
-    email: parsed.data,
-    options: { shouldCreateUser: true },
-  });
-  if (error) return { ok: false, error: "Could not resend the code." };
+  try {
+    await mintAndSendOtp(createAdminClient(), parsed.data);
+  } catch {
+    return { ok: false, error: "Could not resend the code." };
+  }
   return { ok: true };
 }
 

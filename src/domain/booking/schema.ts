@@ -47,7 +47,9 @@ export const emailSchema = z
   .max(200)
   .email("Enter a valid email address.");
 
-export const otpSchema = z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code.");
+// Supabase OTP length (GOTRUE_MAILER_OTP_LENGTH) is currently 8; keep in sync
+// with CODE_LEN in BookingFlow.
+export const otpSchema = z.string().trim().regex(/^\d{8}$/, "Enter the 8-digit code.");
 
 export type CreateDraftInput = z.infer<typeof createDraftSchema>;
 export type TravellerInput = z.infer<typeof travellerSchema>;

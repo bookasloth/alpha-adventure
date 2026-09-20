@@ -8,6 +8,22 @@ import { sendMail } from "./mailer";
 const adminTo = process.env.ADMIN_NOTIFY_EMAIL;
 const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
+// The login code. Supabase mints the OTP (via admin.generateLink) but we send
+// it ourselves through Hostinger SMTP — Supabase's own email delivery is not
+// used. Throws on send failure so the caller can surface it (unlike the
+// booking notices, delivering this code is the whole point of the step).
+export async function sendOtpEmail(to: string, code: string) {
+  await sendMail(
+    to,
+    `${code} is your Alpha Adventures code`,
+    `<h2>Your login code</h2>
+     <p>Enter this code to confirm your booking:</p>
+     <p style="font-size:28px;font-weight:bold;letter-spacing:4px">${code}</p>
+     <p>It expires in 1 hour. If you didn't request this, ignore this email.</p>`,
+    { throwOnError: true },
+  );
+}
+
 export type BookingEmail = {
   to: string;
   reference: string;

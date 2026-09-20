@@ -277,8 +277,11 @@ function TravellerForm({ value, isLead, onChange, back, next }: { value: Travell
     </div>
   );
 }
+// ponytail: box count follows Supabase's OTP length (currently 8). If you change
+// GOTRUE_MAILER_OTP_LENGTH, change CODE_LEN + otpSchema to match.
+const CODE_LEN = 8;
 function OtpForm({ busy, onVerify }: { busy: boolean; onVerify: (code: string) => void }) {
-  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
+  const [digits, setDigits] = useState<string[]>(() => Array(CODE_LEN).fill(""));
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const code = digits.join("");
   return (
@@ -286,12 +289,12 @@ function OtpForm({ busy, onVerify }: { busy: boolean; onVerify: (code: string) =
       <div className="bk-otp">
         {digits.map((d, i) => (
           <input key={i} ref={(el) => { refs.current[i] = el; }} inputMode="numeric" maxLength={1} value={d}
-            onChange={(e) => { const c = e.target.value.replace(/\D/g, "").slice(0, 1); setDigits((p) => p.map((x, j) => (j === i ? c : x))); if (c && i < 5) refs.current[i + 1]?.focus(); }}
+            onChange={(e) => { const c = e.target.value.replace(/\D/g, "").slice(0, 1); setDigits((p) => p.map((x, j) => (j === i ? c : x))); if (c && i < CODE_LEN - 1) refs.current[i + 1]?.focus(); }}
             onKeyDown={(e) => { if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus(); }}
-            onPaste={(e) => { const p = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, 6); if (p) { e.preventDefault(); setDigits(p.padEnd(6, " ").split("").map((c) => (c === " " ? "" : c))); refs.current[Math.min(p.length, 5)]?.focus(); } }} />
+            onPaste={(e) => { const p = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, CODE_LEN); if (p) { e.preventDefault(); setDigits(p.padEnd(CODE_LEN, " ").split("").map((c) => (c === " " ? "" : c))); refs.current[Math.min(p.length, CODE_LEN - 1)]?.focus(); } }} />
         ))}
       </div>
-      <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy || code.length !== 6} onClick={() => onVerify(code)}>{busy ? "Verifying…" : "Verify"} <Arrow /></button></div>
+      <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy || code.length !== CODE_LEN} onClick={() => onVerify(code)}>{busy ? "Verifying…" : "Verify"} <Arrow /></button></div>
     </div>
   );
 }

@@ -19,15 +19,23 @@ function transport(): Transporter | null {
   return cached;
 }
 
-export async function sendMail(to: string, subject: string, html: string) {
+export async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  opts?: { throwOnError?: boolean },
+) {
   const t = transport();
   if (!t) {
-    console.warn("[mailer] SMTP not configured — skipping email to", to);
+    const msg = "SMTP not configured";
+    if (opts?.throwOnError) throw new Error(msg);
+    console.warn("[mailer]", msg, "— skipping email to", to);
     return;
   }
   try {
     await t.sendMail({ from: EMAIL_FROM, to, subject, html });
   } catch (e) {
+    if (opts?.throwOnError) throw e;
     console.error("[mailer] send failed:", (e as Error).message);
   }
 }

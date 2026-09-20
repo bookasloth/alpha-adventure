@@ -44,7 +44,7 @@ const RUN = Boolean(url && key);
   it("guest → account → pending_payment → mock pay → confirmed", async () => {
     const { data: trek } = await admin
       .from("treks")
-      .select("id,base_price")
+      .select("id,base_price,child_price")
       .eq("status", "published")
       .not("base_price", "is", null)
       .limit(1)
@@ -74,7 +74,10 @@ const RUN = Boolean(url && key);
       addons: [],
     });
     bookingId = draft.bookingId;
-    expect(draft.total).toBe(trek!.base_price * 3); // authoritative server price
+    // Authoritative server price: 2 adults at base + 1 child at child rate
+    // (falls back to base when the trek has no child_price).
+    const childRate = trek!.child_price ?? trek!.base_price;
+    expect(draft.total).toBe(trek!.base_price * 2 + childRate);
 
     // 2) Fake verified account (mimics email-OTP verify → handle_new_user trigger).
     const { data: created, error: userErr } = await admin.auth.admin.createUser({
