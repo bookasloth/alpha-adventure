@@ -17,6 +17,32 @@ html .bg-primary { background-color: #fe5100 !important; }
 html .text-primary { color: #fe5100 !important; }
 html .border-primary { border-color: #fe5100 !important; }
 
+/* Make the legacy theme's .primary-btn1 pixel-identical to .btn-primary:
+   solid orange, 10px radius, 14px/24px padding, 15px/600, hover -> dark.
+   Its .transparent / .white-bg / .black-bg variants keep their own styling. */
+html .primary-btn1 {
+  padding: 14px 24px !important;
+  border-radius: 10px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.025em !important;
+  gap: 8px;
+  overflow: visible;
+}
+html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg) {
+  background-color: #fe5100 !important;
+  color: #fff !important;
+}
+html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg):hover {
+  background-color: #110F0F !important;
+  color: #fff !important;
+}
+/* Kill the slide/hover-swap animation so it matches btn-primary's plain hover. */
+html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg)::before,
+html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg)::after { display: none !important; }
+html .primary-btn1 > span { position: static !important; width: auto !important; transform: none !important; opacity: 1 !important; }
+html .primary-btn1 > span:nth-child(2) { display: none !important; }
+
 body {
   @apply bg-page text-[#525252] font-sans antialiased;
 }
