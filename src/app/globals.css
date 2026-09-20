@@ -22,12 +22,18 @@ h1, h2, h3, h4, h5 {
   .container-px {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
+  /* Site-wide button standard (matches the trek "Book Now" / "Enquire" CTAs):
+     primary = solid orange → dark on hover; secondary = outline → orange on hover. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-6 py-3.5 text-[15px] font-semibold leading-none tracking-wide transition-all duration-200;
   }
   .btn-primary {
-    @apply btn bg-btn-gradient text-white shadow-soft hover:brightness-105;
+    @apply btn bg-primary text-white hover:bg-ink hover:text-white;
   }
+  .btn-secondary {
+    @apply btn border border-line bg-transparent text-ink hover:border-primary hover:bg-primary hover:text-white;
+  }
+  /* On dark backgrounds (hero/CTA bands) the secondary needs light borders. */
   .btn-outline {
     @apply btn border border-white/70 text-white hover:bg-white hover:text-ink;
   }
@@ -52,17 +58,8 @@ h1, h2, h3, h4, h5 {
 @media (max-width: 767px){ .trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(2,1fr);} }
 @media (max-width: 576px){ .trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(1,1fr);} }
 
-.trek-detail .itinerary-accordion .accordion-item{ border:1px solid #e9ecef; border-radius:12px; margin-bottom:16px; overflow:hidden; }
-.trek-detail .itinerary-accordion .accordion-button{ display:flex; align-items:flex-start; gap:12px; padding:18px 20px; background:#fff; box-shadow:none; }
-.trek-detail .itinerary-accordion .accordion-button:not(.collapsed){ color:inherit; background:#f8fafc; box-shadow:none; }
-.trek-detail .day-title-wrap{ display:flex; flex-direction:column; gap:4px; }
-.trek-detail .day-chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--primary-color1); }
-.trek-detail .day-main-title{ margin:0; font-size:18px; font-weight:700; line-height:1.35; color:#111827; }
-.trek-detail .timeline{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
-.trek-detail .timeline li{ display:flex; align-items:flex-start; gap:10px; color:#374151; line-height:1.55; }
-.trek-detail .timeline li i{ color:var(--primary-color1); margin-top:2px; line-height:1; }
-.trek-detail .itinerary-meta{ margin-top:16px; padding:12px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#f9fafb; }
-.trek-detail .itinerary-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+/* Itinerary/FAQ accordions + inclusion/package lists are Tailwind + a
+   self-contained React <Accordion>; no Bootstrap, no theme list decorations. */
 
 /* Gallery grid + lightbox trigger */
 .trek-detail .gallery-item-card{ position:relative; display:block; border-radius:12px; overflow:hidden; aspect-ratio:4/3; }

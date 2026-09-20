@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { site } from "@/data/site";
+import Accordion from "./Accordion";
 
 const rupees = (paise) => "₹" + (paise / 100).toLocaleString("en-IN");
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -8,10 +9,10 @@ const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const BtnArrow = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
 );
-// The theme's primary button duplicates its label in two spans (hover swap).
-function PrimaryBtn({ href, external, label, variant = "" }) {
-  const cls = `primary-btn1${variant ? " " + variant : ""}`;
-  const inner = <><span>{label} <BtnArrow /></span><span>{label} <BtnArrow /></span></>;
+// Site-standard button (globals .btn-primary / .btn-secondary).
+function PrimaryBtn({ href, external, label, secondary, className = "" }) {
+  const cls = `${secondary ? "btn-secondary" : "btn-primary"} ${className}`.trim();
+  const inner = <>{label} <BtnArrow /></>;
   return external
     ? <a href={href} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
     : <Link href={href} className={cls}>{inner}</Link>;
@@ -112,74 +113,62 @@ export default function TrekDetail({ trek }) {
 
                 {/* ITINERARY */}
                 {trek.itinerary.length > 0 && (
-                  <div className="tour-itinerary-area mb-60" id="section-itinerary">
-                    <div className="itinerary-title"><h4>Trek Itinerary</h4></div>
-                    <div className="accordion accordion-flush itinerary-accordion" id="trekAccordion">
-                      {trek.itinerary.map((d, i) => {
-                        const hid = `heading-itinerary-${d.day_no}`;
-                        const cid = `day-itinerary-${d.day_no}`;
-                        const first = i === 0;
-                        return (
-                          <div className="accordion-item" key={d.day_no}>
-                            <h2 className="accordion-header" id={hid}>
-                              <button className={`accordion-button${first ? "" : " collapsed"}`} type="button"
-                                data-bs-toggle="collapse" data-bs-target={`#${cid}`} aria-expanded={first ? "true" : "false"} aria-controls={cid}>
-                                <span className="day-title-wrap">
-                                  <span className="day-chip"><i className="bi bi-geo-alt-fill" /> Day {d.day_no}</span>
-                                  <span className="day-main-title">{d.title}</span>
-                                </span>
-                              </button>
-                            </h2>
-                            <div id={cid} className={`accordion-collapse collapse${first ? " show" : ""}`} aria-labelledby={hid} data-bs-parent="#trekAccordion">
-                              <div className="accordion-body">
-                                {d.description && <ul className="timeline"><li><i className="bi bi-clock-fill" /> {d.description}</li></ul>}
-                                {d.image && (
-                                  <img src={d.image} alt={d.title} style={{ width: "100%", maxWidth: 460, height: 220, objectFit: "cover", borderRadius: 12, marginTop: 14, display: "block" }} />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div className="mb-60" id="section-itinerary">
+                    <h4 className="mb-4">Trek Itinerary</h4>
+                    <Accordion items={trek.itinerary.map((d) => ({
+                      title: (
+                        <span className="flex flex-col gap-1">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary"><i className="bi bi-geo-alt-fill" /> Day {d.day_no}</span>
+                          <span className="text-[17px] font-bold leading-snug text-ink">{d.title}</span>
+                        </span>
+                      ),
+                      body: (
+                        <>
+                          {d.description && <p className="leading-relaxed text-gray-600">{d.description}</p>}
+                          {d.image && <img src={d.image} alt={d.title} className="mt-3.5 block h-[220px] w-full max-w-[460px] rounded-xl2 object-cover" />}
+                        </>
+                      ),
+                    }))} />
                   </div>
                 )}
 
                 {/* INCLUSIONS / EXCLUSIONS */}
                 {(trek.inclusions.length > 0 || trek.exclusions.length > 0) && (
-                  <div className="package-info-wrap mb-60" id="section-inclusions">
-                    <div className="row">
-                      <div className="col-md-6">
-                        <h4>What&apos;s Included</h4>
-                        <ul className="timeline">
-                          {trek.inclusions.map((t, i) => (<li key={i}><i className="bi bi-check-circle-fill" style={{ color: "#16a34a" }} /> {t}</li>))}
-                        </ul>
-                      </div>
-                      <div className="col-md-6">
-                        <h4>Not Included</h4>
-                        <ul className="timeline">
-                          {trek.exclusions.map((t, i) => (<li key={i}><i className="bi bi-x-circle-fill" style={{ color: "#dc2626" }} /> {t}</li>))}
-                        </ul>
-                      </div>
+                  <div className="mb-60 grid gap-8 sm:grid-cols-2" id="section-inclusions">
+                    <div>
+                      <h4 className="mb-4">What&apos;s Included</h4>
+                      <ul className="space-y-3">
+                        {trek.inclusions.map((t, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-gray-600"><i className="bi bi-check-circle-fill mt-0.5 text-green-600" /> {t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="mb-4">Not Included</h4>
+                      <ul className="space-y-3">
+                        {trek.exclusions.map((t, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-gray-600"><i className="bi bi-x-circle-fill mt-0.5 text-red-500" /> {t}</li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
                 )}
 
                 {/* PACKAGES */}
                 {trek.packages.length > 0 && (
-                  <div className="package-info-wrap mb-60" id="section-packages">
-                    <h4>Packages</h4>
-                    <div className="row g-3">
+                  <div className="mb-60" id="section-packages">
+                    <h4 className="mb-4">Packages</h4>
+                    <div className="grid gap-4 sm:grid-cols-2">
                       {trek.packages.map((p, i) => (
-                        <div className="col-md-6" key={i}>
-                          <div className="itinerary-meta" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-                            <h6 style={{ fontWeight: 700, marginBottom: 4 }}>{p.name}</h6>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--primary-color1)", marginBottom: 10 }}>{rupees(p.price)} <small style={{ color: "#6b7280", fontWeight: 500 }}>/ person</small></div>
-                            <ul className="timeline" style={{ flex: 1 }}>
-                              {p.inclusions.map((t, j) => (<li key={j}><i className="bi bi-check-circle-fill" style={{ color: "#16a34a" }} /> {t}</li>))}
-                            </ul>
-                            <div style={{ marginTop: 12 }}><PrimaryBtn href={bookHref} label={p.cta_label || "Book Now"} variant="two" /></div>
-                          </div>
+                        <div key={i} className="flex flex-col rounded-xl2 border border-line/70 bg-white p-6">
+                          <h6 className="mb-1 font-bold text-ink">{p.name}</h6>
+                          <div className="mb-3 text-[22px] font-extrabold text-primary">{rupees(p.price)} <small className="font-medium text-gray-500">/ person</small></div>
+                          <ul className="mb-5 flex-1 space-y-2.5">
+                            {p.inclusions.map((t, j) => (
+                              <li key={j} className="flex items-start gap-2.5 text-sm text-gray-600"><i className="bi bi-check-circle-fill mt-0.5 text-green-600" /> {t}</li>
+                            ))}
+                          </ul>
+                          <PrimaryBtn href={bookHref} label={p.cta_label || "Book Now"} className="w-full" />
                         </div>
                       ))}
                     </div>
@@ -205,28 +194,12 @@ export default function TrekDetail({ trek }) {
 
                 {/* FAQ */}
                 {trek.faqs.length > 0 && (
-                  <div className="tour-itinerary-area mb-60" id="section-faq">
-                    <div className="itinerary-title"><h4>Frequently Asked</h4></div>
-                    <div className="accordion accordion-flush itinerary-accordion" id="faqAccordion">
-                      {trek.faqs.map((f, i) => {
-                        const hid = `faq-h-${i}`;
-                        const cid = `faq-c-${i}`;
-                        const first = i === 0;
-                        return (
-                          <div className="accordion-item" key={i}>
-                            <h2 className="accordion-header" id={hid}>
-                              <button className={`accordion-button${first ? "" : " collapsed"}`} type="button"
-                                data-bs-toggle="collapse" data-bs-target={`#${cid}`} aria-expanded={first ? "true" : "false"} aria-controls={cid}>
-                                <span className="day-main-title">{f.question}</span>
-                              </button>
-                            </h2>
-                            <div id={cid} className={`accordion-collapse collapse${first ? " show" : ""}`} aria-labelledby={hid} data-bs-parent="#faqAccordion">
-                              <div className="accordion-body"><p style={{ margin: 0, color: "#374151" }}>{f.answer}</p></div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  <div className="mb-60" id="section-faq">
+                    <h4 className="mb-4">Frequently Asked</h4>
+                    <Accordion items={trek.faqs.map((f) => ({
+                      title: <span className="font-semibold text-ink">{f.question}</span>,
+                      body: <p className="leading-relaxed">{f.answer}</p>,
+                    }))} />
                   </div>
                 )}
               </div>
@@ -234,7 +207,7 @@ export default function TrekDetail({ trek }) {
 
             {/* RIGHT SIDEBAR */}
             <div className="col-lg-4" id="package-main-right">
-              <div className="package-details-sidebar">
+              <div className="package-details-sidebar lg:sticky lg:top-[110px]">
                 <div className="pricing-and-booking-area mb-40">
                   <div className="price-area">
                     <h6>Starting From</h6>
@@ -245,8 +218,8 @@ export default function TrekDetail({ trek }) {
                     <li><i className="bi bi-people" /> Small, expert-led batches.</li>
                     <li><i className="bi bi-arrow-repeat" /> Free cancellation up to 72h before.</li>
                   </ul>
-                  <PrimaryBtn href={bookHref} label="Book Now" variant="mb-20" />
-                  <PrimaryBtn href={site.whatsapp} external label="Enquire on WhatsApp" variant="transparent" />
+                  <PrimaryBtn href={bookHref} label="Book Now" className="mb-3 w-full" />
+                  <PrimaryBtn href={site.whatsapp} external secondary label="Enquire on WhatsApp" className="w-full" />
                 </div>
               </div>
             </div>
