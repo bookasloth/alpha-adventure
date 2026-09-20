@@ -44,3 +44,29 @@ h1, h2, h3, h4, h5 {
     @apply bg-white rounded-xl2 shadow-soft overflow-hidden border border-line/60;
   }
 }
+
+/* ── Trek detail (legacy skin) — page-specific rules ported from the original
+   trek-detail template so /treks/[slug] renders identically. ─────────────── */
+.trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1199px){ .trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(3,1fr);} }
+@media (max-width: 767px){ .trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(2,1fr);} }
+@media (max-width: 576px){ .trek-detail .package-info-list.info-grid-4 { grid-template-columns: repeat(1,1fr);} }
+
+.trek-detail .itinerary-accordion .accordion-item{ border:1px solid #e9ecef; border-radius:12px; margin-bottom:16px; overflow:hidden; }
+.trek-detail .itinerary-accordion .accordion-button{ display:flex; align-items:flex-start; gap:12px; padding:18px 20px; background:#fff; box-shadow:none; }
+.trek-detail .itinerary-accordion .accordion-button:not(.collapsed){ color:inherit; background:#f8fafc; box-shadow:none; }
+.trek-detail .day-title-wrap{ display:flex; flex-direction:column; gap:4px; }
+.trek-detail .day-chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--primary-color1); }
+.trek-detail .day-main-title{ margin:0; font-size:18px; font-weight:700; line-height:1.35; color:#111827; }
+.trek-detail .timeline{ list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.trek-detail .timeline li{ display:flex; align-items:flex-start; gap:10px; color:#374151; line-height:1.55; }
+.trek-detail .timeline li i{ color:var(--primary-color1); margin-top:2px; line-height:1; }
+.trek-detail .itinerary-meta{ margin-top:16px; padding:12px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#f9fafb; }
+.trek-detail .itinerary-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+
+/* Gallery grid + lightbox trigger */
+.trek-detail .gallery-item-card{ position:relative; display:block; border-radius:12px; overflow:hidden; aspect-ratio:4/3; }
+.trek-detail .gallery-item-card .gallery-img{ width:100%; height:100%; object-fit:cover; transition:transform .3s ease; }
+.trek-detail .gallery-item-card:hover .gallery-img{ transform:scale(1.05); }
+.trek-detail .gallery-item-hover{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; background:rgba(17,15,15,.35); opacity:0; transition:opacity .25s ease; }
+.trek-detail .gallery-item-card:hover .gallery-item-hover{ opacity:1; }
