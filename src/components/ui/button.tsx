@@ -9,7 +9,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-white hover:bg-ink",
+        // btn-primary carries the brand orange + hover slide-to-dark animation.
+        primary: "btn-primary",
         secondary: "border border-line bg-transparent text-ink hover:border-primary hover:bg-primary hover:text-white",
         ghost: "text-ink hover:bg-slate-100",
         danger: "bg-red-600 text-white hover:bg-red-700",

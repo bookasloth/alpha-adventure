@@ -17,31 +17,20 @@ html .bg-primary { background-color: #fe5100 !important; }
 html .text-primary { color: #fe5100 !important; }
 html .border-primary { border-color: #fe5100 !important; }
 
-/* Make the legacy theme's .primary-btn1 pixel-identical to .btn-primary:
-   solid orange, 10px radius, 14px/24px padding, 15px/600, hover -> dark.
-   Its .transparent / .white-bg / .black-bg variants keep their own styling. */
-html .primary-btn1 {
-  padding: 14px 24px !important;
-  border-radius: 10px !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.025em !important;
-  gap: 8px;
-  overflow: visible;
+/* Standard primary buttons (.btn-primary, booking .bk-btn-primary) get the same
+   hover slide-to-dark as the legacy .primary-btn1: a dark panel slides up behind
+   the label. Label stays above via the isolate/z-index:-1 pairing. */
+.btn-primary::after, .bk-root .bk-btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #110F0F;
+  border-radius: inherit;
+  transform: translateY(101%);
+  transition: transform 0.45s cubic-bezier(0.455, 0.03, 0.515, 0.955);
 }
-html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg) {
-  background-color: #fe5100 !important;
-  color: #fff !important;
-}
-html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg):hover {
-  background-color: #110F0F !important;
-  color: #fff !important;
-}
-/* Kill the slide/hover-swap animation so it matches btn-primary's plain hover. */
-html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg)::before,
-html .primary-btn1:not(.transparent):not(.white-bg):not(.black-bg)::after { display: none !important; }
-html .primary-btn1 > span { position: static !important; width: auto !important; transform: none !important; opacity: 1 !important; }
-html .primary-btn1 > span:nth-child(2) { display: none !important; }
+.btn-primary:hover::after, .bk-root .bk-btn-primary:hover:not(:disabled)::after { transform: translateY(0); }
 
 body {
   @apply bg-page text-[#525252] font-sans antialiased;
@@ -61,7 +50,7 @@ h1, h2, h3, h4, h5 {
     @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-6 py-3.5 text-[15px] font-semibold leading-none tracking-wide transition-all duration-200;
   }
   .btn-primary {
-    @apply btn bg-primary text-white hover:bg-ink hover:text-white;
+    @apply btn relative isolate overflow-hidden bg-primary text-white hover:text-white;
   }
   .btn-secondary {
     @apply btn border border-line bg-transparent text-ink hover:border-primary hover:bg-primary hover:text-white;

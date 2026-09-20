@@ -85,8 +85,8 @@
 .bk-btn{appearance:none;border:1px solid transparent;border-radius:10px;padding:14px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s}
 .bk-btn:active{transform:translateY(1px)}
 .bk-btn:disabled{opacity:.45;cursor:not-allowed}
-.bk-btn-primary{background:var(--bk-primary);color:#fff}
-.bk-btn-primary:hover:not(:disabled){background:var(--bk-ink);color:#fff}
+.bk-btn-primary{position:relative;overflow:hidden;isolation:isolate;background:var(--bk-primary);color:#fff}
+.bk-btn-primary:hover:not(:disabled){color:#fff}
 .bk-btn-back{background:none;color:var(--bk-muted);font-weight:700;padding:15px 8px}
 .bk-btn-back:hover{color:var(--bk-ink)}
 .bk-linkbtn{background:none;border:0;color:var(--bk-primary);font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;padding:0}
