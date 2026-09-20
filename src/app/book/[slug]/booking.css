@@ -80,11 +80,13 @@
 .bk-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 .bk-pfoot{display:flex;align-items:center;justify-content:space-between;margin-top:26px;gap:12px}
-.bk-btn{appearance:none;border:0;border-radius:14px;padding:15px 26px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:10px;transition:.12s}
+/* Matches the site-standard primary button (globals .btn-primary): solid
+   orange, 10px radius, hover -> dark. */
+.bk-btn{appearance:none;border:1px solid transparent;border-radius:10px;padding:14px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s}
 .bk-btn:active{transform:translateY(1px)}
 .bk-btn:disabled{opacity:.45;cursor:not-allowed}
-.bk-btn-primary{background:var(--bk-primary);color:#fff;box-shadow:0 8px 20px rgba(254,81,0,.28)}
-.bk-btn-primary:hover:not(:disabled){background:var(--bk-primary2)}
+.bk-btn-primary{background:var(--bk-primary);color:#fff}
+.bk-btn-primary:hover:not(:disabled){background:var(--bk-ink);color:#fff}
 .bk-btn-back{background:none;color:var(--bk-muted);font-weight:700;padding:15px 8px}
 .bk-btn-back:hover{color:var(--bk-ink)}
 .bk-linkbtn{background:none;border:0;color:var(--bk-primary);font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;padding:0}

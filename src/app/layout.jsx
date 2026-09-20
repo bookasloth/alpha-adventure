@@ -1,6 +1,7 @@
 import "./globals.css";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
+import SiteChrome from "@/components/layout/SiteChrome";
 import TemplateScripts from "@/components/TemplateScripts";
 import { site } from "@/data/site";
 
@@ -46,9 +47,9 @@ export default function RootLayout({ children }) {
         <div id="magic-cursor">
           <div id="ball"></div>
         </div>
-        <SiteHeader />
-        <main>{children}</main>
-        <SiteFooter />
+        <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>
+          {children}
+        </SiteChrome>
         <TemplateScripts />
       </body>
     </html>

@@ -10,6 +10,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Bootstrap (loaded globally) defines .bg-primary/.text-primary/.border-primary
+   as its blue and collides with Tailwind's `primary` utilities. The brand
+   primary is orange everywhere, so force these to brand orange. */
+html .bg-primary { background-color: #fe5100 !important; }
+html .text-primary { color: #fe5100 !important; }
+html .border-primary { border-color: #fe5100 !important; }
+
 body {
   @apply bg-page text-[#525252] font-sans antialiased;
 }

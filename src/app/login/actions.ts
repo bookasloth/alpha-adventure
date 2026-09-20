@@ -3,6 +3,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { mintAndSendOtp } from "@/lib/otp";
 import { emailSchema, otpSchema } from "@/domain/booking/schema";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -10,12 +12,11 @@ type Result = { ok: true } | { ok: false; error: string };
 export async function sendLoginOtp(rawEmail: unknown): Promise<Result> {
   const e = emailSchema.safeParse(rawEmail);
   if (!e.success) return { ok: false, error: e.error.issues[0]?.message ?? "Invalid email." };
-  const supabase = createClient(cookies());
-  const { error } = await supabase.auth.signInWithOtp({
-    email: e.data,
-    options: { shouldCreateUser: true },
-  });
-  if (error) return { ok: false, error: "Could not send the code. Please try again." };
+  try {
+    await mintAndSendOtp(createAdminClient(), e.data);
+  } catch {
+    return { ok: false, error: "Could not send the code. Please try again." };
+  }
   return { ok: true };
 }
 

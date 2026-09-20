@@ -72,13 +72,11 @@ export default function Hero() {
                         {slide.text}
                       </p>
                       <div className="mt-8 flex flex-wrap gap-4">
-                        <Link href="/treks/upcoming-treks" className="primary-btn1">
-                          <span>Book Your Next Weekend Trek</span>
-                          <span>Book Your Next Weekend Trek</span>
+                        <Link href="/treks/upcoming-treks" className="btn-primary">
+                          Book Your Next Weekend Trek
                         </Link>
-                        <Link href="/contact" className="primary-btn1 transparent">
-                          <span>Plan Custom Itinerary</span>
-                          <span>Plan Custom Itinerary</span>
+                        <Link href="/contact" className="btn-outline">
+                          Plan Custom Itinerary
                         </Link>
                       </div>
                     </div>
