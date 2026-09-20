@@ -3,7 +3,7 @@ import { usePathname } from "next/navigation";
 
 // Auth pages render full-screen (their own split-screen layout), so the site
 // header/footer are hidden there. Everywhere else keeps the normal chrome.
-const BARE = ["/login", "/signup", "/forgot-password"];
+const BARE = ["/login", "/signup", "/forgot-password", "/admin"];
 
 export default function SiteChrome({ header, footer, children }) {
   const path = usePathname() || "";
