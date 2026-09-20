@@ -10,7 +10,7 @@ const inputCls =
   "w-full rounded-[10px] border border-line bg-slate-50 px-4 py-3.5 text-[15px] text-ink outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
 export default function LoginForm({
-  heading = "Welcome Back, Navodian",
+  heading = "Welcome back, Alpha!",
   sub = "Sign in with a one-time code — no password needed.",
   cta = "Log In",
   defaultNext = "/user-dashboard",
