@@ -13,10 +13,12 @@ const email = process.argv[2] || "alphaadventures01@gmail.com";
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 // 1) Ensure the user (auto-creates its profile via the handle_new_user trigger).
-await admin.auth.admin.createUser({ email, email_confirm: true, user_metadata: { full_name: "Test Trekker" } }).catch(() => {});
+await admin.auth.admin.createUser({ email, email_confirm: true }).catch(() => {});
 const { data: list } = await admin.auth.admin.listUsers();
 const user = list.users.find((u) => u.email === email);
 if (!user) { console.error("could not create/find user"); process.exit(1); }
+// Fill the profile so the dashboard shows a name (profiles uses first/last_name).
+await admin.from("profiles").update({ first_name: "Test", last_name: "Trekker", email, phone: "+91 90000 00000" }).eq("id", user.id);
 
 // 2) Pick a real trek + its departures.
 const { data: trek } = await admin.from("treks").select("id,title").eq("status", "published").is("deleted_at", null).limit(1).single();
