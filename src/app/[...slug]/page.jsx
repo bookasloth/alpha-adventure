@@ -1,8 +1,10 @@
 import Link from "next/link";
 
-// Generic placeholder for secondary marketing/legal pages (privacy, terms,
-// safety, corporate, etc.) referenced across the site. Edit freely or replace
-// with a real page by creating app/<route>/page.jsx.
+// Generic placeholder for secondary pages still referenced across the site.
+// Kept so those links resolve, but noindex'd so search engines never index the
+// thin placeholders (avoids soft-404s). Replace with a real route to publish.
+export const metadata = { robots: { index: false, follow: true } };
+
 export default function PlaceholderPage({ params }) {
   const slug = Array.isArray(params.slug) ? params.slug : [params.slug];
   const title = slug[slug.length - 1]

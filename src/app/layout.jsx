@@ -4,13 +4,23 @@ import SiteFooter from "@/components/layout/SiteFooter";
 import SiteChrome from "@/components/layout/SiteChrome";
 import TemplateScripts from "@/components/TemplateScripts";
 import { site } from "@/data/site";
+import { SITE_URL } from "@/lib/seo";
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${site.name} — ${site.tagline}`,
     template: `%s | ${site.name}`,
   },
   description: site.description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    title: `${site.name} — ${site.tagline}`,
+    description: site.description,
+    url: SITE_URL,
+  },
 };
 
 export const viewport = {
