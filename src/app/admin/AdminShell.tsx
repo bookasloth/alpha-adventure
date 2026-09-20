@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RevenueArea, StatusDonut, TopTreksBar } from "./Charts";
 
 /* ─────────────────────────── nav ─────────────────────────── */
 const NAV = [
@@ -77,11 +78,6 @@ const PAYMENTS = [
   { id: "pay_3Lq8", ref: "AA-9F2P", method: "UPI", amount: 799, when: "23 Sep", status: "pending" },
   { id: "pay_1Zt4", ref: "AA-1D6Q", method: "Card", amount: 2598, when: "22 Sep", status: "refunded" },
 ];
-const REVENUE = [
-  { m: "Apr", v: 42 }, { m: "May", v: 55 }, { m: "Jun", v: 38 }, { m: "Jul", v: 61 },
-  { m: "Aug", v: 72 }, { m: "Sep", v: 85 },
-];
-
 const badgeFor = (s: string): "success" | "warning" | "danger" | "neutral" | "brand" => (
   ["confirmed", "completed", "captured", "published", "open", "replied"].includes(s) ? "success"
     : ["pending_payment", "pending", "new", "draft"].includes(s) ? "warning"
@@ -201,7 +197,6 @@ function Kpi({ label, value, delta, up = true, icon: Icon }: any) {
 }
 
 function Overview() {
-  const max = Math.max(...REVENUE.map((r) => r.v));
   return (
     <div>
       <PageHead title="Dashboard" sub="Snapshot of bookings, revenue and departures." />
@@ -215,16 +210,18 @@ function Overview() {
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Revenue — last 6 months</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex h-48 items-end gap-3">
-              {REVENUE.map((r) => (
-                <div key={r.m} className="flex flex-1 flex-col items-center gap-2">
-                  <div className="w-full rounded-t-md bg-primary/80 transition-all hover:bg-primary" style={{ height: `${(r.v / max) * 100}%` }} />
-                  <span className="text-xs text-gray-400">{r.m}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+          <CardContent className="pt-0"><RevenueArea /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Bookings by status</CardTitle></CardHeader>
+          <CardContent className="pt-0"><StatusDonut /></CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle>Top treks by bookings</CardTitle></CardHeader>
+          <CardContent className="pt-0"><TopTreksBar /></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Upcoming departures</CardTitle></CardHeader>
