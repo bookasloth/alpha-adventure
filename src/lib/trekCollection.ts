@@ -1,4 +1,4 @@
-import { publicClient, toSlug } from "./seo";
+import { isPublicSupabaseConfigured, publicClient, toSlug } from "./seo";
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const DIFFS = new Set(["beginner", "moderate", "difficult"]);
@@ -19,6 +19,7 @@ function toCard(t: any) {
 // Resolve a /treks/<slug> that isn't a trek: is it a state or difficulty
 // collection? Returns the listing, or null (→ 404).
 export async function getCollection(slug: string) {
+  if (!isPublicSupabaseConfigured) return null;
   const { data } = await publicClient()
     .from("treks")
     .select("slug,title,location,hero_image,base_price,duration_days,difficulty,state,region")

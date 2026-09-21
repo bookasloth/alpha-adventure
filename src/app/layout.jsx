@@ -2,6 +2,7 @@ import "./globals.css";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteChrome from "@/components/layout/SiteChrome";
+import MagicCursor from "@/components/layout/MagicCursor";
 import TemplateScripts from "@/components/TemplateScripts";
 import { site } from "@/data/site";
 import { SITE_URL } from "@/lib/seo";
@@ -54,9 +55,7 @@ export default function RootLayout({ children }) {
         ))}
       </head>
       <body className="tt-magic-cursor">
-        <div id="magic-cursor">
-          <div id="ball"></div>
-        </div>
+        <MagicCursor />
         <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>
           {children}
         </SiteChrome>
