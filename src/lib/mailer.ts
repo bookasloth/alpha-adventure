@@ -15,7 +15,21 @@ let cached: Transporter | null = null;
 function transport(): Transporter | null {
   if (cached) return cached;
   if (!host || !user || !pass) return null;
-  cached = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+  cached = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+    // Reuse the SMTP connection across sends on a warm instance (skips the
+    // ~1-4s TLS handshake per email). Timeouts stop a slow/dead SMTP server
+    // from hanging the request. ponytail: pool won't persist across serverless
+    // cold starts — the login optimistic-send is what covers that path.
+    pool: true,
+    maxConnections: 3,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 15000,
+  });
   return cached;
 }
 
