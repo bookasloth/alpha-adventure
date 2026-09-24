@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RevenueArea, StatusDonut, TopTreksBar } from "./Charts";
 import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
+import type { AdminData } from "./data";
 
 /* ─────────────────────────── types ─────────────────────────── */
 type Booking = { ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
@@ -41,6 +42,13 @@ type AdminActions = {
   setSearch: React.Dispatch<React.SetStateAction<string>>;
   notifs: { id: number; text: string; when: string }[];
   setNotifs: React.Dispatch<React.SetStateAction<{ id: number; text: string; when: string }[]>>;
+  // Real Supabase-backed, read-only slices (kept separate from the editable
+  // mock state above, which the add-modals mutate locally).
+  kpis: AdminData["kpis"];
+  charts: AdminData["charts"];
+  leads: AdminData["leadRows"];
+  customers: AdminData["customerRows"];
+  payments: AdminData["paymentRows"];
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -70,43 +78,13 @@ const PAGE_ICON: Record<string, any> = {
 
 /* ─────────────────────────── mock data ─────────────────────────── */
 const rupee = (n: number) => "₹" + n.toLocaleString("en-IN");
-const BOOKINGS: Booking[] = [
-  { ref: "AA-2K5J", customer: "Aditya Rao", trek: "Harishchandragad Trek", date: "26 Sep 2026", pax: 3, amount: 3597, status: "confirmed" },
-  { ref: "AA-9F2P", customer: "Sneha Kulkarni", trek: "Kalsubai Peak Trek", date: "12 Oct 2026", pax: 1, amount: 799, status: "pending_payment" },
-  { ref: "AA-7C1X", customer: "Rohit Mehta", trek: "Spiti Valley", date: "02 Nov 2026", pax: 2, amount: 51998, status: "confirmed" },
-  { ref: "AA-4B8M", customer: "Priya Nair", trek: "Seven Sisters Hill Trek", date: "18 Oct 2026", pax: 4, amount: 4796, status: "completed" },
-  { ref: "AA-1D6Q", customer: "Karan Shah", trek: "Harishchandragad Trek", date: "26 Sep 2026", pax: 2, amount: 2598, status: "cancelled" },
-  { ref: "AA-3H9Z", customer: "Meera Iyer", trek: "Kalsubai Peak Trek", date: "12 Oct 2026", pax: 5, amount: 3995, status: "confirmed" },
-];
+// Treks are not DB-backed yet (no price column) — catalog CRUD is a later phase.
 const TREKS: Trek[] = [
   { title: "Harishchandragad Trek", region: "Sahyadri", difficulty: "moderate", price: 1299, departures: 6, status: "published" },
   { title: "Kalsubai Peak Trek", region: "Sahyadri", difficulty: "beginner", price: 799, departures: 8, status: "published" },
   { title: "Seven Sisters Hill Trek", region: "Sahyadri", difficulty: "moderate", price: 1199, departures: 4, status: "published" },
   { title: "Spiti Valley", region: "Himalayan", difficulty: "difficult", price: 25999, departures: 2, status: "published" },
   { title: "Rajgad Fort Trek", region: "Sahyadri", difficulty: "beginner", price: 899, departures: 0, status: "draft" },
-];
-const DEPARTURES: Departure[] = [
-  { trek: "Harishchandragad Trek", start: "26 Sep 2026", end: "27 Sep 2026", capacity: 30, booked: 22, status: "open" },
-  { trek: "Kalsubai Peak Trek", start: "12 Oct 2026", end: "12 Oct 2026", capacity: 30, booked: 30, status: "full" },
-  { trek: "Spiti Valley", start: "02 Nov 2026", end: "09 Nov 2026", capacity: 16, booked: 9, status: "open" },
-  { trek: "Seven Sisters Hill Trek", start: "18 Oct 2026", end: "19 Oct 2026", capacity: 25, booked: 4, status: "open" },
-];
-const CUSTOMERS = [
-  { name: "Aditya Rao", email: "aditya@example.com", bookings: 3, spent: 9591, joined: "Jan 2026" },
-  { name: "Sneha Kulkarni", email: "sneha@example.com", bookings: 1, spent: 799, joined: "Mar 2026" },
-  { name: "Rohit Mehta", email: "rohit@example.com", bookings: 5, spent: 71997, joined: "Nov 2025" },
-  { name: "Priya Nair", email: "priya@example.com", bookings: 2, spent: 4796, joined: "Feb 2026" },
-];
-const LEADS = [
-  { name: "Vikram Sethi", email: "vikram@example.com", subject: "Corporate offsite for 40", when: "2h ago", status: "new" },
-  { name: "Anjali Desai", email: "anjali@example.com", subject: "Custom Himachal itinerary", when: "5h ago", status: "new" },
-  { name: "Farhan Q.", email: "farhan@example.com", subject: "Group discount — Kalsubai", when: "1d ago", status: "replied" },
-];
-const PAYMENTS = [
-  { id: "pay_9Ha2", ref: "AA-2K5J", method: "UPI", amount: 3597, when: "26 Sep", status: "captured" },
-  { id: "pay_7Kx1", ref: "AA-7C1X", method: "Card", amount: 51998, when: "24 Sep", status: "captured" },
-  { id: "pay_3Lq8", ref: "AA-9F2P", method: "UPI", amount: 799, when: "23 Sep", status: "pending" },
-  { id: "pay_1Zt4", ref: "AA-1D6Q", method: "Card", amount: 2598, when: "22 Sep", status: "refunded" },
 ];
 const NOTIFS = [
   { id: 1, text: "New booking AA-9F2P (Sneha Kulkarni)", when: "2m" },
@@ -115,9 +93,9 @@ const NOTIFS = [
 ];
 
 const badgeFor = (s: string): "success" | "warning" | "danger" | "neutral" | "brand" => (
-  ["confirmed", "completed", "captured", "published", "open", "replied"].includes(s) ? "success"
-    : ["pending_payment", "pending", "new", "draft"].includes(s) ? "warning"
-    : ["cancelled", "refunded", "full"].includes(s) ? "danger" : "neutral"
+  ["confirmed", "completed", "deposit_paid", "paid", "captured", "published", "open", "scheduled", "replied"].includes(s) ? "success"
+    : ["pending_payment", "pending_auth", "pending", "new", "draft"].includes(s) ? "warning"
+    : ["cancelled", "refunded", "failed", "expired", "full"].includes(s) ? "danger" : "neutral"
 );
 const label = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const S = ({ s }: { s: string }) => <Badge variant={badgeFor(s)}>{label(s)}</Badge>;
@@ -131,13 +109,15 @@ const genRef = (used: string[]) => {
 };
 
 /* ─────────────────────────── shell ─────────────────────────── */
-export default function AdminShell() {
+export default function AdminShell({ data }: { data: AdminData }) {
   const [section, setSection] = useState("overview");
   const [item, setItem] = useState("dashboard");
-  const [bookings, setBookings] = useState<Booking[]>(BOOKINGS);
+  // Seed editable state from real data (falls back to mock if a slice is empty
+  // only for treks, which isn't DB-backed yet).
+  const [bookings, setBookings] = useState<Booking[]>(data.bookingRows);
   const [gallery, setGallery] = useState<GalleryImage[]>(seedGallery());
   const [treks, setTreks] = useState<Trek[]>(TREKS);
-  const [departures, setDepartures] = useState<Departure[]>(DEPARTURES);
+  const [departures, setDepartures] = useState<Departure[]>(data.departureRows);
   const [notifs, setNotifs] = useState(NOTIFS);
   const [bellOpen, setBellOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -168,7 +148,7 @@ export default function AdminShell() {
 
   const exportCsv = () => {
     const head = "Payment ID,Booking,Method,Amount,Date,Status";
-    const lines = PAYMENTS.map((p) => [p.id, p.ref, p.method, p.amount, p.when, p.status].join(","));
+    const lines = data.paymentRows.map((p) => [p.id, p.ref, p.method, p.amount, p.when, p.status].join(","));
     const blob = new Blob([[head, ...lines].join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -199,6 +179,11 @@ export default function AdminShell() {
     setSearch,
     notifs,
     setNotifs,
+    kpis: data.kpis,
+    charts: data.charts,
+    leads: data.leadRows,
+    customers: data.customerRows,
+    payments: data.paymentRows,
   };
 
   return (
@@ -308,10 +293,10 @@ function Page({ item, actions }: { item: string; actions: AdminActions }) {
     case "dashboard": return <Overview actions={actions} />;
     case "all-bookings": return <BookingsPage actions={actions} />;
     case "departures": return <DeparturesPage actions={actions} />;
-    case "leads": return <LeadsPage />;
+    case "leads": return <LeadsPage actions={actions} />;
     case "treks": return <TreksPage actions={actions} />;
     case "gallery": return <GalleryPage items={actions.gallery} setItems={actions.setGallery} notify={actions.notify} />;
-    case "all-customers": return <CustomersPage />;
+    case "all-customers": return <CustomersPage actions={actions} />;
     case "payments": return <PaymentsPage actions={actions} />;
     case "s-general": return <SettingsGeneral notify={actions.notify} />;
     default: return <Stub title={label(item.replace(/^s-/, ""))} notify={actions.notify} />;
@@ -340,32 +325,35 @@ function Kpi({ label, value, delta, up = true, icon: Icon }: any) {
   );
 }
 
+const monthLabel = new Date().toLocaleDateString("en-IN", { month: "short" });
+
 function Overview({ actions }: { actions: AdminActions }) {
+  const { kpis, charts } = actions;
   return (
     <div>
       <PageHead title="Dashboard" sub="Snapshot of bookings, revenue and departures." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Revenue (Sep)" value={rupee(285400)} delta="+18%" up icon={Banknote} />
-        <Kpi label="Bookings" value="128" delta="+9%" up icon={Ticket} />
-        <Kpi label="Upcoming departures" value="14" delta="-2" up={false} icon={CalendarRange} />
-        <Kpi label="New customers" value="37" delta="+24%" up icon={Users} />
+        <Kpi label={`Revenue (${monthLabel})`} value={rupee(kpis.revenueMonth)} icon={Banknote} />
+        <Kpi label="Bookings" value={String(kpis.bookings)} icon={Ticket} />
+        <Kpi label="Upcoming departures" value={String(kpis.upcomingDepartures)} icon={CalendarRange} />
+        <Kpi label="New customers" value={String(kpis.newCustomers)} icon={Users} />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Revenue analytics</CardTitle></CardHeader>
-          <CardContent className="pt-0"><RevenueArea /></CardContent>
+          <CardContent className="pt-0"><RevenueArea sixMonth={charts.revenue} /></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Bookings by status</CardTitle></CardHeader>
-          <CardContent className="pt-0"><StatusDonut /></CardContent>
+          <CardContent className="pt-0"><StatusDonut data={charts.status} /></CardContent>
         </Card>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle>Top treks by bookings</CardTitle></CardHeader>
-          <CardContent className="pt-0"><TopTreksBar /></CardContent>
+          <CardContent className="pt-0"><TopTreksBar data={charts.topTreks} /></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Upcoming departures</CardTitle></CardHeader>
@@ -597,7 +585,8 @@ function DeparturesPage({ actions }: { actions: AdminActions }) {
   );
 }
 
-function LeadsPage() {
+function LeadsPage({ actions }: { actions: AdminActions }) {
+  const leads = actions.leads;
   return (
     <div>
       <PageHead title="Leads" sub="Enquiries from the contact form and WhatsApp." />
@@ -605,7 +594,10 @@ function LeadsPage() {
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Subject</TableHead><TableHead>Received</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
           <TableBody>
-            {LEADS.map((l, i) => (
+            {leads.length === 0 && (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No leads yet.</TableCell></TableRow>
+            )}
+            {leads.map((l, i) => (
               <TableRow key={i}>
                 <TableCell className="font-medium text-ink">{l.name}</TableCell>
                 <TableCell className="text-gray-500">{l.email}</TableCell>
@@ -655,7 +647,8 @@ function TreksPage({ actions }: { actions: AdminActions }) {
   );
 }
 
-function CustomersPage() {
+function CustomersPage({ actions }: { actions: AdminActions }) {
+  const customers = actions.customers;
   return (
     <div>
       <PageHead title="Customers" sub="Everyone who's booked or signed up." />
@@ -663,7 +656,10 @@ function CustomersPage() {
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Bookings</TableHead><TableHead>Total spent</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader>
           <TableBody>
-            {CUSTOMERS.map((c) => (
+            {customers.length === 0 && (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No customers yet.</TableCell></TableRow>
+            )}
+            {customers.map((c) => (
               <TableRow key={c.email}>
                 <TableCell className="flex items-center gap-2 font-medium text-ink">
                   <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">{c.name[0]}</span>{c.name}
@@ -682,19 +678,27 @@ function CustomersPage() {
 }
 
 function PaymentsPage({ actions }: { actions: AdminActions }) {
+  const pays = actions.payments;
+  const sum = (pred: (s: string) => boolean) => pays.filter((p) => pred(p.status)).reduce((s, p) => s + p.amount, 0);
+  const captured = sum((s) => ["captured", "paid", "success"].includes(s));
+  const pending = sum((s) => ["pending", "processing"].includes(s));
+  const refunded = sum((s) => s === "refunded");
   return (
     <div>
       <PageHead title="Payments" sub="Captured, pending and refunded transactions." action={<Button variant="secondary" size="sm" onClick={actions.exportCsv}>Export CSV</Button>} />
       <div className="mb-4 grid gap-4 sm:grid-cols-3">
-        <Kpi label="Captured (Sep)" value={rupee(285400)} icon={CreditCard} />
-        <Kpi label="Pending" value={rupee(799)} icon={RotateCcw} />
-        <Kpi label="Refunded" value={rupee(2598)} icon={Banknote} />
+        <Kpi label="Captured" value={rupee(captured)} icon={CreditCard} />
+        <Kpi label="Pending" value={rupee(pending)} icon={RotateCcw} />
+        <Kpi label="Refunded" value={rupee(refunded)} icon={Banknote} />
       </div>
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Payment ID</TableHead><TableHead>Booking</TableHead><TableHead>Method</TableHead><TableHead>Amount</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
           <TableBody>
-            {PAYMENTS.map((p) => (
+            {pays.length === 0 && (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="py-10 text-center text-gray-400">No payments yet.</TableCell></TableRow>
+            )}
+            {pays.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-mono text-xs text-gray-500">{p.id}</TableCell>
                 <TableCell className="font-mono text-xs">{p.ref}</TableCell>

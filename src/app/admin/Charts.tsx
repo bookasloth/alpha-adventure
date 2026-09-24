@@ -46,9 +46,11 @@ const RANGE_DATA: Record<RangeKey, { m: string; revenue: number }[]> = {
   "12m": monthSeries(MONTHS_12, 200000),
 };
 
-export function RevenueArea() {
+export function RevenueArea({ sixMonth }: { sixMonth?: { m: string; revenue: number }[] }) {
   const [range, setRange] = useState<RangeKey>("6m");
-  const data = RANGE_DATA[range];
+  // Real 6-month series when provided; other ranges stay illustrative (no
+  // daily/12-month aggregation wired yet).
+  const data = range === "6m" && sixMonth?.length ? sixMonth : RANGE_DATA[range];
   return (
     <div className="space-y-4">
       <div className="flex w-fit flex-wrap gap-1 rounded-lg border border-line bg-white p-1">
@@ -91,15 +93,15 @@ const STATUS_DATA = [
   { name: "Completed", value: 24 }, { name: "Cancelled", value: 14 },
 ];
 
-export function StatusDonut() {
-  const total = STATUS_DATA.reduce((s, d) => s + d.value, 0);
+export function StatusDonut({ data = STATUS_DATA }: { data?: { name: string; value: number }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
   return (
     <ResponsiveContainer width="100%" height={220}>
       <PieChart>
-        <Pie data={STATUS_DATA} dataKey="value" nameKey="name" innerRadius={52} outerRadius={78} paddingAngle={2}
-          label={({ value }) => `${Math.round((value / total) * 100)}%`} labelLine={false}
+        <Pie data={data} dataKey="value" nameKey="name" innerRadius={52} outerRadius={78} paddingAngle={2}
+          label={({ value }) => `${Math.round(((value as number) / total) * 100)}%`} labelLine={false}
           stroke="#fff" strokeWidth={2} style={{ fontSize: 11, fontWeight: 600 }}>
-          {STATUS_DATA.map((d) => <Cell key={d.name} fill={STATUS[d.name as keyof typeof STATUS]} />)}
+          {data.map((d) => <Cell key={d.name} fill={STATUS[d.name as keyof typeof STATUS]} />)}
         </Pie>
         <Legend verticalAlign="bottom" height={28} iconType="circle" iconSize={9}
           formatter={(v) => <span className="text-xs text-gray-600">{v}</span>} />
@@ -110,10 +112,10 @@ export function StatusDonut() {
   );
 }
 
-export function TopTreksBar() {
+export function TopTreksBar({ data = TOP_TREKS }: { data?: { trek: string; bookings: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={TOP_TREKS} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+      <BarChart data={data.length ? data : TOP_TREKS} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} stroke={GRID} />
         <XAxis type="number" tick={{ fill: AXIS, fontSize: 12 }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="trek" width={98} tick={{ fill: "#374151", fontSize: 12 }} axisLine={false} tickLine={false} />

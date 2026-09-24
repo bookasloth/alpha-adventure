@@ -1,8 +1,11 @@
 import AdminShell from "./AdminShell";
+import { getAdminData } from "./data";
 
-// Admin UI mockup (not wired). Full-screen, noindex.
+// Admin dashboard. Server-fetched, admin/staff-gated (see data.ts). Full-screen, noindex.
 export const metadata = { title: "Admin", robots: { index: false, follow: false } };
+export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
-  return <AdminShell />;
+export default async function AdminPage() {
+  const data = await getAdminData(); // redirects if not admin/staff
+  return <AdminShell data={data} />;
 }
