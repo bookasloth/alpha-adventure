@@ -5,8 +5,9 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, otpSchema } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "@/domain/booking/service";
-import { sendBookingPendingEmail, sendBookingConfirmedEmail } from "@/lib/email";
-import { mintAndSendOtp } from "@/lib/otp";
+import { sendBookingPendingEmail, sendBookingConfirmedEmail, sendOtpEmail } from "@/lib/email";
+import { mintOtp } from "@/lib/otp";
+import { background } from "@/lib/after";
 
 const DRAFT_COOKIE = "aa_draft";
 
@@ -58,7 +59,8 @@ export async function sendBookingOtp(bookingId: string, rawEmail: unknown, token
   await admin.from("bookings").update({ contact_email: parsed.data, status: "pending_auth" }).eq("id", bookingId);
 
   try {
-    await mintAndSendOtp(admin, parsed.data);
+    const code = await mintOtp(admin, parsed.data);
+    background(sendOtpEmail(parsed.data, code)); // don't block on SMTP/API
   } catch {
     return { ok: false, error: "Could not send the code. Please try again." };
   }
@@ -92,14 +94,18 @@ export async function verifyBookingOtp(
     const admin = createAdminClient();
     const finalized = await linkAndFinalize(admin, bookingId, draftToken, auth.user.id);
     cookies().delete(DRAFT_COOKIE);
-    await sendBookingPendingEmail({
-      to: email.data,
-      reference: finalized.reference,
-      trekTitle: finalized.trek_title ?? "your trek",
-      departureDate: finalized.departure_date,
-      seats: finalized.adults + finalized.children,
-      total: finalized.grand_total,
-    });
+    // Non-blocking: a "we've held your spot" notice must not delay confirming
+    // the reservation, and a mail failure must not fail a finalized booking.
+    background(
+      sendBookingPendingEmail({
+        to: email.data,
+        reference: finalized.reference,
+        trekTitle: finalized.trek_title ?? "your trek",
+        departureDate: finalized.departure_date,
+        seats: finalized.adults + finalized.children,
+        total: finalized.grand_total,
+      }),
+    );
     return { ok: true, reference: finalized.reference };
   } catch (e) {
     const msg = (e as Error).message.toLowerCase().includes("seat")
@@ -113,7 +119,8 @@ export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
   const parsed = emailSchema.safeParse(rawEmail);
   if (!parsed.success) return { ok: false, error: "Invalid email." };
   try {
-    await mintAndSendOtp(createAdminClient(), parsed.data);
+    const code = await mintOtp(createAdminClient(), parsed.data);
+    background(sendOtpEmail(parsed.data, code));
   } catch {
     return { ok: false, error: "Could not resend the code." };
   }
@@ -140,14 +147,16 @@ export async function payMockBooking(bookingId: string): Promise<Result<{ refere
   try {
     const confirmed = await confirmMockPayment(admin, bookingId);
     if (b.contact_email) {
-      await sendBookingConfirmedEmail({
-        to: b.contact_email,
-        reference: confirmed.reference,
-        trekTitle: confirmed.trek_title ?? "your trek",
-        departureDate: confirmed.departure_date,
-        seats: confirmed.adults + confirmed.children,
-        total: confirmed.grand_total,
-      });
+      background(
+        sendBookingConfirmedEmail({
+          to: b.contact_email,
+          reference: confirmed.reference,
+          trekTitle: confirmed.trek_title ?? "your trek",
+          departureDate: confirmed.departure_date,
+          seats: confirmed.adults + confirmed.children,
+          total: confirmed.grand_total,
+        }),
+      );
     }
     return { ok: true, reference: confirmed.reference };
   } catch (e) {

@@ -1,6 +1,5 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendOtpEmail } from "./email";
 
 // Mint an email OTP without Supabase's own (unreliable) email delivery: have
 // Supabase generate the code (generateLink for an existing user), and only
@@ -22,11 +21,4 @@ async function tryGenerate(admin: SupabaseClient, email: string): Promise<string
   const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (error) return null;
   return data?.properties?.email_otp ?? null;
-}
-
-// Mint + send, awaiting delivery. Used where the caller wants the send to
-// complete (or fail) before returning — e.g. booking flows.
-export async function mintAndSendOtp(admin: SupabaseClient, email: string) {
-  const code = await mintOtp(admin, email);
-  await sendOtpEmail(email, code);
 }
