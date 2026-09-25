@@ -13,7 +13,8 @@ export type AdminData = Awaited<ReturnType<typeof getAdminData>>;
 // Gate: must be signed in AND hold an admin/staff role. Uses the service-role
 // client for the role lookup so it can't be spoofed by a missing RLS policy;
 // everything downstream is then read with service role behind this gate.
-async function requireAdmin() {
+// Exported so admin write actions (e.g. create trek) reuse the same gate.
+export async function requireAdmin() {
   const supabase = createClient(cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/admin");

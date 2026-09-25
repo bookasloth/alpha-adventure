@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   LayoutDashboard, CalendarRange, Inbox, Mountain, Package, FileText, Image as ImageIcon,
@@ -614,7 +615,7 @@ function LeadsPage({ actions }: { actions: AdminActions }) {
 }
 
 function TreksPage({ actions }: { actions: AdminActions }) {
-  const { treks, setTreks, notify, openModal } = actions;
+  const { treks, setTreks, notify } = actions;
   const rowMenu = (t: Trek): MenuItem[] => [
     { label: "Duplicate", onClick: () => { setTreks((prev: Trek[]) => [{ ...t, title: `${t.title} (copy)`, status: "draft" }, ...prev]); notify(`Duplicated "${t.title}"`); } },
     {
@@ -624,7 +625,7 @@ function TreksPage({ actions }: { actions: AdminActions }) {
   ];
   return (
     <div>
-      <PageHead title="Treks" sub="Your catalogue — pricing, difficulty and publish state." action={<Button size="sm" onClick={() => openModal({ type: "trek" })}><Plus size={16} /> Add trek</Button>} />
+      <PageHead title="Treks" sub="Your catalogue — pricing, difficulty and publish state." action={<Button asChild size="sm"><Link href="/admin/treks/new"><Plus size={16} /> Add trek</Link></Button>} />
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Trek</TableHead><TableHead>Region</TableHead><TableHead>Difficulty</TableHead><TableHead>Price</TableHead><TableHead>Departures</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
