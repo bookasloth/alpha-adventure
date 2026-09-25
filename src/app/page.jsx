@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { getHomeTreks, getTopTreks } from "@/lib/trekListing";
 import { getTours } from "@/lib/tourListing";
+import { getTestimonials } from "@/lib/contentListing";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +34,30 @@ function sliceInner(html, anchor, openTag) {
 const PKG = sliceInner(homeHtml, "swiper home2-package-slider", '<div class="swiper-wrapper">');
 const DEST = sliceInner(homeHtml, "swiper home2-destination-slider", '<div class="swiper-wrapper">');
 const TOURS = sliceInner(homeHtml, "home2-oneday-trip-section", '<div class="row g-4 mb-40">');
+const TESTI = sliceInner(homeHtml, "home1-testimonial-slider", '<div class="swiper-wrapper">');
 
-// Assemble the static fragments between the three (document-ordered) regions.
-const OK = PKG && DEST && TOURS && PKG.innerEnd <= DEST.innerStart && DEST.innerEnd <= TOURS.innerStart;
-const PARTS = OK
-  ? {
-      a: homeHtml.slice(0, PKG.innerStart),
-      b: homeHtml.slice(PKG.innerEnd, DEST.innerStart),
-      c: homeHtml.slice(DEST.innerEnd, TOURS.innerStart),
-      d: homeHtml.slice(TOURS.innerEnd),
-    }
-  : null;
+// Stitch the static HTML with per-region generated cards. `regions` is
+// {slice, key} in document order; each key selects the built cards at render.
+const REGIONS = [
+  { slice: PKG, key: "popular" },
+  { slice: DEST, key: "top" },
+  { slice: TOURS, key: "tours" },
+  { slice: TESTI, key: "testimonials" },
+].filter((r) => r.slice);
+// Only stitch if every region was found and they don't overlap (document order).
+const ORDERED =
+  REGIONS.length === 4 &&
+  REGIONS.every((r, i) => i === 0 || REGIONS[i - 1].slice.innerEnd <= r.slice.innerStart);
+
+function stitch(html, cardsByKey) {
+  let out = "";
+  let cursor = 0;
+  for (const r of REGIONS) {
+    out += html.slice(cursor, r.slice.innerStart) + (cardsByKey[r.key] ?? "");
+    cursor = r.slice.innerEnd;
+  }
+  return out + html.slice(cursor);
+}
 
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const rupee = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
@@ -104,16 +118,32 @@ function tourCard(t) {
   </div>`;
 }
 
+function testimonialCard(t) {
+  const full = Math.max(0, Math.min(5, Math.round(t.rating || 5)));
+  const stars = Array.from({ length: 5 }, (_, i) => (i < full ? "<li>&#9733;</li>" : "<li>&#9734;</li>")).join("");
+  return `<div class="swiper-slide"><div class="testimonial-card three">
+    <ul class="rating-area">${stars}</ul>
+    <p>${esc(t.body)}</p>
+    <div class="author-area">
+      <div class="author-img"><img src="${esc(t.avatar_url)}" alt="${esc(t.author)}" onerror="this.onerror=null;this.src='${FALLBACK}';"></div>
+      <div class="author-info"><h5>${esc(t.author)}</h5><span>${esc(t.role)}</span></div>
+    </div>
+  </div></div>`;
+}
+
 export default async function HomePage() {
   let html = homeHtml;
-  if (PARTS) {
-    const [popular, top, tours] = await Promise.all([getHomeTreks(8), getTopTreks(7), getTours()]);
-    if (popular.length && top.length && tours.length) {
-      html =
-        PARTS.a + popular.map(packageCard).join("") +
-        PARTS.b + top.map(destinationCard).join("") +
-        PARTS.c + tours.map(tourCard).join("") +
-        PARTS.d;
+  if (ORDERED) {
+    const [popular, top, tours, testimonials] = await Promise.all([
+      getHomeTreks(8), getTopTreks(7), getTours(), getTestimonials(),
+    ]);
+    if (popular.length && top.length && tours.length && testimonials.length) {
+      html = stitch(html, {
+        popular: popular.map(packageCard).join(""),
+        top: top.map(destinationCard).join(""),
+        tours: tours.map(tourCard).join(""),
+        testimonials: testimonials.map(testimonialCard).join(""),
+      });
     }
   }
   return <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />;
