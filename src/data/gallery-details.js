@@ -7,7 +7,7 @@
 // are visible by default; the rest start hidden ("View All Photos" reveals them).
 // ===========================================================================
 
-const SEASONS = [
+export const SEASONS = [
   {
     id: "summer",
     label: "Summer",
