@@ -42,7 +42,7 @@ function ago(iso: string) {
 export async function getAdminData() {
   const { admin } = await requireAdmin();
 
-  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes] = await Promise.all([
+  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes] = await Promise.all([
     admin.from("bookings")
       .select("id,reference,contact_name,contact_email,user_id,trek_title,departure_date,seats,grand_total,status,created_at")
       .order("created_at", { ascending: false }),
@@ -59,6 +59,8 @@ export async function getAdminData() {
       .order("start_date", { ascending: true }).limit(200),
     admin.from("treks")
       .select("id,title").is("deleted_at", null).order("title"),
+    admin.from("tours")
+      .select("slug,title,type,duration,base_price,status,featured").is("deleted_at", null).order("sort").order("title"),
   ]);
 
   const bookings = bookingsRes.data ?? [];
@@ -67,6 +69,15 @@ export async function getAdminData() {
   const profiles = profilesRes.data ?? [];
   const departures = departuresRes.data ?? [];
   const trekOptions = (treksRes.data ?? []) as { id: string; title: string }[];
+  const tourRows = (toursRes.data ?? []).map((t) => ({
+    slug: t.slug,
+    title: t.title,
+    type: t.type ?? "—",
+    duration: t.duration ?? "—",
+    price: rupees(t.base_price ?? 0),
+    status: t.status,
+    featured: !!t.featured,
+  }));
 
   // Booking ref by id, for the payments table.
   const refById = new Map(bookings.map((b) => [b.id, b.reference]));
@@ -199,6 +210,7 @@ export async function getAdminData() {
     departureRows,
     customerRows,
     trekOptions,
+    tourRows,
     charts: { revenue: revenueSeries, status: statusSeries, topTreks },
   };
 }

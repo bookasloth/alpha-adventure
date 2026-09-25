@@ -56,6 +56,7 @@ type AdminActions = {
   leads: AdminData["leadRows"];
   customers: AdminData["customerRows"];
   payments: AdminData["paymentRows"];
+  tours: AdminData["tourRows"];
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -201,6 +202,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
     leads: data.leadRows,
     customers: data.customerRows,
     payments: data.paymentRows,
+    tours: data.tourRows,
   };
 
   return (
@@ -312,6 +314,7 @@ function Page({ item, actions }: { item: string; actions: AdminActions }) {
     case "departures": return <DeparturesPage actions={actions} />;
     case "leads": return <LeadsPage actions={actions} />;
     case "treks": return <TreksPage actions={actions} />;
+    case "tours": return <ToursPage actions={actions} />;
     case "gallery": return <GalleryPage items={actions.gallery} setItems={actions.setGallery} notify={actions.notify} />;
     case "all-customers": return <CustomersPage actions={actions} />;
     case "payments": return <PaymentsPage actions={actions} />;
@@ -655,6 +658,34 @@ function TreksPage({ actions }: { actions: AdminActions }) {
                 <TableCell>{t.departures}</TableCell>
                 <TableCell><S s={t.status} /></TableCell>
                 <TableCell className="text-right"><RowMenu options={rowMenu(t)} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function ToursPage({ actions }: { actions: AdminActions }) {
+  const tours = actions.tours;
+  return (
+    <div>
+      <PageHead title="Tours" sub="Domestic & international tour packages." action={<Button asChild size="sm"><Link href="/admin/tours/new"><Plus size={16} /> Add tour</Link></Button>} />
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Tour</TableHead><TableHead>Type</TableHead><TableHead>Duration</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {tours.length === 0 && (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No tours yet — add one.</TableCell></TableRow>
+            )}
+            {tours.map((t) => (
+              <TableRow key={t.slug}>
+                <TableCell className="font-medium text-ink">{t.title}</TableCell>
+                <TableCell>{t.type}</TableCell>
+                <TableCell>{t.duration}</TableCell>
+                <TableCell className="font-semibold text-ink">{rupee(t.price)}</TableCell>
+                <TableCell><S s={t.status} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
