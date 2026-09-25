@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { updateTrek } from "./actions";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
+
+type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
+type Day = { title: string; description: string; image: string };
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -19,11 +22,26 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
+function ListRepeater({ items, setItems, placeholder }: { items: string[]; setItems: (v: string[]) => void; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      {items.map((v, i) => (
+        <div key={i} className="flex gap-2">
+          <input className={inp} value={v} placeholder={placeholder} onChange={(e) => setItems(items.map((x, j) => (j === i ? e.target.value : x)))} />
+          <button type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-line text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
+        </div>
+      ))}
+      <button type="button" onClick={() => setItems([...items, ""])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add row</button>
+    </div>
+  );
+}
+
 export type TrekEditInitial = {
   slug: string; title: string; summary: string; overview: string; hero_image: string;
   price: string; difficulty: string; status: string; group: string; tags: string; badge: string;
   region: string; location: string; state: string; duration_days: string; altitude: string;
   base_camp: string; best_season: string; group_size: string; featured: boolean;
+  inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[];
 };
 
 export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) {
@@ -32,12 +50,17 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState(initial);
   const set = (k: keyof TrekEditInitial, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
+  const [inclusions, setInclusions] = useState<string[]>(initial.inclusions.length ? initial.inclusions : [""]);
+  const [exclusions, setExclusions] = useState<string[]>(initial.exclusions.length ? initial.exclusions : [""]);
+  const [packages, setPackages] = useState<Pkg[]>(initial.packages);
+  const [itinerary, setItinerary] = useState<Day[]>(initial.itinerary);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     const clean = (s: string) => s.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
+    const list = (a: string[]) => a.map((x) => x.trim()).filter(Boolean);
     const payload = {
       title: f.title, summary: f.summary, overview: f.overview, hero_image: f.hero_image,
       base_price: f.price, difficulty: f.difficulty, status: f.status,
@@ -46,6 +69,14 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       duration_days: f.duration_days || undefined,
       altitude: f.altitude, base_camp: f.base_camp, best_season: f.best_season, group_size: f.group_size,
       featured: f.featured,
+      inclusions: list(inclusions),
+      exclusions: list(exclusions),
+      packages: packages.filter((p) => p.name.trim()).map((p) => ({
+        name: p.name.trim(), price: p.price, inclusions: clean(p.inclusions), cta_label: p.cta_label.trim() || "Book Now",
+      })),
+      itinerary: itinerary.filter((d) => d.title.trim()).map((d) => ({
+        title: d.title.trim(), description: d.description, image: d.image,
+      })),
     };
     try {
       const r = await updateTrek(initial.slug, payload);
@@ -104,6 +135,51 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
           <Field label="Base camp"><input className={inp} value={f.base_camp} onChange={(e) => set("base_camp", e.target.value)} /></Field>
           <Field label="Best season"><input className={inp} value={f.best_season} onChange={(e) => set("best_season", e.target.value)} /></Field>
           <Field label="Group size"><input className={inp} value={f.group_size} onChange={(e) => set("group_size", e.target.value)} /></Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Inclusions & exclusions</CardTitle></CardHeader>
+        <CardContent className="grid gap-6 sm:grid-cols-2">
+          <div><p className="mb-2 text-sm font-semibold text-ink">What's included</p><ListRepeater items={inclusions} setItems={setInclusions} placeholder="Return transport" /></div>
+          <div><p className="mb-2 text-sm font-semibold text-ink">What's not included</p><ListRepeater items={exclusions} setItems={setExclusions} placeholder="Personal expenses" /></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Itinerary <span className="text-sm font-normal text-gray-400">(day by day)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {itinerary.map((d, i) => (
+            <div key={i} className="rounded-xl border border-line p-4">
+              <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-ink">Day {i + 1}</span>
+                <button type="button" onClick={() => setItinerary(itinerary.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button></div>
+              <div className="space-y-3">
+                <Field label="Title"><input className={inp} value={d.title} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} placeholder="Base to summit" /></Field>
+                <Field label="Description"><textarea className={`${inp} min-h-20`} value={d.description} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} /></Field>
+                <Field label="Image URL" hint="(optional)"><input className={inp} value={d.image} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, image: e.target.value } : x))} placeholder="/assets/img/..." /></Field>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={() => setItinerary([...itinerary, { title: "", description: "", image: "" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add day</button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Pricing packages</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {packages.map((p, i) => (
+            <div key={i} className="rounded-xl border border-line p-4">
+              <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-ink">Package {i + 1}</span>
+                <button type="button" onClick={() => setPackages(packages.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button></div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Name"><input className={inp} value={p.name} onChange={(e) => setPackages(packages.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} /></Field>
+                <Field label="Price" hint="(₹)"><input type="number" min={0} className={inp} value={p.price} onChange={(e) => setPackages(packages.map((x, j) => j === i ? { ...x, price: e.target.value } : x))} /></Field>
+                <Field label="Button label"><input className={inp} value={p.cta_label} onChange={(e) => setPackages(packages.map((x, j) => j === i ? { ...x, cta_label: e.target.value } : x))} /></Field>
+              </div>
+              <div className="mt-3"><Field label="Inclusions" hint="(one per line or comma)"><textarea className={`${inp} min-h-20`} value={p.inclusions} onChange={(e) => setPackages(packages.map((x, j) => j === i ? { ...x, inclusions: e.target.value } : x))} /></Field></div>
+            </div>
+          ))}
+          <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add package</button>
         </CardContent>
       </Card>
 
