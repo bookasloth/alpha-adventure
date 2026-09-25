@@ -22,9 +22,12 @@ import { deleteTour } from "./tours/actions";
 import { deleteTrek } from "./treks/actions";
 import { deleteGalleryAlbum } from "./gallery/actions";
 import { deleteTestimonial } from "./testimonials/actions";
+import { updateDeparture, deleteDeparture } from "./actions";
+import { cancelBooking } from "./bookings/actions";
+import { updateLeadStatus, replyToLead } from "./leads/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
-type Booking = { ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
+type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
 type Trek = { title: string; region: string; difficulty: string; price: number; departures: number; status: string };
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
 type MenuItem = { label: string; onClick: () => void; tone?: "danger" };
@@ -65,6 +68,8 @@ type AdminActions = {
   trekCatalog: AdminData["trekRows"];
   galleryAlbums: AdminData["galleryRows"];
   testimonials: AdminData["testimonialRows"];
+  departureRows: AdminData["departureRows"];
+  refresh: () => void;
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -141,6 +146,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
   const [toast, setToast] = useState<string | null>(null);
   const active = NAV.find((n) => n.key === section)!;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -162,11 +168,8 @@ export default function AdminShell({ data }: { data: AdminData }) {
     const r = await createDeparture(p);
     if (r.ok) {
       const title = data.trekOptions.find((t) => t.id === p.trek_id)?.title ?? "Trek";
-      setDepartures((prev) => [{
-        trek: title, start: p.start_date, end: p.end_date || p.start_date,
-        capacity: Number(p.capacity) || 0, booked: 0, status: p.status,
-      }, ...prev]);
       notify(`Date added to ${title}`);
+      router.refresh();
     }
     return r;
   };
@@ -214,6 +217,8 @@ export default function AdminShell({ data }: { data: AdminData }) {
     trekCatalog: data.trekRows,
     galleryAlbums: data.galleryRows,
     testimonials: data.testimonialRows,
+    departureRows: data.departureRows,
+    refresh: () => router.refresh(),
   };
 
   return (
@@ -521,7 +526,8 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(0);
 
-  const { bookings, setBookings, setSearch, notify, openModal } = actions;
+  const { bookings, setSearch, notify, openModal } = actions;
+  const router = useRouter();
   const query = actions.search;
   const trekOptions: string[] = [...new Set(bookings.map((b: Booking) => b.trek))];
   const status = BOOKING_TAB_STATUS[tab];
@@ -539,9 +545,14 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
 
   const rowMenu = (b: Booking): MenuItem[] => [
     { label: "View booking", onClick: () => notify(`Opening ${b.ref} (${b.customer})…`) },
-    ...(b.status !== "cancelled" ? [{
+    ...(b.status !== "cancelled" && b.id ? [{
       label: "Cancel booking", tone: "danger" as const,
-      onClick: () => { setBookings((prev: Booking[]) => prev.map((x) => x.ref === b.ref ? { ...x, status: "cancelled" } : x)); notify(`${b.ref} cancelled`); },
+      onClick: async () => {
+        if (!confirm(`Cancel booking ${b.ref}?`)) return;
+        const r = await cancelBooking(b.id!);
+        notify(r.ok ? `${b.ref} cancelled` : r.error);
+        if (r.ok) router.refresh();
+      },
     }] : []),
   ];
 
@@ -581,22 +592,37 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
   );
 }
 
+type DepartureRow = AdminData["departureRows"][number];
 function DeparturesPage({ actions }: { actions: AdminActions }) {
+  const rows = actions.departureRows;
+  const [editing, setEditing] = useState<DepartureRow | null>(null);
+  const rowMenu = (d: DepartureRow): MenuItem[] => [
+    { label: "Edit", onClick: () => setEditing(d) },
+    {
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete this ${d.trek} date (${d.start})?`)) return;
+        const r = await deleteDeparture(d.id);
+        actions.notify(r.ok ? "Date deleted" : r.error);
+        if (r.ok) actions.refresh();
+      },
+    },
+  ];
   return (
     <div>
       <PageHead title="Departures" sub="Batch schedule and seat occupancy." action={<Button size="sm" onClick={() => actions.openModal({ type: "departure" })}><Plus size={16} /> New departure</Button>} />
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
-            <TableHead>Trek</TableHead><TableHead>Start</TableHead><TableHead>End</TableHead><TableHead>Occupancy</TableHead><TableHead>Seats left</TableHead><TableHead>Status</TableHead>
+            <TableHead>Trek</TableHead><TableHead>Start</TableHead><TableHead>End</TableHead><TableHead>Occupancy</TableHead><TableHead>Seats left</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {actions.departures.length === 0 ? (
-              <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="py-10 text-center text-gray-400">No departures yet — add one.</TableCell></TableRow>
-            ) : actions.departures.map((d: Departure, i: number) => {
-              const pct = Math.round((d.booked / d.capacity) * 100);
+            {rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={7} className="py-10 text-center text-gray-400">No departures yet — add one.</TableCell></TableRow>
+            ) : rows.map((d) => {
+              const pct = d.capacity > 0 ? Math.round((d.booked / d.capacity) * 100) : 0;
               return (
-                <TableRow key={i}>
+                <TableRow key={d.id}>
                   <TableCell className="font-medium text-ink">{d.trek}</TableCell>
                   <TableCell>{d.start}</TableCell><TableCell>{d.end}</TableCell>
                   <TableCell>
@@ -607,40 +633,139 @@ function DeparturesPage({ actions }: { actions: AdminActions }) {
                   </TableCell>
                   <TableCell className="font-semibold text-ink">{d.capacity - d.booked}</TableCell>
                   <TableCell><S s={d.status} /></TableCell>
+                  <TableCell className="text-right"><RowMenu options={rowMenu(d)} /></TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
       </CardContent></Card>
+      {editing && <DepartureEditModal dep={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); actions.notify("Date updated"); actions.refresh(); }} />}
     </div>
   );
 }
 
+function DepartureEditModal({ dep, onClose, onSaved }: { dep: DepartureRow; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({
+    start_date: dep.startDate, end_date: dep.endDate, start_time: dep.startTime,
+    capacity: String(dep.capacity), price_override: String(dep.priceOverride ?? ""), status: dep.status,
+  });
+  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setErr(null);
+    const r = await updateDeparture(dep.id, f);
+    if (r.ok) onSaved(); else { setErr(r.error); setBusy(false); }
+  }
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/40 p-6">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Edit departure">
+        <div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-bold">Edit date</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button></div>
+        <p className="mb-4 text-sm text-gray-500">{dep.trek}</p>
+        {err && <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>}
+        <form className="space-y-3" onSubmit={submit}>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Start date</span><input type="date" className={inp} value={f.start_date} onChange={(e) => set("start_date", e.target.value)} /></label>
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">End date</span><input type="date" className={inp} value={f.end_date} onChange={(e) => set("end_date", e.target.value)} /></label>
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Start time</span><input className={inp} value={f.start_time} onChange={(e) => set("start_time", e.target.value)} /></label>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Capacity</span><input type="number" min={1} className={inp} value={f.capacity} onChange={(e) => set("capacity", e.target.value)} /></label>
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Price ₹</span><input type="number" min={0} className={inp} value={f.price_override} onChange={(e) => set("price_override", e.target.value)} placeholder="base" /></label>
+            <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Status</span>
+              <select className={inp} value={f.status} onChange={(e) => set("status", e.target.value)}>
+                <option>open</option><option>scheduled</option><option>full</option><option>closed</option><option>cancelled</option><option>completed</option>
+              </select></label>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+type LeadRow = AdminData["leadRows"][number];
 function LeadsPage({ actions }: { actions: AdminActions }) {
   const leads = actions.leads;
+  const router = useRouter();
+  const { notify } = actions;
+  const [reply, setReply] = useState<LeadRow | null>(null);
+
+  const setStatus = async (id: string, status: string, label: string) => {
+    const r = await updateLeadStatus(id, status);
+    notify(r.ok ? `Marked ${label}` : r.error);
+    if (r.ok) router.refresh();
+  };
+  const rowMenu = (l: LeadRow): MenuItem[] => [
+    { label: "Reply", onClick: () => setReply(l) },
+    { label: "Mark replied", onClick: () => setStatus(l.id, "replied", "replied") },
+    { label: "Mark closed", onClick: () => setStatus(l.id, "closed", "closed") },
+    { label: "Mark new", onClick: () => setStatus(l.id, "new", "new") },
+  ];
   return (
     <div>
       <PageHead title="Leads" sub="Enquiries from the contact form and WhatsApp." />
       <Card><CardContent className="p-0">
         <Table>
-          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Subject</TableHead><TableHead>Received</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Subject</TableHead><TableHead>Received</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {leads.length === 0 && (
-              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No leads yet.</TableCell></TableRow>
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="py-10 text-center text-gray-400">No leads yet.</TableCell></TableRow>
             )}
-            {leads.map((l, i) => (
-              <TableRow key={i}>
+            {leads.map((l) => (
+              <TableRow key={l.id}>
                 <TableCell className="font-medium text-ink">{l.name}</TableCell>
                 <TableCell className="text-gray-500">{l.email}</TableCell>
                 <TableCell>{l.subject}</TableCell>
                 <TableCell className="text-gray-400">{l.when}</TableCell>
                 <TableCell><S s={l.status} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(l)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </CardContent></Card>
+      {reply && <ReplyModal lead={reply} onClose={() => setReply(null)} onSent={() => { setReply(null); notify("Reply sent"); router.refresh(); }} />}
+    </div>
+  );
+}
+
+function ReplyModal({ lead, onClose, onSent }: { lead: LeadRow; onClose: () => void; onSent: () => void }) {
+  const [subject, setSubject] = useState(`Re: ${lead.subject !== "—" ? lead.subject : "Your enquiry"}`);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!body.trim()) { setErr("Message required."); return; }
+    setBusy(true); setErr(null);
+    const r = await replyToLead(lead.id, { subject, body });
+    if (r.ok) onSent(); else { setErr(r.error); setBusy(false); }
+  }
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/40 p-6">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Reply to lead">
+        <div className="mb-1 flex items-center justify-between"><h2 className="text-lg font-bold">Reply</h2>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button></div>
+        <p className="mb-4 text-sm text-gray-500">To <b className="text-ink">{lead.name}</b> &lt;{lead.email}&gt;</p>
+        {err && <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>}
+        <form className="space-y-3" onSubmit={submit}>
+          <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Subject</span>
+            <input className={inp} value={subject} onChange={(e) => setSubject(e.target.value)} /></label>
+          <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Message</span>
+            <textarea className={`${inp} min-h-32`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your reply…" /></label>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="submit" size="sm" disabled={busy}>{busy ? "Sending…" : "Send reply"}</Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

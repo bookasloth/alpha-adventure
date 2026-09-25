@@ -47,3 +47,47 @@ export async function createDeparture(raw: unknown): Promise<Result> {
   if (trek?.slug) revalidatePath(`/book/${trek.slug}`);
   return { ok: true, slug: trek?.slug };
 }
+
+const updateDepartureSchema = departureSchema.omit({ trek_id: true });
+
+type Admin = Awaited<ReturnType<typeof requireAdmin>>["admin"];
+async function revalidateBookFor(admin: Admin, departureId: string) {
+  const { data: dep } = await admin.from("trek_departures").select("trek_id").eq("id", departureId).maybeSingle();
+  if (dep?.trek_id) {
+    const { data: trek } = await admin.from("treks").select("slug").eq("id", dep.trek_id).maybeSingle();
+    if (trek?.slug) revalidatePath(`/book/${trek.slug}`);
+  }
+  revalidatePath("/admin");
+}
+
+export async function updateDeparture(id: string, raw: unknown): Promise<Result> {
+  const { admin } = await requireAdmin();
+  const parsed = updateDepartureSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const d = parsed.data;
+  const { error } = await admin.from("trek_departures").update({
+    start_date: d.start_date,
+    end_date: blank(d.end_date),
+    start_time: blank(d.start_time),
+    capacity: d.capacity,
+    price_override: d.price_override != null ? Math.round(d.price_override * 100) : null,
+    status: d.status,
+  }).eq("id", id);
+  if (error) { console.error("[updateDeparture]", error.message); return { ok: false, error: "Could not save the date." }; }
+  await revalidateBookFor(admin, id);
+  return { ok: true };
+}
+
+// Hard delete; if the date has bookings the FK blocks it — tell the admin to
+// cancel it (set status) instead.
+export async function deleteDeparture(id: string): Promise<Result> {
+  const { admin } = await requireAdmin();
+  await revalidateBookFor(admin, id); // capture slug before the row is gone
+  const { error } = await admin.from("trek_departures").delete().eq("id", id);
+  if (error) {
+    console.error("[deleteDeparture]", error.message);
+    return { ok: false, error: "Can't delete a date with bookings — set its status to Cancelled instead." };
+  }
+  revalidatePath("/admin");
+  return { ok: true };
+}

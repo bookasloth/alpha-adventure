@@ -55,7 +55,7 @@ export async function getAdminData() {
     admin.from("profiles")
       .select("id,first_name,last_name,email,created_at"),
     admin.from("trek_departures")
-      .select("id,trek_id,start_date,end_date,capacity,booked_seats,status,treks(title)")
+      .select("id,trek_id,start_date,end_date,start_time,capacity,booked_seats,price_override,status,treks(title)")
       .order("start_date", { ascending: true }).limit(200),
     admin.from("treks")
       .select("id,slug,title,group,difficulty,base_price,status,featured").is("deleted_at", null).order("title"),
@@ -107,6 +107,7 @@ export async function getAdminData() {
 
   // ── table rows (shaped exactly as the UI renders) ─────────────────────────
   const bookingRows = bookings.map((b) => ({
+    id: b.id,
     ref: b.reference,
     customer: b.contact_name || b.contact_email || "Guest",
     trek: b.trek_title ?? "—",
@@ -117,6 +118,7 @@ export async function getAdminData() {
   }));
 
   const leadRows = leads.map((l) => ({
+    id: l.id,
     name: l.name,
     email: l.email,
     subject: l.subject || "—",
@@ -134,12 +136,18 @@ export async function getAdminData() {
   }));
 
   const departureRows = departures.map((d) => ({
+    id: d.id,
     trek: (d.treks as { title?: string } | null)?.title ?? "—",
     start: fmtDate(d.start_date),
     end: fmtDate(d.end_date),
     capacity: d.capacity,
     booked: d.booked_seats,
     status: d.status,
+    // raw values for the edit modal
+    startDate: d.start_date ?? "",
+    endDate: d.end_date ?? "",
+    startTime: d.start_time ?? "",
+    priceOverride: d.price_override != null ? Math.round(d.price_override / 100) : "",
   }));
 
   // Customers: profile + their booking rollup.
