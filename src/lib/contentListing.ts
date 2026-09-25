@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { publicClient } from "@/lib/seo";
 
 export type Testimonial = {
   author: string;
@@ -11,7 +10,7 @@ export type Testimonial = {
 
 // Published testimonials for the home slider, ordered by position.
 export async function getTestimonials(): Promise<Testimonial[]> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("testimonials")
     .select("author_name,role,rating,body,avatar_url")

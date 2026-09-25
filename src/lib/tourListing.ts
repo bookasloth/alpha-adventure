@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { publicClient } from "@/lib/seo";
 
 export type Tour = {
   slug: string;
@@ -28,7 +27,7 @@ const SELECT = "slug,title,type,duration,base_price,image,description";
 
 // All published tours (featured first), for the listing + home slider.
 export async function getTours(): Promise<Tour[]> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("tours")
     .select(SELECT)
@@ -42,7 +41,7 @@ export async function getTours(): Promise<Tour[]> {
 
 // One published tour by slug, or null (page 404s).
 export async function getTourBySlug(slug: string): Promise<Tour | null> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("tours")
     .select(SELECT)

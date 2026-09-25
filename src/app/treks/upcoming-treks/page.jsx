@@ -4,7 +4,7 @@ import { trekGroups } from "@/data/treks";
 import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = { title: "Upcoming Treks" };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function UpcomingTreksPage() {
   const treks = await getListingTreks();

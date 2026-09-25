@@ -8,6 +8,7 @@ import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "@/domai
 import { sendBookingPendingEmail, sendBookingConfirmedEmail, sendOtpEmail } from "@/lib/email";
 import { mintOtp } from "@/lib/otp";
 import { background } from "@/lib/after";
+import { limitByIp } from "@/lib/rateLimit";
 
 const DRAFT_COOKIE = "aa_draft";
 
@@ -32,6 +33,7 @@ function draftTokenFrom(fallback?: string) {
 
 // ── 1. Guest creates a booking draft (no account). Server prices it. ────────
 export async function createDraft(raw: unknown): Promise<Result<{ bookingId: string; total: number; token: string }>> {
+  if (!(await limitByIp("book-draft", 10, 60))) return { ok: false, error: "Too many requests. Please wait a minute." };
   try {
     const admin = createAdminClient();
     const { bookingId, draftToken, total } = await createDraftBooking(admin, raw);
@@ -44,6 +46,7 @@ export async function createDraft(raw: unknown): Promise<Result<{ bookingId: str
 
 // ── 2. Send an email OTP for this draft (draft -> pending_auth). ────────────
 export async function sendBookingOtp(bookingId: string, rawEmail: unknown, token?: string): Promise<Result> {
+  if (!(await limitByIp("otp-send", 5, 60))) return { ok: false, error: "Too many code requests. Please wait a minute." };
   const parsed = emailSchema.safeParse(rawEmail);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid email." };
 
@@ -74,6 +77,7 @@ export async function verifyBookingOtp(
   rawCode: unknown,
   token?: string,
 ): Promise<Result<{ reference: string }>> {
+  if (!(await limitByIp("otp-verify", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const email = emailSchema.safeParse(rawEmail);
   const code = otpSchema.safeParse(rawCode);
   if (!email.success) return { ok: false, error: "Invalid email." };
@@ -116,6 +120,7 @@ export async function verifyBookingOtp(
 }
 
 export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
+  if (!(await limitByIp("otp-send", 5, 60))) return { ok: false, error: "Too many code requests. Please wait a minute." };
   const parsed = emailSchema.safeParse(rawEmail);
   if (!parsed.success) return { ok: false, error: "Invalid email." };
   try {

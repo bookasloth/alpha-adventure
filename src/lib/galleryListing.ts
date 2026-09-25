@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { publicClient } from "@/lib/seo";
 
 export type GalleryAlbum = {
   slug: string;
@@ -12,7 +11,7 @@ export type GalleryAlbum = {
 const SELECT = "slug,title,subtitle,hero,hero_alt";
 
 export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("gallery_albums")
     .select(SELECT)
@@ -24,7 +23,7 @@ export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
 }
 
 export async function getGalleryAlbum(slug: string): Promise<GalleryAlbum | null> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("gallery_albums")
     .select(SELECT)

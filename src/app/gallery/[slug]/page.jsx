@@ -6,7 +6,7 @@ import { SEASONS } from "@/data/gallery-details";
 import { galleryDetailHtml } from "@/lib/galleryDetailHtml";
 import { getGalleryAlbum } from "@/lib/galleryListing";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const galleryDetailInit = fs.readFileSync(
   path.join(process.cwd(), "src/data/gallery-detail-init.js"),

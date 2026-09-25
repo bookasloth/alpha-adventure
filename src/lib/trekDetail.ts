@@ -1,10 +1,9 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { publicClient } from "@/lib/seo";
 
 // Public read of a trek + all detail sections. Anon key + RLS (published,
 // non-deleted). Returns null when not found so the page can 404.
 export async function getTrekBySlug(slug: string) {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
 
   const { data: trek } = await supabase
     .from("treks")

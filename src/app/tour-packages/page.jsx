@@ -4,7 +4,7 @@ import { getTours } from "@/lib/tourListing";
 import { img } from "@/lib/assets";
 
 export const metadata = { title: "Tour Packages" };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function TourPackagesPage() {
   const tours = await getTours();

@@ -4,7 +4,7 @@ import TrekGrid from "@/components/home/TrekGrid";
 import { trekGroups } from "@/data/treks";
 import { getListingTreks } from "@/lib/trekListing";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const SLUG_TO_GROUP = {
   "sahyadri-treks": "sahyadri",

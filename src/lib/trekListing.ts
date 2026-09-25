@@ -1,5 +1,4 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { publicClient } from "@/lib/seo";
 
 // Card shape the listing components (TrekCard / TrekGrid / TrekGroupSections)
 // expect, mapped from the treks table. `group`/`tags` are kept so pages can
@@ -21,7 +20,7 @@ export type ListingTrek = {
 // All published treks, mapped for listing pages. RLS (anon) already limits to
 // published, non-deleted rows; the extra filters are belt-and-suspenders.
 export async function getListingTreks(): Promise<ListingTrek[]> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const { data } = await supabase
     .from("treks")
     .select("slug,title,location,duration_label,base_price,badge,hero_image,group,tags,featured")
@@ -54,7 +53,7 @@ export async function getHomeTreks(limit = 8): Promise<ListingTrek[]> {
 // (departure) count. Featured first, then most batches.
 export type TopTrek = { slug: string; title: string; image: string | null; batches: number };
 export async function getTopTreks(limit = 7): Promise<TopTrek[]> {
-  const supabase = createClient(cookies());
+  const supabase = publicClient();
   const [{ data: treks }, { data: deps }] = await Promise.all([
     supabase.from("treks").select("id,slug,title,hero_image,featured").eq("status", "published").is("deleted_at", null),
     supabase.from("trek_departures").select("trek_id").neq("status", "cancelled"),

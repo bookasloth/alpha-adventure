@@ -3,7 +3,7 @@ import PageHero from "@/components/layout/PageHero";
 import { getGalleryAlbums } from "@/lib/galleryListing";
 
 export const metadata = { title: "Gallery" };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function GalleryPage() {
   const albums = await getGalleryAlbums();

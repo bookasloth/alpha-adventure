@@ -3,7 +3,7 @@ import Link from "next/link";
 import { site } from "@/data/site";
 import { getTourBySlug } from "@/lib/tourListing";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata({ params }) {
   const tour = await getTourBySlug(params.slug);

@@ -3,7 +3,7 @@ import TrekGrid from "@/components/home/TrekGrid";
 import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = { title: "Trips Near Nagpur" };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function TripsNearNagpurPage() {
   const treks = await getListingTreks();

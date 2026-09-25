@@ -7,7 +7,7 @@ export const metadata = {
   description:
     "Coastal escapes, desert circuits, hill stations and Himalayan valleys — curated backpacking across India.",
 };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function BackpackingTripsPage() {
   const treks = await getListingTreks();

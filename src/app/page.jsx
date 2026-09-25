@@ -4,7 +4,7 @@ import { getHomeTreks, getTopTreks } from "@/lib/trekListing";
 import { getTours } from "@/lib/tourListing";
 import { getTestimonials } from "@/lib/contentListing";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const homeHtml = fs.readFileSync(
   path.join(process.cwd(), "src/data/orig-home.html"),

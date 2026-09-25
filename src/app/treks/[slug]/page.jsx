@@ -5,6 +5,8 @@ import { getTrekBySlug } from "@/lib/trekDetail";
 import { getCollection } from "@/lib/trekCollection";
 import { abs, SITE_URL } from "@/lib/seo";
 
+export const revalidate = 300;
+
 // /treks/[slug] resolves either a trek detail OR a collection (state/difficulty).
 export async function generateMetadata({ params }) {
   const trek = await getTrekBySlug(params.slug);
@@ -48,7 +50,7 @@ export default async function TrekOrCollectionPage({ params }) {
   if (trek) {
     return (
       <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(trekJsonLd(trek)) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(trekJsonLd(trek)).replace(/</g, "\\u003c") }} />
         <TrekDetail trek={trek} />
       </>
     );

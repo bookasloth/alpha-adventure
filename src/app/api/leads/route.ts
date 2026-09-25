@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { validateLead, type LeadInput } from "@/utils/lead";
 import { jsonOk, jsonFail } from "@/utils/http";
+import { limitByIp } from "@/lib/rateLimit";
 
 // POST /api/leads — persist a contact/enquiry submission.
 // ponytail: a Route Handler (not a Server Action) because the contact form is
@@ -9,6 +10,10 @@ import { jsonOk, jsonFail } from "@/utils/http";
 // as Pattern A, move this to a Server Action per docs/V2_DECISIONS.md.
 // No rate limiting yet — that lands in the forms/hardening phase.
 export async function POST(request: Request) {
+  if (!(await limitByIp("leads", 5, 60))) {
+    return jsonFail("Too many requests. Please try again in a minute.", "rate_limited", 429);
+  }
+
   let body: LeadInput;
   try {
     body = (await request.json()) as LeadInput;

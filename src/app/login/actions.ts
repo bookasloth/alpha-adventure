@@ -7,6 +7,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { mintOtp } from "@/lib/otp";
 import { sendOtpEmail } from "@/lib/email";
 import { background } from "@/lib/after";
+import { limitByIp } from "@/lib/rateLimit";
 import { emailSchema, otpSchema } from "@/domain/booking/schema";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -15,6 +16,7 @@ type Result = { ok: true } | { ok: false; error: string };
 // awaiting it — the slow part is delivery, and the UI can advance to the code
 // step immediately. If the send fails, the user's "Resend code" button retries.
 export async function sendLoginOtp(rawEmail: unknown): Promise<Result> {
+  if (!(await limitByIp("otp-send", 5, 60))) return { ok: false, error: "Too many code requests. Please wait a minute." };
   const e = emailSchema.safeParse(rawEmail);
   if (!e.success) return { ok: false, error: e.error.issues[0]?.message ?? "Invalid email." };
   let code: string;
@@ -42,6 +44,7 @@ export async function verifyLoginOtp(
   rawCode: unknown,
   rawNext?: unknown,
 ): Promise<Result> {
+  if (!(await limitByIp("otp-verify", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const e = emailSchema.safeParse(rawEmail);
   const c = otpSchema.safeParse(rawCode);
   if (!e.success || !c.success) return { ok: false, error: "Enter the 8-digit code." };
