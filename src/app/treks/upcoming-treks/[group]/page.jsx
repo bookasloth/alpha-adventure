@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import PageHero from "@/components/layout/PageHero";
 import TrekGrid from "@/components/home/TrekGrid";
-import { treks, trekGroups } from "@/data/treks";
+import { trekGroups } from "@/data/treks";
+import { getListingTreks } from "@/lib/trekListing";
+
+export const dynamic = "force-dynamic";
 
 const SLUG_TO_GROUP = {
   "sahyadri-treks": "sahyadri",
@@ -9,23 +12,20 @@ const SLUG_TO_GROUP = {
   "central-india-treks": "central",
 };
 
-export function generateStaticParams() {
-  return Object.keys(SLUG_TO_GROUP).map((slug) => ({ group: slug }));
-}
-
 export function generateMetadata({ params }) {
   const key = SLUG_TO_GROUP[params.group];
   return { title: key ? trekGroups[key].title : "Treks" };
 }
 
-export default function TrekGroupPage({ params }) {
+export default async function TrekGroupPage({ params }) {
   const { group } = params;
   const key = SLUG_TO_GROUP[group];
+  const treks = await getListingTreks();
 
   if (!key) {
-    // "weekend-treks" style filters
-    const weekend = treks.filter((t) => t.tags?.some((tag) => ["beginner", "weekend", "half-day"].includes(tag)));
+    // "weekend-treks" style tag filter
     if (group === "weekend-treks") {
+      const weekend = treks.filter((t) => t.tags?.some((tag) => ["beginner", "weekend", "half-day"].includes(tag)));
       return (
         <>
           <PageHero title="Weekend Treks" crumb="Upcoming Treks / Weekend Treks" subtitle="Quick, beginner-friendly escapes for a perfect weekend." />

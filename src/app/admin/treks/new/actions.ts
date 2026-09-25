@@ -34,8 +34,12 @@ const trekSchema = z.object({
   overview: z.string().trim().min(1, "Overview required"),
   hero_image: z.string().trim().min(1, "Hero image required"),
   base_price: rupees,
-  difficulty: z.enum(["easy", "moderate", "difficult"]),
+  difficulty: z.enum(["beginner", "moderate", "difficult"]),
   status: z.enum(["draft", "published"]).default("draft"),
+  // listing membership
+  group: z.enum(["sahyadri", "himalayan", "central", "backpacking", "near-nagpur"]).optional().or(z.literal("")),
+  tags: z.array(z.string().trim().min(1)).default([]),
+  badge: z.string().trim().max(60).optional().or(z.literal("")),
   // facts (optional)
   region: z.string().trim().max(120).optional().or(z.literal("")),
   location: z.string().trim().max(160).optional().or(z.literal("")),
@@ -84,6 +88,10 @@ export async function createTrek(raw: unknown): Promise<Result> {
       difficulty: t.difficulty,
       status: t.status,
       published_at: t.status === "published" ? new Date().toISOString() : null,
+      group: blank(t.group),
+      tags: t.tags,
+      badge: blank(t.badge),
+      duration_label: t.duration_days ? `${t.duration_days} Day${t.duration_days > 1 ? "s" : ""}` : null,
       region: blank(t.region),
       location: blank(t.location),
       state: blank(t.state),
@@ -141,5 +149,7 @@ export async function createTrek(raw: unknown): Promise<Result> {
 
   revalidatePath("/admin");
   revalidatePath(`/treks/${trek.slug}`);
+  revalidatePath("/treks/upcoming-treks");
+  revalidatePath("/treks/trips-near-nagpur");
   return { ok: true, slug: trek.slug };
 }

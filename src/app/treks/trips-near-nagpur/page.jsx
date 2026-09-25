@@ -1,13 +1,13 @@
 import PageHero from "@/components/layout/PageHero";
 import TrekGrid from "@/components/home/TrekGrid";
-import { treks } from "@/data/treks";
+import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = { title: "Trips Near Nagpur" };
+export const dynamic = "force-dynamic";
 
-export default function TripsNearNagpurPage() {
-  const items = treks
-    .filter((t) => t.group === "near-nagpur")
-    .map((t) => ({ ...t, href: `/trips-near-nagpur/detail/${t.slug}` }));
+export default async function TripsNearNagpurPage() {
+  const treks = await getListingTreks();
+  const items = treks.filter((t) => t.group === "near-nagpur");
   return (
     <>
       <PageHero

@@ -56,6 +56,9 @@ export default function NewTrekForm() {
   const [basePrice, setBasePrice] = useState("");
   const [difficulty, setDifficulty] = useState("moderate");
   const [status, setStatus] = useState("draft");
+  const [group, setGroup] = useState("sahyadri");
+  const [tags, setTags] = useState("");
+  const [badge, setBadge] = useState("");
 
   const [region, setRegion] = useState("");
   const [location, setLocation] = useState("");
@@ -82,6 +85,7 @@ export default function NewTrekForm() {
     const input = {
       title, slug, summary, overview, hero_image: heroImage,
       base_price: basePrice, difficulty, status,
+      group, tags: clean(tags.split(/[\n,]/)), badge,
       region, location, state,
       duration_days: durationDays || undefined,
       altitude, base_camp: baseCamp, best_season: bestSeason, group_size: groupSize, featured,
@@ -143,9 +147,14 @@ export default function NewTrekForm() {
             <Field label="Base price" hint="(₹)"><input type="number" min={0} className={inp} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="1299" /></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Difficulty"><select className={inp} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="easy">Easy</option><option value="moderate">Moderate</option><option value="difficult">Difficult</option></select></Field>
+            <Field label="Difficulty"><select className={inp} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}><option value="beginner">Beginner</option><option value="moderate">Moderate</option><option value="difficult">Difficult</option></select></Field>
             <Field label="Status"><select className={inp} value={status} onChange={(e) => setStatus(e.target.value)}><option value="draft">Draft</option><option value="published">Published</option></select></Field>
             <label className="flex items-end gap-2 pb-2.5 text-sm"><input type="checkbox" className="accent-primary" checked={featured} onChange={(e) => setFeatured(e.target.checked)} /> Featured</label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Listing group" hint="(which section)"><select className={inp} value={group} onChange={(e) => setGroup(e.target.value)}><option value="sahyadri">Sahyadri</option><option value="himalayan">Himalayan</option><option value="central">Central India</option><option value="backpacking">Backpacking</option><option value="near-nagpur">Near Nagpur</option></select></Field>
+            <Field label="Tags" hint="(comma-separated)"><input className={inp} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="fort, moderate, night" /></Field>
+            <Field label="Badge" hint="(optional)"><input className={inp} value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Adventure!" /></Field>
           </div>
         </CardContent>
       </Card>

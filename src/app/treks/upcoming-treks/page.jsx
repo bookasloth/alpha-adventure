@@ -1,10 +1,13 @@
 import PageHero from "@/components/layout/PageHero";
 import TrekGroupSections from "@/components/treks/TrekGroupSections";
-import { treks, trekGroups } from "@/data/treks";
+import { trekGroups } from "@/data/treks";
+import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = { title: "Upcoming Treks" };
+export const dynamic = "force-dynamic";
 
-export default function UpcomingTreksPage() {
+export default async function UpcomingTreksPage() {
+  const treks = await getListingTreks();
   const sections = ["sahyadri", "himalayan", "central"].map((key) => ({
     key,
     title: trekGroups[key].title,
