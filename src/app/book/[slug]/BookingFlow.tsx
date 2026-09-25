@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import "./booking.css";
-import { createDraft, sendBookingOtp, verifyBookingOtp, resendBookingOtp, payMockBooking } from "../actions";
+import { createDraft, sendBookingOtp, verifyBookingOtp, resendBookingOtp, startPayment } from "../actions";
 
 type Trek = { id: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
@@ -92,10 +92,11 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   }
   async function doPay() {
     setError(null); setBusy(true);
-    const r = await payMockBooking(bookingId);
+    const r = await startPayment(bookingId);
+    if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    setReference(r.reference); setStep(5);
+    setReference(r.reference!); setStep(5); // mock path: confirmed inline
   }
 
   if (step >= 5)

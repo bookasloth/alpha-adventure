@@ -168,3 +168,52 @@ export async function confirmMockPayment(admin: Admin, bookingId: string): Promi
   if (confErr || !confirmed) throw new Error(`Confirm failed: ${confErr?.message ?? "unknown"}`);
   return confirmed as BookingRow;
 }
+
+const BOOKING_COLS = "id,reference,status,grand_total,amount_paid,trek_title,departure_date,adults,children";
+
+// PhonePe: create the pending payment row + return the merchant txn id to
+// initiate against. Booking must be pending_payment.
+export async function createPhonePePayment(admin: Admin, bookingId: string): Promise<{ merchantTransactionId: string; amountPaise: number }> {
+  const { data: b } = await admin.from("bookings").select("id,status,grand_total").eq("id", bookingId).maybeSingle();
+  if (!b) throw new Error("Booking not found.");
+  if (b.status !== "pending_payment") throw new Error(`Booking not payable (is ${b.status}).`);
+
+  const mtx = `AA${Date.now().toString(36)}${bookingId.replace(/-/g, "").slice(0, 12)}`.slice(0, 38);
+  const { error } = await admin.from("payments").insert({
+    booking_id: bookingId,
+    provider: "phonepe",
+    merchant_order_id: mtx,
+    amount: b.grand_total,
+    currency: "INR",
+    status: "pending",
+    idempotency_key: mtx,
+    kind: "full",
+  });
+  if (error) throw new Error(`Payment insert failed: ${error.message}`);
+  return { merchantTransactionId: mtx, amountPaise: b.grand_total };
+}
+
+// PhonePe: after a server-verified success, mark the payment + confirm the
+// booking. Idempotent — a duplicate callback is a no-op.
+export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null): Promise<BookingRow | null> {
+  const { data: pay } = await admin.from("payments").select("id,booking_id,status").eq("merchant_order_id", merchantTransactionId).maybeSingle();
+  if (!pay) return null;
+
+  const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", pay.booking_id).single();
+  if (b?.status === "confirmed") return b as BookingRow; // already done
+
+  await admin.from("payments").update({
+    status: "success", provider_txn_id: providerTxnId, method: "phonepe", verified_at: new Date().toISOString(),
+  }).eq("id", pay.id);
+
+  if (b?.status === "pending_payment") {
+    await admin.from("bookings").update({ status: "payment_processing" }).eq("id", pay.booking_id);
+  }
+  const { data: confirmed } = await admin
+    .from("bookings")
+    .update({ status: "confirmed", amount_paid: (b as { grand_total: number }).grand_total, confirmed_at: new Date().toISOString() })
+    .eq("id", pay.booking_id)
+    .select(BOOKING_COLS)
+    .single();
+  return (confirmed as BookingRow) ?? null;
+}

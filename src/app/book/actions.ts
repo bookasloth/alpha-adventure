@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, otpSchema } from "@/domain/booking/schema";
-import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "@/domain/booking/service";
+import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment } from "@/domain/booking/service";
+import { isPhonePeEnabled, phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
 import { sendBookingPendingEmail, sendBookingConfirmedEmail, sendOtpEmail } from "@/lib/email";
 import { mintOtp } from "@/lib/otp";
 import { background } from "@/lib/after";
@@ -130,6 +131,32 @@ export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
     return { ok: false, error: "Could not resend the code." };
   }
   return { ok: true };
+}
+
+// ── 4b. Start payment. PhonePe (sandbox) when configured, else the mock path.
+// Returns a redirectUrl (PhonePe hosted page) or a reference (mock = done).
+export async function startPayment(bookingId: string): Promise<Result<{ redirectUrl?: string; reference?: string }>> {
+  const supabase = createClient(cookies());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Please verify your email first." };
+
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,user_id").eq("id", bookingId).maybeSingle();
+  if (!b || b.user_id !== user.id) return { ok: false, error: "Booking not found." };
+
+  if (!isPhonePeEnabled()) {
+    const r = await payMockBooking(bookingId);
+    return r.ok ? { ok: true, reference: r.reference } : r;
+  }
+  try {
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId);
+    const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
+    const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId: user.id, redirectUrl: cb, callbackUrl: cb });
+    if (!init.ok) return { ok: false, error: init.error };
+    return { ok: true, redirectUrl: init.redirectUrl };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
 }
 
 // ── 4. Mock payment (test mode) -> confirmed. Authorised via the signed-in user.
