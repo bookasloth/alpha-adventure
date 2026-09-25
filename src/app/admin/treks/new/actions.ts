@@ -14,6 +14,18 @@ const packageSchema = z.object({
   cta_label: z.string().trim().min(1).default("Book Now"),
 });
 
+// Blank ("" / null) → undefined, so an empty price field means "use base price".
+const optRupees = z.preprocess((v) => (v === "" || v == null ? undefined : v), rupees.optional());
+
+const departureSchema = z.object({
+  start_date: z.string().min(1, "Date required"),           // yyyy-mm-dd
+  end_date: z.string().optional().or(z.literal("")),
+  start_time: z.string().optional().or(z.literal("")),
+  capacity: z.coerce.number().int().min(1, "Capacity ≥ 1"),
+  price_override: optRupees,                                 // ₹, blank = base price
+  status: z.enum(["scheduled", "open", "full", "closed", "cancelled", "completed"]).default("open"),
+});
+
 const trekSchema = z.object({
   // basics
   title: z.string().trim().min(1, "Title required").max(160),
@@ -38,6 +50,7 @@ const trekSchema = z.object({
   inclusions: z.array(z.string().trim().min(1)).default([]),
   exclusions: z.array(z.string().trim().min(1)).default([]),
   packages: z.array(packageSchema).default([]),
+  departures: z.array(departureSchema).default([]),
 });
 
 export type CreateTrekInput = z.input<typeof trekSchema>;
@@ -107,6 +120,19 @@ export async function createTrek(raw: unknown): Promise<Result> {
         inclusions: p.inclusions,
         cta_label: p.cta_label,
         sort,
+      })),
+    ));
+  }
+  if (t.departures.length) {
+    jobs.push(admin.from("trek_departures").insert(
+      t.departures.map((d) => ({
+        trek_id: trek.id,
+        start_date: d.start_date,
+        end_date: blank(d.end_date),
+        start_time: blank(d.start_time),
+        capacity: d.capacity,
+        price_override: d.price_override != null ? toPaise(d.price_override) : null,
+        status: d.status,
       })),
     ));
   }

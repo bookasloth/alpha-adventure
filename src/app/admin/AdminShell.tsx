@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { RevenueArea, StatusDonut, TopTreksBar } from "./Charts";
 import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
 import type { AdminData } from "./data";
+import { createDeparture } from "./actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
 type Booking = { ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
@@ -23,12 +24,17 @@ type Trek = { title: string; region: string; difficulty: string; price: number; 
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
 type MenuItem = { label: string; onClick: () => void; tone?: "danger" };
 type ModalType = "booking" | "departure" | "trek";
+type DeparturePayload = {
+  trek_id: string; start_date: string; end_date: string; start_time: string;
+  capacity: string; price_override: string; status: string;
+};
 type AdminActions = {
   go: (next: string) => void;
   notify: (msg: string) => void;
   addBooking: (b: Omit<Booking, "ref">) => void;
   addTrek: (t: Trek) => void;
-  addDeparture: (d: Departure) => void;
+  saveDeparture: (d: DeparturePayload) => Promise<{ ok: boolean; error?: string }>;
+  trekOptions: AdminData["trekOptions"];
   exportCsv: () => void;
   openModal: React.Dispatch<React.SetStateAction<{ type: ModalType } | null>>;
   bookings: Booking[];
@@ -142,9 +148,18 @@ export default function AdminShell({ data }: { data: AdminData }) {
     setTreks((prev) => [t, ...prev]);
     notify(`Trek “${t.title}” added`);
   };
-  const addDeparture = (d: Departure) => {
-    setDepartures((prev) => [d, ...prev]);
-    notify(`Departure for “${d.trek}” added`);
+  // Persists a new date to Supabase, then reflects it in the local table.
+  const saveDeparture = async (p: DeparturePayload) => {
+    const r = await createDeparture(p);
+    if (r.ok) {
+      const title = data.trekOptions.find((t) => t.id === p.trek_id)?.title ?? "Trek";
+      setDepartures((prev) => [{
+        trek: title, start: p.start_date, end: p.end_date || p.start_date,
+        capacity: Number(p.capacity) || 0, booked: 0, status: p.status,
+      }, ...prev]);
+      notify(`Date added to ${title}`);
+    }
+    return r;
   };
 
   const exportCsv = () => {
@@ -165,7 +180,8 @@ export default function AdminShell({ data }: { data: AdminData }) {
     notify,
     addBooking,
     addTrek,
-    addDeparture,
+    saveDeparture,
+    trekOptions: data.trekOptions,
     exportCsv,
     openModal: setModal,
     bookings,
@@ -278,7 +294,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
         </main>
       </div>
 
-      {modal && <EntityModal type={modal.type} treks={actions.treks} onSave={modal.type === "booking" ? actions.addBooking : modal.type === "trek" ? actions.addTrek : actions.addDeparture} onClose={() => setModal(null)} />}
+      {modal && <EntityModal type={modal.type} treks={actions.treks} trekOptions={actions.trekOptions} onSave={modal.type === "booking" ? actions.addBooking : modal.type === "trek" ? actions.addTrek : actions.saveDeparture} onClose={() => setModal(null)} />}
       {toast && (
         <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-xl border border-line bg-ink px-4 py-3 text-sm font-medium text-white shadow-xl">
           <Check size={16} className="text-green-400" /> {toast}
@@ -727,15 +743,18 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
-function EntityModal({ type, treks, onSave, onClose }: {
+function EntityModal({ type, treks, trekOptions, onSave, onClose }: {
   type: ModalType;
   treks: Trek[];
-  onSave: (payload: any) => void;
+  trekOptions: { id: string; title: string }[];
+  onSave: (payload: any) => void | Promise<{ ok: boolean; error?: string }>;
   onClose: () => void;
 }) {
   const [b, setB] = useState({ customer: "", trek: treks[0]?.title ?? "", date: "", pax: 1, amount: "", status: "pending_payment" });
   const [t, setT] = useState({ title: "", region: "Sahyadri", difficulty: "beginner", price: "", departures: 0, status: "draft" });
-  const [d, setD] = useState({ trek: treks[0]?.title ?? "", start: "", end: "", capacity: 30, booked: 0, status: "open" });
+  const [d, setD] = useState({ trek_id: trekOptions[0]?.id ?? "", start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" });
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const titles = type === "booking" ? "Add booking" : type === "trek" ? "Add trek" : "New departure";
   const themes = {
@@ -750,12 +769,27 @@ function EntityModal({ type, treks, onSave, onClose }: {
       commit: () => onSave({ title: t.title.trim(), region: t.region, difficulty: t.difficulty, price: Number(t.price) || 0, departures: Number(t.departures) || 0, status: t.status }),
     },
     departure: {
-      subtitle: "Schedule a new batch.", submit: "Save departure",
-      accepts: () => !!d.trek && !!d.start.trim(),
-      commit: () => onSave({ trek: d.trek, start: d.start, end: d.end || d.start, capacity: Number(d.capacity) || 1, booked: Number(d.booked) || 0, status: d.status }),
+      subtitle: "Add a date to an existing trek. Saved to the database.", submit: "Save date",
+      accepts: () => !!d.trek_id && !!d.start_date,
+      commit: () => onSave({ trek_id: d.trek_id, start_date: d.start_date, end_date: d.end_date, start_time: d.start_time, capacity: d.capacity, price_override: d.price_override, status: d.status }),
     },
   } as const;
   const theme = themes[type];
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!theme.accepts()) { setErr("Please fill the required fields."); return; }
+    setErr(null);
+    setBusy(true);
+    try {
+      const r = await theme.commit();
+      if (r && !r.ok) { setErr(r.error ?? "Could not save."); setBusy(false); return; }
+      onClose();
+    } catch {
+      setErr("Something went wrong. Please try again.");
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/40 p-6">
@@ -765,7 +799,8 @@ function EntityModal({ type, treks, onSave, onClose }: {
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
         </div>
         <p className="mb-5 text-sm text-gray-500">{theme.subtitle}</p>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (theme.accepts()) { theme.commit(); onClose(); } }}>
+        {err && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>}
+        <form className="space-y-3" onSubmit={submit}>
           {type === "booking" && (
             <>
               <div className="grid grid-cols-2 gap-3">
@@ -831,29 +866,32 @@ function EntityModal({ type, treks, onSave, onClose }: {
           {type === "departure" && (
             <>
               <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Trek</span>
-                <select className={inp} value={d.trek} onChange={(e) => setD({ ...d, trek: e.target.value })}>
-                  {treks.map((x) => <option key={x.title} value={x.title}>{x.title}</option>)}
-                  {!treks.some((x) => x.title === d.trek) && <option value={d.trek}>{d.trek}</option>}
+                <select className={inp} value={d.trek_id} onChange={(e) => setD({ ...d, trek_id: e.target.value })}>
+                  {trekOptions.length === 0 && <option value="">No treks yet — add one first</option>}
+                  {trekOptions.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
                 </select>
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Start</span>
-                  <input className={inp} value={d.start} onChange={(e) => setD({ ...d, start: e.target.value })} placeholder="02 Nov 2026" />
+              <div className="grid grid-cols-3 gap-3">
+                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Start date</span>
+                  <input type="date" className={inp} value={d.start_date} onChange={(e) => setD({ ...d, start_date: e.target.value })} />
                 </label>
-                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">End</span>
-                  <input className={inp} value={d.end} onChange={(e) => setD({ ...d, end: e.target.value })} placeholder="09 Nov 2026" />
+                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">End date</span>
+                  <input type="date" className={inp} value={d.end_date} onChange={(e) => setD({ ...d, end_date: e.target.value })} />
+                </label>
+                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Start time</span>
+                  <input className={inp} value={d.start_time} onChange={(e) => setD({ ...d, start_time: e.target.value })} placeholder="10:00 PM" />
                 </label>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Capacity</span>
-                  <input type="number" min={1} className={inp} value={d.capacity} onChange={(e) => setD({ ...d, capacity: Number(e.target.value) })} />
+                  <input type="number" min={1} className={inp} value={d.capacity} onChange={(e) => setD({ ...d, capacity: e.target.value })} />
                 </label>
-                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Booked</span>
-                  <input type="number" min={0} className={inp} value={d.booked} onChange={(e) => setD({ ...d, booked: Number(e.target.value) })} />
+                <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Price ₹ <span className="text-gray-400">(blank=base)</span></span>
+                  <input type="number" min={0} className={inp} value={d.price_override} onChange={(e) => setD({ ...d, price_override: e.target.value })} placeholder="base" />
                 </label>
                 <label className="grid gap-1.5"><span className="text-xs font-medium text-gray-500">Status</span>
                   <select className={inp} value={d.status} onChange={(e) => setD({ ...d, status: e.target.value })}>
-                    <option>open</option><option>full</option>
+                    <option>open</option><option>scheduled</option><option>full</option><option>closed</option><option>cancelled</option><option>completed</option>
                   </select>
                 </label>
               </div>
@@ -861,7 +899,7 @@ function EntityModal({ type, treks, onSave, onClose }: {
           )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" size="sm">{theme.submit}</Button>
+            <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving…" : theme.submit}</Button>
           </div>
         </form>
       </div>

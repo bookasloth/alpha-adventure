@@ -12,6 +12,8 @@ const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
+type Dep = { start_date: string; end_date: string; start_time: string; capacity: string; price_override: string; status: string };
+const DEP_STATUS = ["open", "scheduled", "full", "closed", "cancelled", "completed"];
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -68,6 +70,7 @@ export default function NewTrekForm() {
   const [inclusions, setInclusions] = useState<string[]>([""]);
   const [exclusions, setExclusions] = useState<string[]>([""]);
   const [packages, setPackages] = useState<Pkg[]>([{ name: "Standard Batch", price: "", inclusions: "", cta_label: "Book Now" }]);
+  const [departures, setDepartures] = useState<Dep[]>([{ start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" }]);
 
   const onTitle = (v: string) => { setTitle(v); if (!slugEdited) setSlug(slugify(v)); };
 
@@ -91,6 +94,16 @@ export default function NewTrekForm() {
           price: p.price,
           inclusions: clean(p.inclusions.split(/[\n,]/)),
           cta_label: p.cta_label.trim() || "Book Now",
+        })),
+      departures: departures
+        .filter((d) => d.start_date.trim())
+        .map((d) => ({
+          start_date: d.start_date,
+          end_date: d.end_date,
+          start_time: d.start_time,
+          capacity: d.capacity,
+          price_override: d.price_override,
+          status: d.status,
         })),
     };
     try {
@@ -179,6 +192,33 @@ export default function NewTrekForm() {
           ))}
           <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])}
             className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add package</button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Dates <span className="text-sm font-normal text-gray-400">(departures / batches — each date books independently)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {departures.map((d, i) => (
+            <div key={i} className="rounded-xl border border-line p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm font-semibold text-ink">Date {i + 1}</span>
+                <button type="button" onClick={() => setDepartures(departures.filter((_, j) => j !== i))}
+                  className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Start date"><input type="date" className={inp} value={d.start_date} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, start_date: e.target.value } : x))} /></Field>
+                <Field label="End date" hint="(optional)"><input type="date" className={inp} value={d.end_date} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, end_date: e.target.value } : x))} /></Field>
+                <Field label="Start time" hint="(optional)"><input className={inp} value={d.start_time} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, start_time: e.target.value } : x))} placeholder="10:00 PM" /></Field>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <Field label="Capacity" hint="(seats)"><input type="number" min={1} className={inp} value={d.capacity} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, capacity: e.target.value } : x))} /></Field>
+                <Field label="Price override" hint="(₹, blank = base)"><input type="number" min={0} className={inp} value={d.price_override} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, price_override: e.target.value } : x))} placeholder="base price" /></Field>
+                <Field label="Status"><select className={inp} value={d.status} onChange={(e) => setDepartures(departures.map((x, j) => j === i ? { ...x, status: e.target.value } : x))}>{DEP_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={() => setDepartures([...departures, { start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" }])}
+            className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add date</button>
         </CardContent>
       </Card>
 
