@@ -58,7 +58,7 @@ export async function getAdminData() {
       .select("id,trek_id,start_date,end_date,capacity,booked_seats,status,treks(title)")
       .order("start_date", { ascending: true }).limit(200),
     admin.from("treks")
-      .select("id,title").is("deleted_at", null).order("title"),
+      .select("id,slug,title,group,difficulty,base_price,status,featured").is("deleted_at", null).order("title"),
     admin.from("tours")
       .select("slug,title,type,duration,base_price,status,featured").is("deleted_at", null).order("sort").order("title"),
   ]);
@@ -68,7 +68,20 @@ export async function getAdminData() {
   const payments = paymentsRes.data ?? [];
   const profiles = profilesRes.data ?? [];
   const departures = departuresRes.data ?? [];
-  const trekOptions = (treksRes.data ?? []) as { id: string; title: string }[];
+  const treksData = (treksRes.data ?? []) as {
+    id: string; slug: string; title: string; group: string | null;
+    difficulty: string | null; base_price: number | null; status: string; featured: boolean;
+  }[];
+  const trekOptions = treksData.map((t) => ({ id: t.id, title: t.title }));
+  const trekRows = treksData.map((t) => ({
+    slug: t.slug,
+    title: t.title,
+    group: t.group ?? "—",
+    difficulty: t.difficulty ?? "—",
+    price: rupees(t.base_price ?? 0),
+    status: t.status,
+    featured: !!t.featured,
+  }));
   const tourRows = (toursRes.data ?? []).map((t) => ({
     slug: t.slug,
     title: t.title,
@@ -210,6 +223,7 @@ export async function getAdminData() {
     departureRows,
     customerRows,
     trekOptions,
+    trekRows,
     tourRows,
     charts: { revenue: revenueSeries, status: statusSeries, topTreks },
   };

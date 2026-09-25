@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { createTour } from "./actions";
+import { createTour, updateTour } from "./actions";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -20,21 +20,28 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
-export default function NewTourForm() {
+export type TourInitial = {
+  slug: string; title: string; type: string; duration: string; price: string;
+  image: string; description: string; featured: boolean; status: string;
+};
+const EMPTY: TourInitial = { slug: "", title: "", type: "Domestic", duration: "", price: "", image: "", description: "", featured: false, status: "draft" };
+
+export default function TourForm({ mode, initial }: { mode: "new" | "edit"; initial?: TourInitial }) {
   const router = useRouter();
+  const init = initial ?? EMPTY;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
-  const [type, setType] = useState("Domestic");
-  const [duration, setDuration] = useState("");
-  const [price, setPrice] = useState("");
-  const [image, setImage] = useState("");
-  const [description, setDescription] = useState("");
-  const [featured, setFeatured] = useState(false);
-  const [status, setStatus] = useState("draft");
+  const [title, setTitle] = useState(init.title);
+  const [slug, setSlug] = useState(init.slug);
+  const [slugEdited, setSlugEdited] = useState(mode === "edit");
+  const [type, setType] = useState(init.type);
+  const [duration, setDuration] = useState(init.duration);
+  const [price, setPrice] = useState(init.price);
+  const [image, setImage] = useState(init.image);
+  const [description, setDescription] = useState(init.description);
+  const [featured, setFeatured] = useState(init.featured);
+  const [status, setStatus] = useState(init.status);
 
   const onTitle = (v: string) => { setTitle(v); if (!slugEdited) setSlug(slugify(v)); };
 
@@ -42,8 +49,9 @@ export default function NewTourForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    const payload = { title, slug, type, duration, base_price: price, image, description, featured, status };
     try {
-      const r = await createTour({ title, slug, type, duration, base_price: price, image, description, featured, status });
+      const r = mode === "edit" ? await updateTour(init.slug, payload) : await createTour(payload);
       if (r.ok) router.push("/admin");
       else { setError(r.error); setBusy(false); }
     } catch {
@@ -52,14 +60,17 @@ export default function NewTourForm() {
     }
   }
 
+  const heading = mode === "edit" ? "Edit tour" : "Add tour";
+  const cta = mode === "edit" ? "Save changes" : "Save tour";
+
   return (
     <form onSubmit={submit} className="mx-auto max-w-3xl space-y-6 p-6">
       <div className="flex items-center gap-3">
         <Link href="/admin" className="grid h-9 w-9 place-items-center rounded-lg border border-line text-gray-500 hover:bg-slate-100"><ArrowLeft size={18} /></Link>
-        <div><h1 className="text-2xl font-bold">Add tour</h1><p className="text-sm text-gray-500">Creates a Supabase-backed tour, live at /tour-packages/&lt;slug&gt;.</p></div>
+        <div><h1 className="text-2xl font-bold">{heading}</h1><p className="text-sm text-gray-500">Supabase-backed tour, live at /tour-packages/&lt;slug&gt;.</p></div>
         <div className="ml-auto flex gap-2">
           <Button type="button" variant="secondary" size="sm" onClick={() => router.push("/admin")}>Cancel</Button>
-          <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving…" : "Save tour"}</Button>
+          <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving…" : cta}</Button>
         </div>
       </div>
 
@@ -70,13 +81,13 @@ export default function NewTourForm() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title"><input className={inp} value={title} onChange={(e) => onTitle(e.target.value)} placeholder="Royal Rajasthan Heritage" /></Field>
-            <Field label="Slug" hint="(URL)"><input className={inp} value={slug} onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} placeholder="royal-rajasthan-heritage" /></Field>
+            <Field label="Slug" hint={mode === "edit" ? "(fixed)" : "(URL)"}><input className={inp} value={slug} disabled={mode === "edit"} onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} placeholder="royal-rajasthan-heritage" /></Field>
           </div>
           <Field label="Description"><textarea className={`${inp} min-h-24`} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
           <Field label="Image URL"><input className={inp} value={image} onChange={(e) => setImage(e.target.value)} placeholder="/assets/img/home1/tour-package-img1.jpg" /></Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Type"><select className={inp} value={type} onChange={(e) => setType(e.target.value)}><option value="Domestic">Domestic</option><option value="International">International</option></select></Field>
-            <Field label="Duration" hint='(e.g. 6D/5N)'><input className={inp} value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="6D/5N" /></Field>
+            <Field label="Duration" hint="(e.g. 6D/5N)"><input className={inp} value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="6D/5N" /></Field>
             <Field label="Price" hint="(₹)"><input type="number" min={0} className={inp} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="18500" /></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -88,7 +99,7 @@ export default function NewTourForm() {
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={() => router.push("/admin")}>Cancel</Button>
-        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save tour"}</Button>
+        <Button type="submit" disabled={busy}>{busy ? "Saving…" : cta}</Button>
       </div>
     </form>
   );

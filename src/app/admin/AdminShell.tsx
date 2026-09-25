@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
   LayoutDashboard, CalendarRange, Inbox, Mountain, Package, FileText, Image as ImageIcon,
@@ -17,6 +18,8 @@ import { RevenueArea, StatusDonut, TopTreksBar } from "./Charts";
 import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
 import type { AdminData } from "./data";
 import { createDeparture } from "./actions";
+import { deleteTour } from "./tours/actions";
+import { deleteTrek } from "./treks/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
 type Booking = { ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
@@ -57,6 +60,7 @@ type AdminActions = {
   customers: AdminData["customerRows"];
   payments: AdminData["paymentRows"];
   tours: AdminData["tourRows"];
+  trekCatalog: AdminData["trekRows"];
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -203,6 +207,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
     customers: data.customerRows,
     payments: data.paymentRows,
     tours: data.tourRows,
+    trekCatalog: data.trekRows,
   };
 
   return (
@@ -634,12 +639,18 @@ function LeadsPage({ actions }: { actions: AdminActions }) {
 }
 
 function TreksPage({ actions }: { actions: AdminActions }) {
-  const { treks, setTreks, notify } = actions;
-  const rowMenu = (t: Trek): MenuItem[] => [
-    { label: "Duplicate", onClick: () => { setTreks((prev: Trek[]) => [{ ...t, title: `${t.title} (copy)`, status: "draft" }, ...prev]); notify(`Duplicated "${t.title}"`); } },
+  const treks = actions.trekCatalog;
+  const router = useRouter();
+  const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "Edit", onClick: () => router.push(`/admin/treks/${slug}/edit`) },
     {
-      label: t.status === "published" ? "Unpublish" : "Publish",
-      onClick: () => { setTreks((prev: Trek[]) => prev.map((x) => x.title === t.title ? { ...x, status: t.status === "published" ? "draft" : "published" } : x)); notify(`"${t.title}" ${t.status === "published" ? "unpublished" : "published"}`); },
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete "${title}"? It will be removed from every listing.`)) return;
+        const r = await deleteTrek(slug);
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
+        if (r.ok) router.refresh();
+      },
     },
   ];
   return (
@@ -647,17 +658,19 @@ function TreksPage({ actions }: { actions: AdminActions }) {
       <PageHead title="Treks" sub="Your catalogue — pricing, difficulty and publish state." action={<Button asChild size="sm"><Link href="/admin/treks/new"><Plus size={16} /> Add trek</Link></Button>} />
       <Card><CardContent className="p-0">
         <Table>
-          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Trek</TableHead><TableHead>Region</TableHead><TableHead>Difficulty</TableHead><TableHead>Price</TableHead><TableHead>Departures</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Trek</TableHead><TableHead>Group</TableHead><TableHead>Difficulty</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
-            {treks.map((t: Trek) => (
-              <TableRow key={t.title}>
+            {treks.length === 0 && (
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="py-10 text-center text-gray-400">No treks yet — add one.</TableCell></TableRow>
+            )}
+            {treks.map((t) => (
+              <TableRow key={t.slug}>
                 <TableCell className="font-medium text-ink">{t.title}</TableCell>
-                <TableCell>{t.region}</TableCell>
+                <TableCell>{t.group}</TableCell>
                 <TableCell><S s={t.difficulty} /></TableCell>
                 <TableCell className="font-semibold text-ink">{rupee(t.price)}</TableCell>
-                <TableCell>{t.departures}</TableCell>
                 <TableCell><S s={t.status} /></TableCell>
-                <TableCell className="text-right"><RowMenu options={rowMenu(t)} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(t.slug, t.title)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -669,15 +682,28 @@ function TreksPage({ actions }: { actions: AdminActions }) {
 
 function ToursPage({ actions }: { actions: AdminActions }) {
   const tours = actions.tours;
+  const router = useRouter();
+  const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "Edit", onClick: () => router.push(`/admin/tours/${slug}/edit`) },
+    {
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete "${title}"? It will be removed from the site.`)) return;
+        const r = await deleteTour(slug);
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
+        if (r.ok) router.refresh();
+      },
+    },
+  ];
   return (
     <div>
       <PageHead title="Tours" sub="Domestic & international tour packages." action={<Button asChild size="sm"><Link href="/admin/tours/new"><Plus size={16} /> Add tour</Link></Button>} />
       <Card><CardContent className="p-0">
         <Table>
-          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Tour</TableHead><TableHead>Type</TableHead><TableHead>Duration</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Tour</TableHead><TableHead>Type</TableHead><TableHead>Duration</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
           <TableBody>
             {tours.length === 0 && (
-              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No tours yet — add one.</TableCell></TableRow>
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={6} className="py-10 text-center text-gray-400">No tours yet — add one.</TableCell></TableRow>
             )}
             {tours.map((t) => (
               <TableRow key={t.slug}>
@@ -686,6 +712,7 @@ function ToursPage({ actions }: { actions: AdminActions }) {
                 <TableCell>{t.duration}</TableCell>
                 <TableCell className="font-semibold text-ink">{rupee(t.price)}</TableCell>
                 <TableCell><S s={t.status} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(t.slug, t.title)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
