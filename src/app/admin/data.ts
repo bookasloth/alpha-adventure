@@ -42,7 +42,7 @@ function ago(iso: string) {
 export async function getAdminData() {
   const { admin } = await requireAdmin();
 
-  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes] = await Promise.all([
+  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes, galleryRes, testimonialsRes] = await Promise.all([
     admin.from("bookings")
       .select("id,reference,contact_name,contact_email,user_id,trek_title,departure_date,seats,grand_total,status,created_at")
       .order("created_at", { ascending: false }),
@@ -61,6 +61,10 @@ export async function getAdminData() {
       .select("id,slug,title,group,difficulty,base_price,status,featured").is("deleted_at", null).order("title"),
     admin.from("tours")
       .select("slug,title,type,duration,base_price,status,featured").is("deleted_at", null).order("sort").order("title"),
+    admin.from("gallery_albums")
+      .select("slug,title,status,hero").is("deleted_at", null).order("sort").order("title"),
+    admin.from("testimonials")
+      .select("id,author_name,role,rating,status,position").order("position"),
   ]);
 
   const bookings = bookingsRes.data ?? [];
@@ -81,6 +85,12 @@ export async function getAdminData() {
     price: rupees(t.base_price ?? 0),
     status: t.status,
     featured: !!t.featured,
+  }));
+  const galleryRows = (galleryRes.data ?? []).map((a) => ({
+    slug: a.slug, title: a.title, hero: a.hero ?? null, status: a.status,
+  }));
+  const testimonialRows = (testimonialsRes.data ?? []).map((t) => ({
+    id: t.id, author: t.author_name, role: t.role ?? "—", rating: t.rating ?? 5, status: t.status, position: t.position ?? 0,
   }));
   const tourRows = (toursRes.data ?? []).map((t) => ({
     slug: t.slug,
@@ -225,6 +235,8 @@ export async function getAdminData() {
     trekOptions,
     trekRows,
     tourRows,
+    galleryRows,
+    testimonialRows,
     charts: { revenue: revenueSeries, status: statusSeries, topTreks },
   };
 }

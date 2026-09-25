@@ -20,6 +20,8 @@ import type { AdminData } from "./data";
 import { createDeparture } from "./actions";
 import { deleteTour } from "./tours/actions";
 import { deleteTrek } from "./treks/actions";
+import { deleteGalleryAlbum } from "./gallery/actions";
+import { deleteTestimonial } from "./testimonials/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
 type Booking = { ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
@@ -61,6 +63,8 @@ type AdminActions = {
   payments: AdminData["paymentRows"];
   tours: AdminData["tourRows"];
   trekCatalog: AdminData["trekRows"];
+  galleryAlbums: AdminData["galleryRows"];
+  testimonials: AdminData["testimonialRows"];
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -73,7 +77,7 @@ const NAV = [
     { key: "treks", label: "Treks" }, { key: "tours", label: "Tours" }, { key: "content", label: "Content" }, { key: "gallery", label: "Gallery" },
   ] },
   { key: "customers", label: "Customers", icon: Users, items: [
-    { key: "all-customers", label: "All Customers" }, { key: "reviews", label: "Reviews" },
+    { key: "all-customers", label: "All Customers" }, { key: "reviews", label: "Testimonials" },
   ] },
   { key: "finance", label: "Finance", icon: Banknote, items: [
     { key: "payments", label: "Payments" }, { key: "refunds", label: "Refunds" }, { key: "payouts", label: "Payouts" },
@@ -208,6 +212,8 @@ export default function AdminShell({ data }: { data: AdminData }) {
     payments: data.paymentRows,
     tours: data.tourRows,
     trekCatalog: data.trekRows,
+    galleryAlbums: data.galleryRows,
+    testimonials: data.testimonialRows,
   };
 
   return (
@@ -320,8 +326,9 @@ function Page({ item, actions }: { item: string; actions: AdminActions }) {
     case "leads": return <LeadsPage actions={actions} />;
     case "treks": return <TreksPage actions={actions} />;
     case "tours": return <ToursPage actions={actions} />;
-    case "gallery": return <GalleryPage items={actions.gallery} setItems={actions.setGallery} notify={actions.notify} />;
+    case "gallery": return <GalleryAlbumsPage actions={actions} />;
     case "all-customers": return <CustomersPage actions={actions} />;
+    case "reviews": return <TestimonialsPage actions={actions} />;
     case "payments": return <PaymentsPage actions={actions} />;
     case "s-general": return <SettingsGeneral notify={actions.notify} />;
     default: return <Stub title={label(item.replace(/^s-/, ""))} notify={actions.notify} />;
@@ -713,6 +720,83 @@ function ToursPage({ actions }: { actions: AdminActions }) {
                 <TableCell className="font-semibold text-ink">{rupee(t.price)}</TableCell>
                 <TableCell><S s={t.status} /></TableCell>
                 <TableCell className="text-right"><RowMenu options={rowMenu(t.slug, t.title)} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function GalleryAlbumsPage({ actions }: { actions: AdminActions }) {
+  const albums = actions.galleryAlbums;
+  const router = useRouter();
+  const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "Edit", onClick: () => router.push(`/admin/gallery/${slug}/edit`) },
+    {
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete album "${title}"?`)) return;
+        const r = await deleteGalleryAlbum(slug);
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
+        if (r.ok) router.refresh();
+      },
+    },
+  ];
+  return (
+    <div>
+      <PageHead title="Gallery" sub="Photo albums shown on /gallery." action={<Button asChild size="sm"><Link href="/admin/gallery/new"><Plus size={16} /> Add album</Link></Button>} />
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Album</TableHead><TableHead>Slug</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {albums.length === 0 && <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="py-10 text-center text-gray-400">No albums yet — add one.</TableCell></TableRow>}
+            {albums.map((a) => (
+              <TableRow key={a.slug}>
+                <TableCell className="font-medium text-ink">{a.title}</TableCell>
+                <TableCell className="font-mono text-xs text-gray-500">{a.slug}</TableCell>
+                <TableCell><S s={a.status} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(a.slug, a.title)} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function TestimonialsPage({ actions }: { actions: AdminActions }) {
+  const items = actions.testimonials;
+  const router = useRouter();
+  const rowMenu = (id: string, author: string): MenuItem[] => [
+    { label: "Edit", onClick: () => router.push(`/admin/testimonials/${id}/edit`) },
+    {
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete testimonial by ${author}?`)) return;
+        const r = await deleteTestimonial(id);
+        actions.notify(r.ok ? `Deleted testimonial by ${author}` : r.error);
+        if (r.ok) router.refresh();
+      },
+    },
+  ];
+  return (
+    <div>
+      <PageHead title="Testimonials" sub="Shown in the homepage testimonials slider." action={<Button asChild size="sm"><Link href="/admin/testimonials/new"><Plus size={16} /> Add testimonial</Link></Button>} />
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Author</TableHead><TableHead>Role</TableHead><TableHead>Rating</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {items.length === 0 && <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No testimonials yet — add one.</TableCell></TableRow>}
+            {items.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="font-medium text-ink">{t.author}</TableCell>
+                <TableCell>{t.role}</TableCell>
+                <TableCell>{"★".repeat(t.rating)}</TableCell>
+                <TableCell><S s={t.status} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(t.id, t.author)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
