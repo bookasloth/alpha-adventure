@@ -15,6 +15,7 @@ export type ListingTrek = {
   href: string;
   group: string | null;
   tags: string[];
+  featured: boolean;
 };
 
 // All published treks, mapped for listing pages. RLS (anon) already limits to
@@ -23,7 +24,7 @@ export async function getListingTreks(): Promise<ListingTrek[]> {
   const supabase = createClient(cookies());
   const { data } = await supabase
     .from("treks")
-    .select("slug,title,location,duration_label,base_price,badge,hero_image,group,tags")
+    .select("slug,title,location,duration_label,base_price,badge,hero_image,group,tags,featured")
     .eq("status", "published")
     .is("deleted_at", null)
     .order("title");
@@ -39,5 +40,12 @@ export async function getListingTreks(): Promise<ListingTrek[]> {
     href: `/treks/${t.slug}`,
     group: t.group,
     tags: t.tags ?? [],
+    featured: !!t.featured,
   }));
+}
+
+// Treks for the homepage "Popular Treks" slider: featured first, then the rest.
+export async function getHomeTreks(limit = 8): Promise<ListingTrek[]> {
+  const all = await getListingTreks();
+  return [...all].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, limit);
 }
