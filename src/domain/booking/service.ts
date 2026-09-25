@@ -64,6 +64,9 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
       grand_total: p.grand_total,
       trek_title: trek.title,
       departure_date: dep.start_date,
+      // Drafts self-expire so the cleanup cron (expire_stale_bookings) can prune
+      // abandoned ones; finalize resets this to a 30-min payment hold.
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     })
     .select("id")
     .single();
