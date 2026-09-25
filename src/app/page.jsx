@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { getHomeTreks, getTopTreks } from "@/lib/trekListing";
+import { getTours } from "@/lib/tourListing";
 
 export const dynamic = "force-dynamic";
 
@@ -9,14 +10,15 @@ const homeHtml = fs.readFileSync(
   "utf8",
 );
 
-// Locate a swiper slider's inner slides (by anchor class) via balanced <div>
-// matching, so we can refill it with DB cards while keeping the rest verbatim.
-function sliceByAnchor(html, anchor) {
+// Find a container's inner span (after `anchor`, opening at `openTag`) via
+// balanced <div> matching, so we can refill it with DB cards per request while
+// keeping the rest of the page verbatim.
+function sliceInner(html, anchor, openTag) {
   const a = html.indexOf(anchor);
   if (a < 0) return null;
-  const wrapOpen = html.indexOf('<div class="swiper-wrapper">', a);
-  if (wrapOpen < 0) return null;
-  const innerStart = html.indexOf(">", wrapOpen) + 1;
+  const open = html.indexOf(openTag, a);
+  if (open < 0) return null;
+  const innerStart = html.indexOf(">", open) + 1;
   const re = /<div\b|<\/div>/g;
   re.lastIndex = innerStart;
   let depth = 1, m;
@@ -28,18 +30,20 @@ function sliceByAnchor(html, anchor) {
   return null;
 }
 
-// Precompute both slider spans once, then keep the 3 static fragments between
-// them (pkg span comes before dest span in the document).
-const PKG = sliceByAnchor(homeHtml, "swiper home2-package-slider");
-const DEST = sliceByAnchor(homeHtml, "swiper home2-destination-slider");
-const PARTS =
-  PKG && DEST && PKG.innerEnd <= DEST.innerStart
-    ? {
-        a: homeHtml.slice(0, PKG.innerStart),
-        b: homeHtml.slice(PKG.innerEnd, DEST.innerStart),
-        c: homeHtml.slice(DEST.innerEnd),
-      }
-    : null;
+const PKG = sliceInner(homeHtml, "swiper home2-package-slider", '<div class="swiper-wrapper">');
+const DEST = sliceInner(homeHtml, "swiper home2-destination-slider", '<div class="swiper-wrapper">');
+const TOURS = sliceInner(homeHtml, "home2-oneday-trip-section", '<div class="row g-4 mb-40">');
+
+// Assemble the static fragments between the three (document-ordered) regions.
+const OK = PKG && DEST && TOURS && PKG.innerEnd <= DEST.innerStart && DEST.innerEnd <= TOURS.innerStart;
+const PARTS = OK
+  ? {
+      a: homeHtml.slice(0, PKG.innerStart),
+      b: homeHtml.slice(PKG.innerEnd, DEST.innerStart),
+      c: homeHtml.slice(DEST.innerEnd, TOURS.innerStart),
+      d: homeHtml.slice(TOURS.innerEnd),
+    }
+  : null;
 
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const rupee = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
@@ -80,12 +84,36 @@ function destinationCard(t) {
   </div></div>`;
 }
 
+function tourCard(t) {
+  const href = `/tour-packages/${esc(t.slug)}`;
+  return `<div class="col-lg-4 col-md-6">
+    <div class="package-card media-first">
+      <div class="package-img-wrap">
+        <a href="${href}" class="package-img"><img src="${esc(t.image)}" alt="${esc(t.title)}" onerror="this.onerror=null;this.src='${FALLBACK}';"></a>
+        <div class="package-overlay"><div class="meta"><span class="duration">${esc(t.duration)}</span></div></div>
+      </div>
+      <div class="package-content">
+        <h5><a href="${href}">${esc(t.title)}</a></h5>
+        <div class="location-and-time"><div class="location">${LOC_SVG}<a href="${href}">${esc(t.type)}</a></div></div>
+        <div class="btn-and-price-area">
+          <a href="${href}" class="primary-btn1">Book Now</a>
+          <div class="price-area"><h6>Per Person</h6><span>${rupee(t.price)}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 export default async function HomePage() {
   let html = homeHtml;
   if (PARTS) {
-    const [popular, top] = await Promise.all([getHomeTreks(8), getTopTreks(7)]);
-    if (popular.length && top.length) {
-      html = PARTS.a + popular.map(packageCard).join("") + PARTS.b + top.map(destinationCard).join("") + PARTS.c;
+    const [popular, top, tours] = await Promise.all([getHomeTreks(8), getTopTreks(7), getTours()]);
+    if (popular.length && top.length && tours.length) {
+      html =
+        PARTS.a + popular.map(packageCard).join("") +
+        PARTS.b + top.map(destinationCard).join("") +
+        PARTS.c + tours.map(tourCard).join("") +
+        PARTS.d;
     }
   }
   return <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />;
