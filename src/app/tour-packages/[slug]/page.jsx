@@ -1,20 +1,17 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { img } from "@/lib/assets";
 import { site } from "@/data/site";
-import { tourPackages, getTourBySlug } from "@/data/tours";
+import { getTourBySlug } from "@/lib/tourListing";
 
-export function generateStaticParams() {
-  return tourPackages.map((t) => ({ slug: t.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }) {
-  const tour = getTourBySlug(params.slug);
+export async function generateMetadata({ params }) {
+  const tour = await getTourBySlug(params.slug);
   return { title: tour ? tour.title : "Tour" };
 }
 
-export default function TourDetailPage({ params }) {
-  const tour = getTourBySlug(params.slug);
+export default async function TourDetailPage({ params }) {
+  const tour = await getTourBySlug(params.slug);
   if (!tour) return notFound();
   return (
     <>

@@ -1,9 +1,8 @@
 import TourCard from "@/components/ui/TourCard";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { tourPackages } from "@/data/tours";
 
-// Tour packages section.
-export default function TourPackages() {
+// Tour packages section. `tours` are passed in (from Supabase).
+export default function TourPackages({ tours = [] }) {
   return (
     <section className="section bg-gray-50 wow animate fadeInUp" data-wow-delay="200ms" data-wow-duration="1500ms">
       <div className="container-px">
@@ -13,7 +12,7 @@ export default function TourPackages() {
           subtitle="Domestic and international tour packages, planned end-to-end."
         />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tourPackages.map((t) => (
+          {tours.map((t) => (
             <TourCard key={t.slug} tour={t} />
           ))}
         </div>

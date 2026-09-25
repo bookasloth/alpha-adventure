@@ -1,11 +1,13 @@
 import PageHero from "@/components/layout/PageHero";
 import TourPackages from "@/components/home/TourPackages";
-import { tourPackages } from "@/data/tours";
+import { getTours } from "@/lib/tourListing";
 import { img } from "@/lib/assets";
 
 export const metadata = { title: "Tour Packages" };
+export const dynamic = "force-dynamic";
 
-export default function TourPackagesPage() {
+export default async function TourPackagesPage() {
+  const tours = await getTours();
   return (
     <>
       <PageHero
@@ -14,7 +16,7 @@ export default function TourPackagesPage() {
         subtitle="Explore our most popular domestic and international tour packages, planned end-to-end."
         image={img("home1/tour-package-img1.jpg")}
       />
-      <TourPackages />
+      <TourPackages tours={tours} />
     </>
   );
 }
