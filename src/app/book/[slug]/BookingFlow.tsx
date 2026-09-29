@@ -39,6 +39,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   const [token, setToken] = useState("");
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [reference, setReference] = useState("");
+  const [payToken, setPayToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,11 +89,11 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     const r = await verifyBookingOtp(bookingId, email, code, token);
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    setReference(r.reference); setPay("pay");
+    setReference(r.reference); setPayToken(r.payToken); setPay("pay");
   }
   async function doPay() {
     setError(null); setBusy(true);
-    const r = await startPayment(bookingId);
+    const r = await startPayment(bookingId, payToken);
     if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe
     setBusy(false);
     if (!r.ok) return setError(r.error);

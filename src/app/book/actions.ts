@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "crypto";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
@@ -14,6 +15,40 @@ import { limitByIp } from "@/lib/rateLimit";
 const DRAFT_COOKIE = "aa_draft";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+
+// Supabase's verifyOtp establishes a session, but cookies written inside a
+// value-returning Server Action don't reach the browser here (only a redirect
+// commits them — see login/actions.ts). So the pay step can't rely on that
+// session: verifyBookingOtp returns an HMAC-signed bearer of the linked user
+// id, the client passes it back to the pay actions (exactly like the draft
+// token), and they authorise off it — falling back to a real session if one is
+// present. The bearer only authorises paying the caller's own finalized
+// booking, and can't be forged without the service-role key.
+function paySecret() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.CRON_SECRET ?? "dev-only-insecure";
+}
+function signPay(userId: string) {
+  const mac = crypto.createHmac("sha256", paySecret()).update(userId).digest("hex");
+  return `${userId}.${mac}`;
+}
+function verifyPay(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const dot = value.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const userId = value.slice(0, dot);
+  const mac = value.slice(dot + 1);
+  const good = crypto.createHmac("sha256", paySecret()).update(userId).digest("hex");
+  const a = Buffer.from(mac);
+  const b = Buffer.from(good);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  return userId;
+}
+// The signed-in user id for the pay step: a real session if committed, else the
+// signed bearer the client carries from verifyBookingOtp.
+async function payUserId(supabase: ReturnType<typeof createClient>, payToken?: string): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? verifyPay(payToken);
+}
 
 function setDraftCookie(token: string) {
   cookies().set(DRAFT_COOKIE, token, {
@@ -77,7 +112,7 @@ export async function verifyBookingOtp(
   rawEmail: unknown,
   rawCode: unknown,
   token?: string,
-): Promise<Result<{ reference: string }>> {
+): Promise<Result<{ reference: string; payToken: string }>> {
   if (!(await limitByIp("otp-verify", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const email = emailSchema.safeParse(rawEmail);
   const code = otpSchema.safeParse(rawCode);
@@ -99,6 +134,7 @@ export async function verifyBookingOtp(
     const admin = createAdminClient();
     const finalized = await linkAndFinalize(admin, bookingId, draftToken, auth.user.id);
     cookies().delete(DRAFT_COOKIE);
+    const payToken = signPay(auth.user.id); // authorises the pay step; session cookie doesn't survive this action
     // Non-blocking: a "we've held your spot" notice must not delay confirming
     // the reservation, and a mail failure must not fail a finalized booking.
     background(
@@ -111,7 +147,7 @@ export async function verifyBookingOtp(
         total: finalized.grand_total,
       }),
     );
-    return { ok: true, reference: finalized.reference };
+    return { ok: true, reference: finalized.reference, payToken };
   } catch (e) {
     const msg = (e as Error).message.toLowerCase().includes("seat")
       ? "Those seats were just taken. Please pick another departure."
@@ -135,23 +171,23 @@ export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
 
 // ── 4b. Start payment. PhonePe (sandbox) when configured, else the mock path.
 // Returns a redirectUrl (PhonePe hosted page) or a reference (mock = done).
-export async function startPayment(bookingId: string): Promise<Result<{ redirectUrl?: string; reference?: string }>> {
+export async function startPayment(bookingId: string, payToken?: string): Promise<Result<{ redirectUrl?: string; reference?: string }>> {
   const supabase = createClient(cookies());
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Please verify your email first." };
+  const userId = await payUserId(supabase, payToken);
+  if (!userId) return { ok: false, error: "Please verify your email first." };
 
   const admin = createAdminClient();
   const { data: b } = await admin.from("bookings").select("id,user_id").eq("id", bookingId).maybeSingle();
-  if (!b || b.user_id !== user.id) return { ok: false, error: "Booking not found." };
+  if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
 
   if (!isPhonePeEnabled()) {
-    const r = await payMockBooking(bookingId);
+    const r = await payMockBooking(bookingId, payToken);
     return r.ok ? { ok: true, reference: r.reference } : r;
   }
   try {
     const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId);
     const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
-    const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId: user.id, redirectUrl: cb, callbackUrl: cb });
+    const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId, redirectUrl: cb, callbackUrl: cb });
     if (!init.ok) return { ok: false, error: init.error };
     return { ok: true, redirectUrl: init.redirectUrl };
   } catch (e) {
@@ -161,12 +197,10 @@ export async function startPayment(bookingId: string): Promise<Result<{ redirect
 
 // ── 4. Mock payment (test mode) -> confirmed. Authorised via the signed-in user.
 // PhonePe replaces this with a server-verified webhook flow.
-export async function payMockBooking(bookingId: string): Promise<Result<{ reference: string }>> {
+export async function payMockBooking(bookingId: string, payToken?: string): Promise<Result<{ reference: string }>> {
   const supabase = createClient(cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Please verify your email first." };
+  const userId = await payUserId(supabase, payToken);
+  if (!userId) return { ok: false, error: "Please verify your email first." };
 
   const admin = createAdminClient();
   const { data: b } = await admin
@@ -174,7 +208,7 @@ export async function payMockBooking(bookingId: string): Promise<Result<{ refere
     .select("id,user_id,contact_email")
     .eq("id", bookingId)
     .maybeSingle();
-  if (!b || b.user_id !== user.id) return { ok: false, error: "Booking not found." };
+  if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
 
   try {
     const confirmed = await confirmMockPayment(admin, bookingId);
