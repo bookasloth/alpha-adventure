@@ -4,11 +4,11 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
-import { emailSchema, otpSchema } from "@/domain/booking/schema";
+import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment } from "@/domain/booking/service";
 import { isPhonePeEnabled, phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
-import { sendBookingPendingEmail, sendBookingConfirmedEmail, sendOtpEmail } from "@/lib/email";
-import { mintOtp } from "@/lib/otp";
+import { sendBookingPendingEmail, sendBookingConfirmedEmail } from "@/lib/email";
+import { sendVerifyEmail } from "@/lib/verifyEmail";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
 
@@ -80,11 +80,18 @@ export async function createDraft(raw: unknown): Promise<Result<{ bookingId: str
   }
 }
 
-// ── 2. Send an email OTP for this draft (draft -> pending_auth). ────────────
-export async function sendBookingOtp(bookingId: string, rawEmail: unknown, token?: string): Promise<Result> {
-  if (!(await limitByIp("otp-send", 5, 60))) return { ok: false, error: "Too many code requests. Please wait a minute." };
-  const parsed = emailSchema.safeParse(rawEmail);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid email." };
+// ── 2+3. Identity at checkout: sign in OR register (email+password), then link
+// the draft and reserve seats (pending_payment). Seats are never consumed until
+// a real user id is held. Returns the HMAC payToken bearer for the pay step.
+export async function authenticateBooking(
+  bookingId: string,
+  raw: { name?: unknown; email: unknown; password: unknown; mode: "signin" | "register" },
+  token?: string,
+): Promise<Result<{ reference: string; payToken: string }>> {
+  if (!(await limitByIp("book-auth", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const email = emailSchema.safeParse(raw.email);
+  if (!email.success) return { ok: false, error: "Invalid email." };
+  if (typeof raw.password !== "string" || !raw.password) return { ok: false, error: "Enter your password." };
 
   const draftToken = draftTokenFrom(token);
   if (!draftToken) return { ok: false, error: "Your booking session expired. Please start again." };
@@ -94,47 +101,39 @@ export async function sendBookingOtp(bookingId: string, rawEmail: unknown, token
   if (!b || b.draft_token !== draftToken) return { ok: false, error: "Booking not found." };
   if (b.status !== "draft" && b.status !== "pending_auth")
     return { ok: false, error: "This booking can no longer be verified." };
-
-  await admin.from("bookings").update({ contact_email: parsed.data, status: "pending_auth" }).eq("id", bookingId);
-
-  try {
-    const code = await mintOtp(admin, parsed.data);
-    background(sendOtpEmail(parsed.data, code)); // don't block on SMTP/API
-  } catch {
-    return { ok: false, error: "Could not send the code. Please try again." };
-  }
-  return { ok: true };
-}
-
-// ── 3. Verify OTP -> account -> link draft -> reserve seats (pending_payment).
-export async function verifyBookingOtp(
-  bookingId: string,
-  rawEmail: unknown,
-  rawCode: unknown,
-  token?: string,
-): Promise<Result<{ reference: string; payToken: string }>> {
-  if (!(await limitByIp("otp-verify", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
-  const email = emailSchema.safeParse(rawEmail);
-  const code = otpSchema.safeParse(rawCode);
-  if (!email.success) return { ok: false, error: "Invalid email." };
-  if (!code.success) return { ok: false, error: code.error.issues[0]?.message ?? "Invalid code." };
-
-  const draftToken = draftTokenFrom(token);
-  if (!draftToken) return { ok: false, error: "Your booking session expired. Please start again." };
+  await admin.from("bookings").update({ contact_email: email.data, status: "pending_auth" }).eq("id", bookingId);
 
   const supabase = createClient(cookies());
-  const { data: auth, error: otpErr } = await supabase.auth.verifyOtp({
-    email: email.data,
-    token: code.data,
-    type: "email",
-  });
-  if (otpErr || !auth.user) return { ok: false, error: "That code is incorrect or expired." };
+  let userId: string;
+  if (raw.mode === "register") {
+    const name = nameSchema.safeParse(raw.name);
+    const pw = passwordSchema.safeParse(raw.password);
+    if (!name.success) return { ok: false, error: name.error.issues[0]!.message };
+    if (!pw.success) return { ok: false, error: pw.error.issues[0]!.message };
+    if (!passwordDisallowsIdentity(pw.data, { name: name.data, email: email.data }))
+      return { ok: false, error: "Password must not contain your name or email." };
+    const created = await admin.auth.admin.createUser({
+      email: email.data, password: pw.data, email_confirm: true, user_metadata: { first_name: name.data },
+    });
+    if (created.error || !created.data.user) {
+      const msg = (created.error?.message ?? "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists"))
+        return { ok: false, error: "An account with this email already exists — switch to Sign in." };
+      return { ok: false, error: "Could not create your account. Please try again." };
+    }
+    userId = created.data.user.id;
+    background(sendVerifyEmail(userId, email.data));
+    await supabase.auth.signInWithPassword({ email: email.data, password: pw.data }); // best-effort session
+  } else {
+    const res = await supabase.auth.signInWithPassword({ email: email.data, password: raw.password });
+    if (res.error || !res.data.user) return { ok: false, error: "Email or password is incorrect." };
+    userId = res.data.user.id;
+  }
 
   try {
-    const admin = createAdminClient();
-    const finalized = await linkAndFinalize(admin, bookingId, draftToken, auth.user.id);
+    const finalized = await linkAndFinalize(admin, bookingId, draftToken, userId);
     cookies().delete(DRAFT_COOKIE);
-    const payToken = signPay(auth.user.id); // authorises the pay step; session cookie doesn't survive this action
+    const payToken = signPay(userId); // authorises the pay step; session cookie doesn't survive this action
     // Non-blocking: a "we've held your spot" notice must not delay confirming
     // the reservation, and a mail failure must not fail a finalized booking.
     background(
@@ -154,19 +153,6 @@ export async function verifyBookingOtp(
       : "Could not complete your booking. Please try again.";
     return { ok: false, error: msg };
   }
-}
-
-export async function resendBookingOtp(rawEmail: unknown): Promise<Result> {
-  if (!(await limitByIp("otp-send", 5, 60))) return { ok: false, error: "Too many code requests. Please wait a minute." };
-  const parsed = emailSchema.safeParse(rawEmail);
-  if (!parsed.success) return { ok: false, error: "Invalid email." };
-  try {
-    const code = await mintOtp(createAdminClient(), parsed.data);
-    background(sendOtpEmail(parsed.data, code));
-  } catch {
-    return { ok: false, error: "Could not resend the code." };
-  }
-  return { ok: true };
 }
 
 // ── 4b. Start payment. PhonePe (sandbox) when configured, else the mock path.
