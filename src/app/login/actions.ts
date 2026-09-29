@@ -8,19 +8,12 @@ import { sendVerifyEmail } from "@/lib/verifyEmail";
 import { siteUrl } from "@/lib/siteUrl";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
+import { withTimeout } from "@/lib/withTimeout";
+import { safeNext } from "@/lib/safeNext";
 import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-// Fail fast instead of leaving the button spinning forever when Supabase Auth
-// is unresponsive. 10s is well above a warm call or a cold start.
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([p, new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms))]);
-}
-// Keep only same-origin relative paths — block open-redirect via ?next=//evil.com.
-function safeNext(raw: unknown): string {
-  return typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/user-dashboard";
-}
 const BAD_CREDS = "Email or password is incorrect.";
 
 export async function signIn(rawEmail: unknown, rawPassword: unknown, rawNext?: unknown): Promise<Result> {

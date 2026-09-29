@@ -17,11 +17,29 @@ export default function ResetForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The recovery link lands with a session in the URL; @supabase/ssr picks it up.
+  // A server-minted recovery link can land three ways: a hash session
+  // (#access_token, auto-detected), ?code (PKCE-style exchange), or
+  // ?token_hash&type=recovery. Handle all so the happy path can't silently die.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setReady(!!data.session));
+    let cancelled = false;
+    async function establish() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const tokenHash = url.searchParams.get("token_hash");
+      const type = url.searchParams.get("type");
+      try {
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+        } else if (tokenHash && type === "recovery") {
+          await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+        }
+      } catch { /* fall through to session check */ }
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled) setReady(!!data.session);
+    }
+    establish();
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => { if (session) setReady(true); });
-    return () => sub.subscription.unsubscribe();
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [supabase]);
 
   async function onSubmit(e: React.FormEvent) {

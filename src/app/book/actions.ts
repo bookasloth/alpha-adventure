@@ -9,6 +9,7 @@ import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePeP
 import { isPhonePeEnabled, phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
 import { sendBookingPendingEmail, sendBookingConfirmedEmail } from "@/lib/email";
 import { sendVerifyEmail } from "@/lib/verifyEmail";
+import { withTimeout } from "@/lib/withTimeout";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
 
@@ -112,9 +113,14 @@ export async function authenticateBooking(
     if (!pw.success) return { ok: false, error: pw.error.issues[0]!.message };
     if (!passwordDisallowsIdentity(pw.data, { name: name.data, email: email.data }))
       return { ok: false, error: "Password must not contain your name or email." };
-    const created = await admin.auth.admin.createUser({
-      email: email.data, password: pw.data, email_confirm: true, user_metadata: { first_name: name.data },
-    });
+    let created;
+    try {
+      created = await withTimeout(admin.auth.admin.createUser({
+        email: email.data, password: pw.data, email_confirm: true, user_metadata: { first_name: name.data },
+      }), 10000);
+    } catch {
+      return { ok: false, error: "That took too long — please try again." };
+    }
     if (created.error || !created.data.user) {
       const msg = (created.error?.message ?? "").toLowerCase();
       if (msg.includes("already") || msg.includes("registered") || msg.includes("exists"))
@@ -125,7 +131,12 @@ export async function authenticateBooking(
     background(sendVerifyEmail(userId, email.data));
     await supabase.auth.signInWithPassword({ email: email.data, password: pw.data }); // best-effort session
   } else {
-    const res = await supabase.auth.signInWithPassword({ email: email.data, password: raw.password });
+    let res;
+    try {
+      res = await withTimeout(supabase.auth.signInWithPassword({ email: email.data, password: raw.password }), 10000);
+    } catch {
+      return { ok: false, error: "That took too long — please try again." };
+    }
     if (res.error || !res.data.user) return { ok: false, error: "Email or password is incorrect." };
     userId = res.data.user.id;
   }
