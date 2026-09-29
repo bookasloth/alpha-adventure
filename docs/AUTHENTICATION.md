@@ -1,23 +1,48 @@
 # Authentication & Authorization
 
-## No authentication exists.
-There is no login, session, cookie, token, middleware auth, or user store in
-this repo (verified: no `process.env`, no auth libs, middleware only rewrites
-`.php`). Every route is public and anonymous.
+## Email + password (Supabase Auth)
+Sign-in and registration use Supabase native email+password
+(`signInWithPassword`, `admin.createUser`). Server Actions live in
+`src/app/login/actions.ts` (`signIn`, `register`, `requestPasswordReset`,
+`signOut`); the client form is `src/app/login/LoginForm.tsx` (mode `signin` |
+`register`, reused by `/login` and `/signup`).
 
-## `/user-dashboard` is a mock
-`src/app/user-dashboard/page.jsx` injects `orig-dashboard.html` verbatim. It
-**looks** like a logged-in dashboard but has no auth, no data binding, and no
-protection. Do not treat it as a real account area or link real user data into
-it without designing auth first.
+- **Register** creates a pre-confirmed user (`email_confirm: true`) with
+  `user_metadata.first_name`. The `on_auth_user_created` trigger
+  (`handle_new_user`) inserts the `profiles` row + `customer` role.
+- **Redirect after auth is server-side** (`redirect()` in the action) — a
+  client redirect after a Server Action auth does not reliably navigate.
+- **Password policy** (`src/domain/booking/schema.ts`): min 8, ≥1 uppercase,
+  ≥1 digit, ≥1 special; must not contain the user's name or email local-part
+  (`passwordDisallowsIdentity`).
+
+## Email verification (non-blocking)
+Supabase native "Confirm email" is **OFF**. On register we send our own
+HMAC-signed verification link (`src/lib/verifyEmail.ts`) via the Brevo mailer.
+`/verify-email?token=…` sets `profiles.email_verified = true`. It gates nothing
+— only a dashboard banner shows while unverified. This keeps guest checkout
+uninterrupted.
+
+## Password reset
+`requestPasswordReset` → `admin.generateLink({ type: "recovery" })` → link
+delivered by our mailer → `/reset-password` (browser client picks up the
+recovery session) → `supabase.auth.updateUser({ password })`. Requests always
+return ok (no account enumeration).
+
+## Booking identity (guest-first)
+`src/app/book/actions.ts` `authenticateBooking(bookingId, {name?, email,
+password, mode}, token?)`: sign in or register at the checkout identity step,
+then `linkAndFinalize` reserves seats. Seats are never consumed until a real
+user id is held. Because cookies set in a value-returning Server Action don't
+reach the browser, the pay step authorises off an HMAC `payToken` bearer, not a
+session.
 
 ## Authorization
-No roles, permissions, or gated content. Nothing to check. If asked "what
-happens when a user is unauthorized?" — the concept does not apply; there is no
-protected resource.
+`user_roles` (`customer`/`staff`/`admin`) + `is_admin()`/`is_staff()` SQL
+helpers. `/admin` gated by `requireAdmin()` (`src/app/admin/data.ts`);
+`/user-dashboard` and `/account` require a session. Middleware
+(`src/middleware.ts`) refreshes the session only on `/account`,
+`/user-dashboard`, `/admin` (scoped to avoid concurrent-refresh logouts).
 
-## If auth is ever added
-Record it as a decision in [DECISIONS.md](DECISIONS.md). Next.js middleware
-(`src/middleware.js`) is the natural enforcement point, but note its current
-`matcher` is scoped to `/gallery-detail.php` — broadening it affects the legacy
-rewrite. See [ARCHITECTURE.md](ARCHITECTURE.md).
+## Config
+Supabase Auth → "Confirm email" must be **OFF** (see DEPLOYMENT.md).

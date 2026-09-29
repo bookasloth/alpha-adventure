@@ -16,10 +16,10 @@ const DRAFT_COOKIE = "aa_draft";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
-// Supabase's verifyOtp establishes a session, but cookies written inside a
+// signInWithPassword establishes a session, but cookies written inside a
 // value-returning Server Action don't reach the browser here (only a redirect
 // commits them — see login/actions.ts). So the pay step can't rely on that
-// session: verifyBookingOtp returns an HMAC-signed bearer of the linked user
+// session: authenticateBooking returns an HMAC-signed bearer of the linked user
 // id, the client passes it back to the pay actions (exactly like the draft
 // token), and they authorise off it — falling back to a real session if one is
 // present. The bearer only authorises paying the caller's own finalized

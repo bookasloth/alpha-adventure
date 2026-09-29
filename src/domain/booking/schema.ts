@@ -47,10 +47,6 @@ export const emailSchema = z
   .max(200)
   .email("Enter a valid email address.");
 
-// Supabase OTP length (GOTRUE_MAILER_OTP_LENGTH) is currently 8; keep in sync
-// with CODE_LEN in BookingFlow.
-export const otpSchema = z.string().trim().regex(/^\d{8}$/, "Enter the 8-digit code.");
-
 // Password policy: 8+ chars, one uppercase, one digit, one special.
 export const passwordSchema = z
   .string()
