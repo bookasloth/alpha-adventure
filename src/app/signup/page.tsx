@@ -16,11 +16,7 @@ export default function SignupPage() {
       }
     >
       <Suspense fallback={null}>
-        <LoginForm
-          heading="Create your account"
-          sub="Enter your email — we'll send a one-time code and set you up. No password to remember."
-          cta="Create account"
-        />
+        <LoginForm mode="register" sub="Create your account with an email and password." />
       </Suspense>
     </AuthLayout>
   );

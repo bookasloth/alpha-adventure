@@ -1,145 +1,85 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { sendLoginOtp, verifyLoginOtp } from "./actions";
+import { signIn, register, requestPasswordReset } from "./actions";
 import { Button } from "@/components/ui/button";
 
 const inputCls =
   "w-full rounded-[10px] border border-line bg-slate-50 px-4 py-3.5 text-[15px] text-ink outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
 // Thin top bar that ramps toward ~90% while busy and snaps to 100% on finish —
-// a "the app is working" cue so the small wait never feels dead. Placebo by
-// design: the width is not tied to real progress (there isn't any to measure).
+// a "the app is working" cue. Placebo by design (no real progress to measure).
 function ProgressBar({ active }: { active: boolean }) {
   const [w, setW] = useState(0);
   useEffect(() => {
     if (!active) {
-      // Finish: jump to 100, then fade out.
       setW((prev) => (prev > 0 ? 100 : 0));
       const t = setTimeout(() => setW(0), 350);
       return () => clearTimeout(t);
     }
     setW(12);
-    // Ease toward 90% but never reach it until the action resolves.
     const id = setInterval(() => setW((v) => (v < 90 ? v + (90 - v) * 0.25 : v)), 200);
     return () => clearInterval(id);
   }, [active]);
-
   return (
     <div className="mb-4 h-0.5 w-full overflow-hidden rounded bg-transparent" aria-hidden>
-      <div
-        className="h-full rounded bg-primary transition-[width,opacity] duration-300 ease-out"
-        style={{ width: `${w}%`, opacity: w === 0 ? 0 : 1 }}
-      />
+      <div className="h-full rounded bg-primary transition-[width,opacity] duration-300 ease-out"
+        style={{ width: `${w}%`, opacity: w === 0 ? 0 : 1 }} />
     </div>
   );
 }
 
 export default function LoginForm({
-  heading = "Welcome back, Alpha!",
-  sub = "Sign in with a one-time code — no password needed.",
-  cta = "Log In",
+  mode = "signin",
+  heading,
+  sub,
   defaultNext = "/user-dashboard",
 }: {
+  mode?: "signin" | "register";
   heading?: string;
   sub?: string;
-  cta?: string;
   defaultNext?: string;
 }) {
   const params = useSearchParams();
   const next = params.get("next") || defaultNext;
+  const isRegister = mode === "register";
 
-  const [step, setStep] = useState<"email" | "otp">("email");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [cooldown, setCooldown] = useState(0); // resend lockout (s)
-  const verifiedRef = useRef(false); // guard against double auto-submit
-
-  // Resend cooldown ticker.
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [cooldown]);
-
   const NET_ERR = "Something went wrong. Please try again.";
 
-  async function submitEmail(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
+    setBusy(true); setError(null); setNotice(null);
     try {
-      const r = await sendLoginOtp(email);
-      if (r.ok) {
-        setStep("otp");
-        setNotice(`Code sent to ${email}`);
-        setCooldown(30);
-      } else setError(r.error);
-    } catch {
-      setError(NET_ERR); // action threw (stale deployment, network) — don't hang
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function resend() {
-    if (cooldown > 0 || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await sendLoginOtp(email);
-      if (r.ok) {
-        setNotice(`New code sent to ${email}`);
-        setCooldown(30);
-      } else setError(r.error);
-    } catch {
-      setError(NET_ERR);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verify(codeToCheck: string) {
-    if (verifiedRef.current) return;
-    verifiedRef.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      // On success the action redirects server-side (throws NEXT_REDIRECT) and
-      // the browser navigates — code past this only runs on a failed verify.
-      const r = await verifyLoginOtp(email, codeToCheck, next);
+      const r = isRegister
+        ? await register(name, email, password, next)
+        : await signIn(email, password, next);
       if (r && !r.ok) setError(r.error);
-      else return; // redirecting — keep the bar riding through navigation
+      else return; // success redirects server-side; keep the bar riding
     } catch (err) {
-      // Re-throw Next's redirect signal so navigation proceeds; only real
-      // failures fall through to the error state.
       if (err && typeof err === "object" && "digest" in err &&
           typeof (err as { digest?: string }).digest === "string" &&
-          (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")) {
-        throw err;
-      }
+          (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")) throw err;
       setError(NET_ERR);
     }
-    verifiedRef.current = false;
     setBusy(false);
   }
 
-  async function submitCode(e: React.FormEvent) {
-    e.preventDefault();
-    verify(code);
-  }
-
-  function onCodeChange(v: string) {
-    const digits = v.replace(/\D/g, "").slice(0, 8);
-    setCode(digits);
-    setError(null);
-    // Auto-verify the moment 8 digits are in — removes the extra button press.
-    if (digits.length === 8) verify(digits);
+  async function onForgot() {
+    setError(null); setNotice(null);
+    if (!/.+@.+\..+/.test(email)) { setError("Enter your email above first."); return; }
+    setBusy(true);
+    try { await requestPasswordReset(email); setNotice("If that email has an account, a reset link is on its way."); }
+    catch { setError(NET_ERR); }
+    setBusy(false);
   }
 
   return (
@@ -147,47 +87,50 @@ export default function LoginForm({
       <p className="mb-6 text-lg font-bold">
         <Link href="/" className="text-primary hover:underline">Homepage</Link>
         <span className="mx-2 text-gray-300">\\</span>
-        <span className="text-ink">{heading}</span>
+        <span className="text-ink">{heading ?? (isRegister ? "Create your account" : "Welcome back!")}</span>
       </p>
 
       <ProgressBar active={busy} />
 
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
-      {!error && notice && step === "otp" && (
-        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
-      )}
+      {notice && <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>}
 
-      {step === "email" ? (
-        <form onSubmit={submitEmail} className="space-y-5">
-          <p className="text-sm text-gray-500">{sub}</p>
+      <form onSubmit={onSubmit} className="space-y-5">
+        {sub && <p className="text-sm text-gray-500">{sub}</p>}
+        {isRegister && (
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-ink">Email Address</label>
-            <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputCls} />
+            <label className="mb-1.5 block text-sm font-semibold text-ink">Full name</label>
+            <input required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className={inputCls} />
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-gray-500"><input type="checkbox" className="accent-primary" /> Remember me</label>
-            <Link href="/forgot-password" className="font-medium text-gray-500 hover:text-primary">Trouble signing in?</Link>
+        )}
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-ink">Email Address</label>
+          <input type="email" required autoFocus={!isRegister} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputCls} />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold text-ink">Password</label>
+          <div className="relative">
+            <input type={show ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder={isRegister ? "8+ chars, 1 capital, 1 number, 1 symbol" : "Your password"} className={inputCls} />
+            <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">{show ? "Hide" : "Show"}</button>
           </div>
-          <Button type="submit" disabled={busy} className="w-full">{busy ? "Sending code…" : cta}</Button>
-        </form>
-      ) : (
-        <form onSubmit={submitCode} className="space-y-5">
-          <p className="text-sm text-gray-500">Enter the 8-digit code sent to <b className="text-ink">{email}</b>.</p>
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-ink">Verification code</label>
-            <input inputMode="numeric" autoFocus required value={code} maxLength={8} disabled={busy}
-              onChange={(e) => onCodeChange(e.target.value)}
-              placeholder="••••••••" className={`${inputCls} tracking-[0.5em] text-center text-xl`} />
+          {isRegister && <p className="mt-1.5 text-xs text-gray-500">At least 8 characters, one capital, one number, one special character. Don&apos;t use your name or email.</p>}
+        </div>
+        {!isRegister && (
+          <div className="flex justify-end text-sm">
+            <button type="button" onClick={onForgot} className="font-medium text-gray-500 hover:text-primary">Forgot password?</button>
           </div>
-          <Button type="submit" disabled={busy || code.length !== 8} className="w-full">{busy ? "Verifying…" : "Verify & continue"}</Button>
-          <div className="flex justify-between text-sm text-gray-500">
-            <button type="button" className="hover:text-primary" onClick={() => { setStep("email"); setCode(""); setError(null); setNotice(null); verifiedRef.current = false; }}>Change email</button>
-            <button type="button" disabled={cooldown > 0 || busy} className="hover:text-primary disabled:opacity-50 disabled:hover:text-gray-500" onClick={resend}>
-              {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
-            </button>
-          </div>
-        </form>
-      )}
+        )}
+        <Button type="submit" disabled={busy} className="w-full">
+          {busy ? (isRegister ? "Creating…" : "Signing in…") : (isRegister ? "Create account" : "Log In")}
+        </Button>
+      </form>
+
+      <p className="mt-5 text-center text-sm text-gray-500">
+        {isRegister
+          ? (<>Already a member? <Link href="/login" className="font-semibold text-primary hover:underline">Sign in</Link></>)
+          : (<>New here? <Link href="/signup" className="font-semibold text-primary hover:underline">Create an account</Link></>)}
+      </p>
     </div>
   );
 }
