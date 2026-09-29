@@ -11,6 +11,14 @@ const nextConfig = {
   // it from node_modules at runtime avoids that entirely.
   experimental: {
     serverComponentsExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+    // Pattern B pages read src/data/orig-*.html and *-init.js at runtime via
+    // fs.readFileSync(path.join(process.cwd(), ...)). process.cwd() is not
+    // statically analyzable, so Next's file tracer never bundles those files
+    // into the serverless function -> ENOENT -> 500 on every dynamic route on
+    // Vercel (works locally because the files sit on disk). Force-include them.
+    outputFileTracingIncludes: {
+      "/**": ["./src/data/**"],
+    },
   },
   images: {
     remotePatterns: [
