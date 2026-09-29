@@ -43,6 +43,7 @@ export default async function UserDashboardPage() {
       bookings={rows}
       payments={payments}
       stats={stats}
+      emailVerified={profile?.email_verified ?? false}
     />
   );
 }

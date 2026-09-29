@@ -55,9 +55,10 @@ type Props = {
   bookings: Booking[];
   payments: { id: string; date: string; reference: string; amount: number | null; status: string }[];
   stats: { total: number; upcoming: number; spent: number };
+  emailVerified?: boolean;
 };
 
-export default function Dashboard({ email, profile, bookings, payments, stats }: Props) {
+export default function Dashboard({ email, profile, bookings, payments, stats, emailVerified = true }: Props) {
   const [tab, setTab] = useState("overview");
   const [detail, setDetail] = useState<Booking | null>(null);
   const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Trekker";
@@ -65,6 +66,13 @@ export default function Dashboard({ email, profile, bookings, payments, stats }:
 
   return (
     <div className="min-h-[70vh] bg-page">
+      {!emailVerified && (
+        <div className="container-px pt-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Please confirm your email — check your inbox for the verification link.
+          </div>
+        </div>
+      )}
       <div className="container-px flex gap-6 py-8">
         {/* SIDEBAR (2-level rail) */}
         <aside className="hidden w-64 shrink-0 lg:block">
