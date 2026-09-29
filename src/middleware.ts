@@ -28,7 +28,14 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/gallery-detail.php",
-    // Run on app routes to refresh the session; skip Next internals & static assets.
-    "/((?!_next/static|_next/image|favicon.ico|assets/|.*\\.[\\w]+$).*)",
+    // Only refresh/gate on auth-relevant routes. Running updateSession on EVERY
+    // route made link prefetches fire concurrent getUser()/token refreshes;
+    // Supabase refresh tokens are single-use (rotation), so racing requests got
+    // "token already used" and the session was cleared — random logouts. These
+    // areas are the only ones that read the session, and login/booking actions
+    // manage their own cookies, so nothing else needs the middleware.
+    "/account/:path*",
+    "/user-dashboard/:path*",
+    "/admin/:path*",
   ],
 };
