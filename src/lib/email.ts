@@ -24,6 +24,19 @@ export async function sendOtpEmail(to: string, code: string) {
   );
 }
 
+// Non-blocking "confirm your email" — verifies ownership out of band; does not
+// gate sign-in or booking. Does NOT throw (a failure just means no banner clear).
+export async function sendVerifyEmail(to: string, link: string) {
+  await sendMail(
+    to,
+    "Confirm your email — Alpha Adventures",
+    `<h2>Confirm your email</h2>
+     <p>Tap below to confirm this is your email address.</p>
+     <p><a href="${link}" style="display:inline-block;background:#fe5100;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Confirm email</a></p>
+     <p>If you didn't create an account, ignore this email.</p>`,
+  );
+}
+
 export type BookingEmail = {
   to: string;
   reference: string;
