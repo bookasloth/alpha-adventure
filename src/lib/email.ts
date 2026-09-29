@@ -37,6 +37,18 @@ export async function sendVerifyEmail(to: string, link: string) {
   );
 }
 
+// Password reset link (via admin.generateLink recovery), delivered by our mailer.
+export async function sendResetEmail(to: string, link: string) {
+  await sendMail(
+    to,
+    "Reset your password — Alpha Adventures",
+    `<h2>Reset your password</h2>
+     <p>Tap below to choose a new password. The link expires in 1 hour.</p>
+     <p><a href="${link}" style="display:inline-block;background:#fe5100;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Reset password</a></p>
+     <p>If you didn't request this, ignore this email.</p>`,
+  );
+}
+
 export type BookingEmail = {
   to: string;
   reference: string;
