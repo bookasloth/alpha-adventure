@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
 
@@ -46,14 +46,7 @@ type Result = { ok: true; slug: string } | { ok: false; error: string };
 const blank = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
 const toPaise = (r: number) => Math.round(r * 100);
 
-function revalidateTrek(slug: string) {
-  revalidatePath("/admin");
-  revalidatePath(`/treks/${slug}`);
-  revalidatePath("/treks/upcoming-treks");
-  revalidatePath("/treks/trips-near-nagpur");
-  revalidatePath("/treks/backpacking-trips");
-  revalidatePath("/");
-}
+const revalidateTrek = (slug: string) => revalidatePublicTrek(slug);
 
 export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
   const { admin } = await requireAdmin();
