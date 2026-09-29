@@ -5,6 +5,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ponytail: keep Supabase out of server vendor-chunks. A cached/incremental
+  // build can emit a page.js that requires ./vendor-chunks/@supabase.js without
+  // re-emitting the chunk -> MODULE_NOT_FOUND -> 500 on every DB route. Loading
+  // it from node_modules at runtime avoids that entirely.
+  experimental: {
+    serverComponentsExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+  },
   images: {
     remotePatterns: [
       {
