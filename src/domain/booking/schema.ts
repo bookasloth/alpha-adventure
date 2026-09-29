@@ -51,5 +51,25 @@ export const emailSchema = z
 // with CODE_LEN in BookingFlow.
 export const otpSchema = z.string().trim().regex(/^\d{8}$/, "Enter the 8-digit code.");
 
+// Password policy: 8+ chars, one uppercase, one digit, one special.
+export const passwordSchema = z
+  .string()
+  .min(8, "Use at least 8 characters.")
+  .regex(/[A-Z]/, "Add an uppercase letter.")
+  .regex(/\d/, "Add a number.")
+  .regex(/[^A-Za-z0-9]/, "Add a special character.");
+
+export const nameSchema = z.string().trim().min(2, "Enter your name.").max(80);
+
+// True when the password does NOT embed the user's identity (a name token of
+// length >= 3, or the email local-part). Case-insensitive substring check.
+export function passwordDisallowsIdentity(pw: string, id: { name?: string; email?: string }): boolean {
+  const lower = pw.toLowerCase();
+  const tokens: string[] = [];
+  if (id.name) tokens.push(...id.name.toLowerCase().split(/\s+/));
+  if (id.email) tokens.push(id.email.toLowerCase().split("@")[0] ?? "");
+  return !tokens.some((t) => t.length >= 3 && lower.includes(t));
+}
+
 export type CreateDraftInput = z.infer<typeof createDraftSchema>;
 export type TravellerInput = z.infer<typeof travellerSchema>;
