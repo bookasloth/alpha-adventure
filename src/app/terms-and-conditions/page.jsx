@@ -17,6 +17,7 @@ export default function TermsAndConditionsPage() {
   return (
     <div
       suppressHydrationWarning
+      className="mx-auto max-w-3xl px-4 py-10"
       dangerouslySetInnerHTML={{ __html: termsHtml }}
     />
   );
