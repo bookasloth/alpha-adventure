@@ -141,8 +141,8 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       <Card>
         <CardHeader><CardTitle>Inclusions & exclusions</CardTitle></CardHeader>
         <CardContent className="grid gap-6 sm:grid-cols-2">
-          <div><p className="mb-2 text-sm font-semibold text-ink">What's included</p><ListRepeater items={inclusions} setItems={setInclusions} placeholder="Return transport" /></div>
-          <div><p className="mb-2 text-sm font-semibold text-ink">What's not included</p><ListRepeater items={exclusions} setItems={setExclusions} placeholder="Personal expenses" /></div>
+          <div><p className="mb-2 text-sm font-semibold text-ink">What&apos;s included</p><ListRepeater items={inclusions} setItems={setInclusions} placeholder="Return transport" /></div>
+          <div><p className="mb-2 text-sm font-semibold text-ink">What&apos;s not included</p><ListRepeater items={exclusions} setItems={setExclusions} placeholder="Personal expenses" /></div>
         </CardContent>
       </Card>
 
