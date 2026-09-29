@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
 
@@ -147,9 +147,6 @@ export async function createTrek(raw: unknown): Promise<Result> {
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[createTrek] child insert failed:", r.error.message);
 
-  revalidatePath("/admin");
-  revalidatePath(`/treks/${trek.slug}`);
-  revalidatePath("/treks/upcoming-treks");
-  revalidatePath("/treks/trips-near-nagpur");
+  revalidatePublicTrek(trek.slug);
   return { ok: true, slug: trek.slug };
 }

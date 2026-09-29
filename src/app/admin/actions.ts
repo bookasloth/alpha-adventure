@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "./data";
+import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 
 const optRupees = z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().min(0).optional());
 
@@ -43,8 +43,7 @@ export async function createDeparture(raw: unknown): Promise<Result> {
   }
 
   const { data: trek } = await admin.from("treks").select("slug").eq("id", d.trek_id).maybeSingle();
-  revalidatePath("/admin");
-  if (trek?.slug) revalidatePath(`/book/${trek.slug}`);
+  revalidatePublicTrek(trek?.slug);
   return { ok: true, slug: trek?.slug };
 }
 
@@ -53,11 +52,12 @@ const updateDepartureSchema = departureSchema.omit({ trek_id: true });
 type Admin = Awaited<ReturnType<typeof requireAdmin>>["admin"];
 async function revalidateBookFor(admin: Admin, departureId: string) {
   const { data: dep } = await admin.from("trek_departures").select("trek_id").eq("id", departureId).maybeSingle();
+  let slug: string | undefined;
   if (dep?.trek_id) {
     const { data: trek } = await admin.from("treks").select("slug").eq("id", dep.trek_id).maybeSingle();
-    if (trek?.slug) revalidatePath(`/book/${trek.slug}`);
+    slug = trek?.slug ?? undefined;
   }
-  revalidatePath("/admin");
+  revalidatePublicTrek(slug);
 }
 
 export async function updateDeparture(id: string, raw: unknown): Promise<Result> {
@@ -88,6 +88,5 @@ export async function deleteDeparture(id: string): Promise<Result> {
     console.error("[deleteDeparture]", error.message);
     return { ok: false, error: "Can't delete a date with bookings — set its status to Cancelled instead." };
   }
-  revalidatePath("/admin");
   return { ok: true };
 }
