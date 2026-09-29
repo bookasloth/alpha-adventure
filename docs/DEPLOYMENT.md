@@ -32,3 +32,14 @@ if that domain is down, but the live site renders unstyled/broken. See
 ## Environment
 No environment variables to configure — see
 [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md).
+
+## Auth config (password auth)
+
+- **Supabase Auth \u2192 "Confirm email": OFF.** Register creates users pre-confirmed
+  (`email_confirm: true`), so sign-in works regardless; keeping the global
+  confirmation off ensures any future signup path is not blocked on Supabase
+  email delivery. Email ownership is verified out-of-band by our own Brevo link
+  (`/verify-email`, sets `profiles.email_verified`) \u2014 non-blocking.
+- `NEXT_PUBLIC_SITE_URL` should be set to the canonical prod origin
+  (https://alphaadventures.in) so reset/verify links point at prod, not the
+  Vercel preview host.

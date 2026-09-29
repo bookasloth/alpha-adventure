@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import "./booking.css";
-import { createDraft, sendBookingOtp, verifyBookingOtp, resendBookingOtp, startPayment } from "../actions";
+import { createDraft, authenticateBooking, startPayment } from "../actions";
 
 type Trek = { id: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
 type Addon = { id: string; name: string; price: number };
 type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 type Traveller = { full_name: string; age: string; gender: Gender | ""; emergency_contact_phone?: string };
-type Pay = "email" | "otp" | "pay";
+type Pay = "auth" | "pay";
 
 const rupees = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
 const GENDERS: { v: Gender; label: string }[] = [
@@ -33,12 +33,16 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   const [travellers, setTravellers] = useState<Traveller[]>([{ full_name: "", age: "", gender: "" }]);
   const [tIndex, setTIndex] = useState(0);
   const [addonOn, setAddonOn] = useState<Record<string, boolean>>({});
-  const [pay, setPay] = useState<Pay>("email");
+  const [pay, setPay] = useState<Pay>("auth");
+  const [authMode, setAuthMode] = useState<"signin" | "register">("register");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [bookingId, setBookingId] = useState("");
   const [token, setToken] = useState("");
   const [serverTotal, setServerTotal] = useState<number | null>(null);
   const [reference, setReference] = useState("");
+  const [payToken, setPayToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,27 +76,22 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     setBookingId(r.bookingId); setToken(r.token); setServerTotal(r.total);
     return { id: r.bookingId, token: r.token };
   }
-  async function sendCode() {
+  async function authenticate() {
     setError(null);
     if (!/.+@.+\..+/.test(email)) return setError("Enter a valid email.");
+    if (!password) return setError("Enter your password.");
+    if (authMode === "register" && name.trim().length < 2) return setError("Enter your name.");
     setBusy(true);
     const d = await ensureDraft();
     if (!d) return setBusy(false);
-    const r = await sendBookingOtp(d.id, email, d.token);
+    const r = await authenticateBooking(d.id, { name, email, password, mode: authMode }, d.token);
     setBusy(false);
     if (!r.ok) return setError(r.error);
-    setPay("otp");
-  }
-  async function verify(code: string) {
-    setError(null); setBusy(true);
-    const r = await verifyBookingOtp(bookingId, email, code, token);
-    setBusy(false);
-    if (!r.ok) return setError(r.error);
-    setReference(r.reference); setPay("pay");
+    setReference(r.reference); setPayToken(r.payToken); setPay("pay");
   }
   async function doPay() {
     setError(null); setBusy(true);
-    const r = await startPayment(bookingId);
+    const r = await startPayment(bookingId, payToken);
     if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe
     setBusy(false);
     if (!r.ok) return setError(r.error);
@@ -194,20 +193,23 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
               </Panel>
             )}
 
-            {step === 4 && pay === "email" && (
-              <Panel eyebrow="Step 5 of 5" title="Confirm your email" desc="We'll email a one-time code. Your account is created automatically — no password.">
+            {step === 4 && pay === "auth" && (
+              <Panel eyebrow="Step 5 of 5" title={authMode === "register" ? "Create your account" : "Sign in to book"} desc={authMode === "register" ? "Set a password — you'll use it to manage your bookings." : "Welcome back — sign in to confirm your booking."}>
+                {authMode === "register" && (<>
+                  <label className="bk-fld">Full name</label>
+                  <input className="bk-inp" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                </>)}
                 <label className="bk-fld">Email address</label>
                 <input className="bk-inp" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                <Foot back={{ onClick: () => go(3) }} next={{ label: busy ? "Sending…" : "Send code", onClick: sendCode, disabled: busy }} />
-              </Panel>
-            )}
-            {step === 4 && pay === "otp" && (
-              <Panel eyebrow="Step 5 of 5" title="Enter the code" desc={`Sent to ${email}.`}>
-                <OtpForm busy={busy} onVerify={verify} />
-                <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                  <button className="bk-linkbtn" onClick={() => resendBookingOtp(email)}>Resend code</button>
-                  <button className="bk-linkbtn" style={{ marginLeft: "auto", color: "var(--bk-muted)" }} onClick={() => setPay("email")}>Change email</button>
+                <label className="bk-fld">Password</label>
+                <input className="bk-inp" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode === "register" ? "8+ chars, 1 capital, 1 number, 1 symbol" : "Your password"} />
+                {authMode === "register" && <div className="bk-tiny" style={{ marginTop: 6 }}>At least 8 characters, one capital, one number, one special character.</div>}
+                <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
+                  <button type="button" className="bk-linkbtn" onClick={() => { setError(null); setAuthMode(authMode === "register" ? "signin" : "register"); }}>
+                    {authMode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}
+                  </button>
                 </div>
+                <Foot back={{ onClick: () => go(3) }} next={{ label: busy ? "Please wait…" : (authMode === "register" ? "Create & continue" : "Sign in & continue"), onClick: authenticate, disabled: busy }} />
               </Panel>
             )}
             {step === 4 && pay === "pay" && (
@@ -275,27 +277,6 @@ function TravellerForm({ value, isLead, onChange, back, next }: { value: Travell
       </div>
       {isLead && (<><label className="bk-fld">Emergency contact phone</label><input className="bk-inp" value={value.emergency_contact_phone ?? ""} onChange={(e) => onChange({ ...value, emergency_contact_phone: e.target.value })} placeholder="+91…" /></>)}
       <Foot back={back} next={next} />
-    </div>
-  );
-}
-// ponytail: box count follows Supabase's OTP length (currently 8). If you change
-// GOTRUE_MAILER_OTP_LENGTH, change CODE_LEN + otpSchema to match.
-const CODE_LEN = 8;
-function OtpForm({ busy, onVerify }: { busy: boolean; onVerify: (code: string) => void }) {
-  const [digits, setDigits] = useState<string[]>(() => Array(CODE_LEN).fill(""));
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
-  const code = digits.join("");
-  return (
-    <div>
-      <div className="bk-otp">
-        {digits.map((d, i) => (
-          <input key={i} ref={(el) => { refs.current[i] = el; }} inputMode="numeric" maxLength={1} value={d}
-            onChange={(e) => { const c = e.target.value.replace(/\D/g, "").slice(0, 1); setDigits((p) => p.map((x, j) => (j === i ? c : x))); if (c && i < CODE_LEN - 1) refs.current[i + 1]?.focus(); }}
-            onKeyDown={(e) => { if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus(); }}
-            onPaste={(e) => { const p = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, CODE_LEN); if (p) { e.preventDefault(); setDigits(p.padEnd(CODE_LEN, " ").split("").map((c) => (c === " " ? "" : c))); refs.current[Math.min(p.length, CODE_LEN - 1)]?.focus(); } }} />
-        ))}
-      </div>
-      <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy || code.length !== CODE_LEN} onClick={() => onVerify(code)}>{busy ? "Verifying…" : "Verify"} <Arrow /></button></div>
     </div>
   );
 }
