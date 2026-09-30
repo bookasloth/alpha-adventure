@@ -9,14 +9,18 @@ import { siteUrl } from "@/lib/siteUrl";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
 import { withTimeout } from "@/lib/withTimeout";
-import { safeNext } from "@/lib/safeNext";
 import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 
 type Result = { ok: true } | { ok: false; error: string };
 
 const BAD_CREDS = "Email or password is incorrect.";
 
-export async function signIn(rawEmail: unknown, rawPassword: unknown, rawNext?: unknown): Promise<Result> {
+// Validates credentials + rate-limits, but does NOT establish the session here:
+// cookies set inside a Server Action don't reach the browser in this app (see
+// book/actions.ts). The client sets the session via the browser Supabase client
+// after this returns ok. Server sign-in here is only the rate-limited credential
+// check (brute-force guard the client can't enforce).
+export async function signIn(rawEmail: unknown, rawPassword: unknown): Promise<Result> {
   if (!(await limitByIp("signin", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const e = emailSchema.safeParse(rawEmail);
   if (!e.success || typeof rawPassword !== "string" || !rawPassword) return { ok: false, error: BAD_CREDS };
@@ -28,12 +32,12 @@ export async function signIn(rawEmail: unknown, rawPassword: unknown, rawNext?: 
     return { ok: false, error: "That took too long — please try again." };
   }
   if (res.error || !res.data.user) return { ok: false, error: BAD_CREDS };
-  // Redirect server-side, AFTER the session cookie is set. A client redirect
-  // after a Server Action auth does not reliably navigate.
-  redirect(safeNext(rawNext));
+  return { ok: true };
 }
 
-export async function register(rawName: unknown, rawEmail: unknown, rawPassword: unknown, rawNext?: unknown): Promise<Result> {
+// Creates the pre-confirmed account (admin) + fires the verify email. Returns
+// ok; the client then signs in with the browser client to set the session.
+export async function register(rawName: unknown, rawEmail: unknown, rawPassword: unknown): Promise<Result> {
   if (!(await limitByIp("signup", 5, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const name = nameSchema.safeParse(rawName);
   const e = emailSchema.safeParse(rawEmail);
@@ -64,11 +68,7 @@ export async function register(rawName: unknown, rawEmail: unknown, rawPassword:
     return { ok: false, error: "Could not create your account. Please try again." };
   }
   background(sendVerifyEmail(created.data.user.id, e.data));
-
-  const supabase = createClient(cookies());
-  const res = await supabase.auth.signInWithPassword({ email: e.data, password: pw.data });
-  if (res.error) return { ok: false, error: "Account created — please sign in." };
-  redirect(safeNext(rawNext));
+  return { ok: true };
 }
 
 // Always returns ok — never leak whether an account exists.
