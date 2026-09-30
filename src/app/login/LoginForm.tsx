@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, register, requestPasswordReset } from "./actions";
+import { createClient } from "@/utils/supabase/client";
+import { safeNext } from "@/lib/safeNext";
 import { Button } from "@/components/ui/button";
 
 const inputCls =
@@ -42,8 +44,9 @@ export default function LoginForm({
   sub?: string;
   defaultNext?: string;
 }) {
+  const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || defaultNext;
+  const next = safeNext(params.get("next"), defaultNext);
   const isRegister = mode === "register";
 
   const [name, setName] = useState("");
@@ -59,18 +62,20 @@ export default function LoginForm({
     e.preventDefault();
     setBusy(true); setError(null); setNotice(null);
     try {
-      const r = isRegister
-        ? await register(name, email, password, next)
-        : await signIn(email, password, next);
-      if (r && !r.ok) setError(r.error);
-      else return; // success redirects server-side; keep the bar riding
-    } catch (err) {
-      if (err && typeof err === "object" && "digest" in err &&
-          typeof (err as { digest?: string }).digest === "string" &&
-          (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")) throw err;
+      // 1. Server: rate-limited credential check (sign in) / account creation (register).
+      const r = isRegister ? await register(name, email, password) : await signIn(email, password);
+      if (!r.ok) { setError(r.error); setBusy(false); return; }
+      // 2. Client: establish the session in the browser (server-action cookies
+      //    don't reach the browser in this app), then navigate.
+      const supabase = createClient();
+      const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signErr) { setError(NET_ERR); setBusy(false); return; }
+      router.push(next);
+      router.refresh(); // drop the pre-auth router cache so the dashboard renders authed
+    } catch {
       setError(NET_ERR);
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function onForgot() {

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import "./booking.css";
 import { createDraft, authenticateBooking, startPayment } from "../actions";
+import { createClient } from "@/utils/supabase/client";
 
 type Trek = { id: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
@@ -85,8 +86,11 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     const d = await ensureDraft();
     if (!d) return setBusy(false);
     const r = await authenticateBooking(d.id, { name, email, password, mode: authMode }, d.token);
+    if (!r.ok) { setBusy(false); return setError(r.error); }
+    // Best-effort: establish the browser session so the user is signed in after
+    // booking (the pay step itself authorises off the payToken, not the session).
+    try { await createClient().auth.signInWithPassword({ email, password }); } catch { /* non-fatal */ }
     setBusy(false);
-    if (!r.ok) return setError(r.error);
     setReference(r.reference); setPayToken(r.payToken); setPay("pay");
   }
   async function doPay() {
