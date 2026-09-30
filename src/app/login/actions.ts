@@ -1,7 +1,6 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { sendVerifyEmail } from "@/lib/verifyEmail";
@@ -91,8 +90,3 @@ export async function requestPasswordReset(rawEmail: unknown): Promise<Result> {
   return { ok: true };
 }
 
-export async function signOut() {
-  const supabase = createClient(cookies());
-  await supabase.auth.signOut();
-  redirect("/");
-}
