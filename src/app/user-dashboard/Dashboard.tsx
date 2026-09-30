@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Ticket, CreditCard, User, LogOut, Mountain,
   CalendarCheck, Wallet, ChevronRight, X,
 } from "lucide-react";
-import { signOut } from "../login/actions";
+import { createClient } from "@/utils/supabase/client";
 import { updateProfile, getBookingTravellers, cancelBooking } from "./actions";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,8 +59,17 @@ type Props = {
 };
 
 export default function Dashboard({ email, profile, bookings, payments, stats, emailVerified = true }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState("overview");
   const [detail, setDetail] = useState<Booking | null>(null);
+
+  // Client-side sign-out: server-action cookie clears don't reach the browser
+  // in this app, so clear the session with the browser client, then navigate.
+  async function handleSignOut() {
+    try { await createClient().auth.signOut(); } catch { /* clear locally anyway */ }
+    router.push("/");
+    router.refresh();
+  }
   const name = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Trekker";
   const initials = (name === "Trekker" ? email || "T" : name).slice(0, 1).toUpperCase();
 
@@ -105,11 +114,9 @@ export default function Dashboard({ email, profile, bookings, payments, stats, e
                 </div>
               ))}
               <div className="border-t border-line/70 pt-3">
-                <form action={signOut}>
-                  <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600">
-                    <LogOut size={18} /> Sign out
-                  </button>
-                </form>
+                <button type="button" onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600">
+                  <LogOut size={18} /> Sign out
+                </button>
               </div>
             </nav>
           </div>
