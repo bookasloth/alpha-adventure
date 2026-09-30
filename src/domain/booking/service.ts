@@ -28,7 +28,17 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
     .select("id,trek_id,start_date,status,capacity,booked_seats")
     .eq("id", input.departure_id)
     .maybeSingle();
-  if (!dep || dep.trek_id !== input.trek_id || dep.status === "cancelled") throw new Error("Departure is not bookable.");
+  // IST "today" (business tz) — reject client-tampered past/unlisted departures.
+  // price_booking enforces the same gate in SQL; this gives a clean early error.
+  const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  if (
+    !dep ||
+    dep.trek_id !== input.trek_id ||
+    dep.status === "cancelled" ||
+    !dep.start_date ||
+    dep.start_date < todayIST
+  )
+    throw new Error("Departure is not bookable.");
 
   const seats = input.adults + input.children;
   if (dep.booked_seats + seats > dep.capacity) throw new Error("Not enough seats left.");
@@ -107,6 +117,11 @@ export type BookingRow = {
   departure_date: string | null;
   adults: number;
   children: number;
+  // Present when the row comes from a full-row RPC (finalize/confirm); used for
+  // the itemized receipt email. Optional because the col-subset selects omit them.
+  price_adult?: number;
+  price_child?: number;
+  addons_total?: number;
 };
 
 // After OTP verify: attach the draft to the account + reserve seats (pending_payment).
@@ -132,44 +147,17 @@ export async function linkAndFinalize(
 }
 
 // Mock payment: records a successful payment + moves pending_payment -> confirmed
-// (via payment_processing, respecting the transition trigger). PhonePe replaces
-// this with a server-verified webhook flow.
+// atomically in ONE transaction (confirm_mock_payment RPC, migration 0019). The
+// row lock makes it idempotent, so a double-click can't double-pay. PhonePe
+// replaces this with a server-verified webhook flow.
 export async function confirmMockPayment(admin: Admin, bookingId: string): Promise<BookingRow> {
-  const { data: b } = await admin
-    .from("bookings")
-    .select("id,status,grand_total")
-    .eq("id", bookingId)
-    .maybeSingle();
-  if (!b) throw new Error("Booking not found.");
-  if (b.status !== "pending_payment") throw new Error(`Booking not payable (is ${b.status}).`);
-
-  const merchantOrderId = `MOCK-${bookingId}-${Date.now()}`;
-  const { error: payErr } = await admin.from("payments").insert({
-    booking_id: bookingId,
-    provider: "mock",
-    merchant_order_id: merchantOrderId,
-    provider_txn_id: merchantOrderId,
-    amount: b.grand_total,
-    currency: "INR",
-    status: "success",
-    method: "mock",
-    idempotency_key: merchantOrderId,
-    verified_at: new Date().toISOString(),
-    kind: "full",
-    raw_response: { mock: true },
-  });
-  if (payErr) throw new Error(`Payment insert failed: ${payErr.message}`);
-
-  // Respect the transition DAG: pending_payment -> payment_processing -> confirmed.
-  await admin.from("bookings").update({ status: "payment_processing" }).eq("id", bookingId);
-  const { data: confirmed, error: confErr } = await admin
-    .from("bookings")
-    .update({ status: "confirmed", amount_paid: b.grand_total, confirmed_at: new Date().toISOString() })
-    .eq("id", bookingId)
-    .select("id,reference,status,grand_total,amount_paid,trek_title,departure_date,adults,children")
-    .single();
-  if (confErr || !confirmed) throw new Error(`Confirm failed: ${confErr?.message ?? "unknown"}`);
-  return confirmed as BookingRow;
+  const { data, error } = await admin.rpc("confirm_mock_payment", { _booking_id: bookingId });
+  if (error) {
+    if (/booking not found/i.test(error.message)) throw new Error("Booking not found.");
+    throw new Error(`Confirm failed: ${error.message}`);
+  }
+  if (!data) throw new Error("Booking not found.");
+  return data as BookingRow;
 }
 
 const BOOKING_COLS = "id,reference,status,grand_total,amount_paid,trek_title,departure_date,adults,children";

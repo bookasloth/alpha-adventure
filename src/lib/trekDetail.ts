@@ -1,8 +1,11 @@
+import { cache } from "react";
 import { publicClient } from "@/lib/seo";
 
 // Public read of a trek + all detail sections. Anon key + RLS (published,
 // non-deleted). Returns null when not found so the page can 404.
-export async function getTrekBySlug(slug: string) {
+// Wrapped in React.cache: the detail page calls this in generateMetadata AND in
+// the body — cache dedupes them into one fetch per request (~14 → 7 round-trips).
+export const getTrekBySlug = cache(async (slug: string) => {
   const supabase = publicClient();
 
   const { data: trek } = await supabase
@@ -36,6 +39,6 @@ export async function getTrekBySlug(slug: string) {
     gallery: gallery.data ?? [],
     faqs: faqs.data ?? [],
   };
-}
+});
 
 export type TrekDetailData = NonNullable<Awaited<ReturnType<typeof getTrekBySlug>>>;
