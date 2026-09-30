@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { img } from "@/lib/assets";
 
 const slides = [
@@ -55,7 +56,7 @@ export default function Hero() {
                   </div>
                 ) : (
                   <div className="banner-img-area absolute inset-0">
-                    <img src={item.media} alt={item.alt} className="h-full w-full object-cover" />
+                    <Image src={item.media} alt={item.alt} fill sizes="100vw" className="object-cover" />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-black/15" />

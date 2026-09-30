@@ -3,14 +3,15 @@ import { createClient } from "@/utils/supabase/server";
 import { validateLead, type LeadInput } from "@/utils/lead";
 import { jsonOk, jsonFail } from "@/utils/http";
 import { limitByIp } from "@/lib/rateLimit";
+import { background } from "@/lib/after";
+import { sendLeadNotification } from "@/lib/email";
 
 // POST /api/leads — persist a contact/enquiry submission.
 // ponytail: a Route Handler (not a Server Action) because the contact form is
 // injected legacy HTML (Pattern B), not a React form. When /contact is rebuilt
 // as Pattern A, move this to a Server Action per docs/V2_DECISIONS.md.
-// No rate limiting yet — that lands in the forms/hardening phase.
 export async function POST(request: Request) {
-  if (!(await limitByIp("leads", 5, 60))) {
+  if (!(await limitByIp("leads", 5, 60, { failClosed: true }))) {
     return jsonFail("Too many requests. Please try again in a minute.", "rate_limited", 429);
   }
 
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
       500
     );
   }
+
+  // Alert the operator (non-blocking) — an unseen enquiry is a lost booking.
+  background(sendLeadNotification(result.value));
 
   return jsonOk(null);
 }

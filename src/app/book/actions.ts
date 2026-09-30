@@ -218,6 +218,11 @@ export async function payMockBooking(bookingId: string, payToken?: string): Prom
           departureDate: confirmed.departure_date,
           seats: confirmed.adults + confirmed.children,
           total: confirmed.grand_total,
+          adults: confirmed.adults,
+          children: confirmed.children,
+          priceAdult: confirmed.price_adult,
+          priceChild: confirmed.price_child,
+          addonsTotal: confirmed.addons_total,
         }),
       );
     }

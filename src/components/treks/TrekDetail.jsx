@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { site } from "@/data/site";
 import Accordion from "./Accordion";
 
@@ -38,8 +39,10 @@ export default function TrekDetail({ trek }) {
     <div className="trek-detail">
       {/* HERO BANNER — self-contained (theme's swiper banner needs JS/height we don't run here) */}
       <div className="breadcrumb-section two" id="section-hero-slider" style={{ position: "relative", minHeight: 460, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-        <div className="banner-bg" aria-hidden="true"
-          style={{ position: "absolute", inset: 0, backgroundImage: trek.hero_image ? `url(${trek.hero_image})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }} />
+        {trek.hero_image && (
+          <Image src={trek.hero_image} alt={trek.title} fill priority sizes="100vw"
+            aria-hidden="true" style={{ objectFit: "cover", objectPosition: "center" }} />
+        )}
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(17,15,15,.25) 0%, rgba(17,15,15,.72) 100%)" }} />
         <div className="banner-content-wrap" style={{ position: "relative", width: "100%", paddingBottom: 48 }}>
           <div className="container">

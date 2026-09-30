@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { isPublicSupabaseConfigured, publicClient, toSlug } from "./seo";
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
@@ -17,8 +18,9 @@ function toCard(t: any) {
 }
 
 // Resolve a /treks/<slug> that isn't a trek: is it a state or difficulty
-// collection? Returns the listing, or null (→ 404).
-export async function getCollection(slug: string) {
+// collection? Returns the listing, or null (→ 404). React.cache-wrapped: the
+// page calls it in both generateMetadata and the body — dedupe to one fetch.
+export const getCollection = cache(async (slug: string) => {
   if (!isPublicSupabaseConfigured) return null;
   const { data } = await publicClient()
     .from("treks")
@@ -39,4 +41,4 @@ export async function getCollection(slug: string) {
   }
 
   return null;
-}
+});

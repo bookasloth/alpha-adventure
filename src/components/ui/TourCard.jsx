@@ -1,14 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 
 // Reusable tour-package card.
 export default function TourCard({ tour }) {
   return (
     <Link href={`/tour-packages/${tour.slug}`} className="card group block hover:-translate-y-1 transition-transform duration-300">
       <div className="relative h-56 overflow-hidden">
-        <img
+        <Image
           src={tour.image}
           alt={tour.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <span className="absolute top-3 left-3 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
           {tour.type}

@@ -37,7 +37,7 @@ export async function signIn(rawEmail: unknown, rawPassword: unknown): Promise<R
 // Creates the pre-confirmed account (admin) + fires the verify email. Returns
 // ok; the client then signs in with the browser client to set the session.
 export async function register(rawName: unknown, rawEmail: unknown, rawPassword: unknown): Promise<Result> {
-  if (!(await limitByIp("signup", 5, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  if (!(await limitByIp("signup", 5, 60, { failClosed: true }))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const name = nameSchema.safeParse(rawName);
   const e = emailSchema.safeParse(rawEmail);
   const pw = passwordSchema.safeParse(rawPassword);
@@ -72,7 +72,7 @@ export async function register(rawName: unknown, rawEmail: unknown, rawPassword:
 
 // Always returns ok — never leak whether an account exists.
 export async function requestPasswordReset(rawEmail: unknown): Promise<Result> {
-  if (!(await limitByIp("reset", 5, 60))) return { ok: false, error: "Too many requests. Please wait a minute." };
+  if (!(await limitByIp("reset", 5, 60, { failClosed: true }))) return { ok: false, error: "Too many requests. Please wait a minute." };
   const e = emailSchema.safeParse(rawEmail);
   if (!e.success) return { ok: true };
   try {
