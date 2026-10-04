@@ -24,25 +24,25 @@
             var activeCategory = 'all';
             var productImageMap = {
                 'rub-50-red': [
-                    'assets/img/innerpages/product-img1.jpg',
-                    'assets/img/innerpages/product-details-img1.jpg'
+                    'assets/img/innerpages/destination-img4.jpg',
+                    'assets/img/innerpages/destination-img1.jpg'
                 ],
                 'rub-50-blue': [
-                    'assets/img/innerpages/product-img2.jpg',
-                    'assets/img/innerpages/product-details-img2.jpg'
+                    'assets/img/innerpages/destination-img5.jpg',
+                    'assets/img/innerpages/destination-img2.jpg'
                 ],
                 'od-4-black': [
-                    'assets/img/innerpages/product-img3.jpg',
-                    'assets/img/innerpages/product-details-img3.jpg'
+                    'assets/img/innerpages/destination-img6.jpg',
+                    'assets/img/innerpages/destination-img3.jpg'
                 ],
                 'od-1-black': [
-                    'assets/img/innerpages/product-img4.jpg'
+                    'assets/img/innerpages/tour-package-img1.jpg'
                 ],
                 'od-1-brown': [
-                    'assets/img/innerpages/product-img5.jpg'
+                    'assets/img/innerpages/tour-package-img2.jpg'
                 ],
                 'trekking-pole': [
-                    'assets/img/innerpages/product-img6.jpg'
+                    'assets/img/innerpages/tour-package-img3.jpg'
                 ]
             };
 
