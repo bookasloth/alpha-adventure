@@ -22,7 +22,7 @@ export const treks = [
     duration: "02 Days/01 Night",
     price: 1299,
     badge: "Adventure!",
-    image: img("home2/trek-harishchandragad.jpg"),
+    image: img("home2/destination-img1.jpg"),
     description:
       "Ancient fort with the famous Konkan Kada cliff — a dramatic crescent-shaped edge offering jaw-dropping sunset views over the Sahyadri range.",
   },
@@ -36,8 +36,8 @@ export const treks = [
     duration: "01 Day Trek",
     price: 899,
     badge: "Historical!",
-    image: img("home2/trek-rajgad.jpg"),
-    gallery: [img("home2/trek-rajgad.jpg"), img("home2/trek-rajgad2.jpg"), img("home2/trek-rajgad3.jpg")],
+    image: img("home2/destination-img3.jpg"),
+    gallery: [img("home2/destination-img3.jpg"), img("home2/destination-img4.jpg"), img("home2/destination-img5.jpg")],
     description:
       "Former capital of the Maratha Empire. Rajgad is a sprawling fort with multiple plateaus, secret doors and centuries of history waiting to be explored.",
   },
@@ -51,7 +51,7 @@ export const treks = [
     duration: "01 Day Trek",
     price: 799,
     badge: "",
-    image: img("home2/trek-kalsubai.jpg"),
+    image: img("home2/destination-img2.jpg"),
     description:
       "The highest peak in Maharashtra at 1,646m. A rewarding climb with a temple at the summit and panoramic views of the surrounding ranges.",
   },
@@ -65,7 +65,7 @@ export const treks = [
     duration: "01 Day Trek",
     price: 999,
     badge: "Monsoon Special!",
-    image: img("home2/trek-andharban.jpg"),
+    image: img("home2/destination-img6.jpg"),
     description:
       "A 'dark forest' descent through dense evergreen woods, waterfalls and valleys — one of the most scenic monsoon trails in the Sahyadris.",
   },
@@ -79,7 +79,7 @@ export const treks = [
     duration: "Half Day Trek",
     price: 599,
     badge: "",
-    image: img("home2/trek-sinhagad.jpg"),
+    image: img("home2/destination-img7.jpg"),
     description:
       "A short, beginner-friendly fort trek packed with history and the famous 'Kanda Bhaji' at the top. Perfect for a quick weekend escape.",
   },

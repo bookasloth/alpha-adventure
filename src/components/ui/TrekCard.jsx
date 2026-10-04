@@ -8,7 +8,7 @@ export default function TrekCard({ trek, href }) {
     <Link href={link} className="card group block hover:-translate-y-1 transition-transform duration-300">
       <div className="relative h-56 overflow-hidden">
         <Image
-          src={trek.image}
+          src={trek.image || "/assets/img/home2/destination-img1.jpg"}
           alt={trek.title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
