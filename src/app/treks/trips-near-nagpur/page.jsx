@@ -1,5 +1,5 @@
 import PageHero from "@/components/layout/PageHero";
-import TrekGrid from "@/components/home/TrekGrid";
+import PackageGrid from "@/components/home/PackageGrid";
 import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = { title: "Trips Near Nagpur" };
@@ -15,7 +15,7 @@ export default async function TripsNearNagpurPage() {
         crumb="Trips Near Nagpur"
         subtitle="Quick weekend getaways, hidden waterfalls and riverside camping — all close to Nagpur."
       />
-      <TrekGrid treks={items} eyebrow="Near Nagpur" title="Weekend Escapes From Nagpur" />
+      <PackageGrid treks={items} eyebrow="Near Nagpur" title="Weekend Escapes From Nagpur" />
     </>
   );
 }
