@@ -13,7 +13,7 @@ export default function PackageGrid({ eyebrow, title, subtitle, treks }) {
         ) : (
           <div className="row g-4">
             {treks.map((t) => (
-              <div key={t.slug} className="col-xl-3 col-lg-4 col-md-6">
+              <div key={t.slug} className="col-lg-4 col-md-6">
                 <PackageCard trek={t} />
               </div>
             ))}
