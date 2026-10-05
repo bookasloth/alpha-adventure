@@ -23,7 +23,7 @@ import { deleteTrek } from "./treks/actions";
 import { deleteGalleryAlbum } from "./gallery/actions";
 import { deleteTestimonial } from "./testimonials/actions";
 import { updateDeparture, deleteDeparture } from "./actions";
-import { cancelBooking } from "./bookings/actions";
+import { cancelBooking, getBookingDetail, type BookingDetail } from "./bookings/actions";
 import { updateLeadStatus, replyToLead } from "./leads/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
@@ -528,6 +528,16 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
 
   const { bookings, setSearch, notify, openModal } = actions;
   const router = useRouter();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detail, setDetail] = useState<BookingDetail | null>(null);
+
+  const openDetail = async (b: Booking) => {
+    if (!b.id) { notify("This booking isn't saved yet."); return; }
+    setDetail(null); setDetailOpen(true);
+    const r = await getBookingDetail(b.id);
+    if (r.ok) setDetail(r.detail);
+    else { setDetailOpen(false); notify(r.error); }
+  };
   const query = actions.search;
   const trekOptions: string[] = [...new Set(bookings.map((b: Booking) => b.trek))];
   const status = BOOKING_TAB_STATUS[tab];
@@ -544,7 +554,7 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
   const clearFilters = () => { setTab("all"); setTrek("all"); setSearch(""); setPage(0); };
 
   const rowMenu = (b: Booking): MenuItem[] => [
-    { label: "View booking", onClick: () => notify(`Opening ${b.ref} (${b.customer})…`) },
+    { label: "View booking", onClick: () => openDetail(b) },
     ...(b.status !== "cancelled" && b.id ? [{
       label: "Cancel booking", tone: "danger" as const,
       onClick: async () => {
@@ -588,8 +598,113 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
           <button disabled={safePage === maxPage || rows.length === 0} onClick={() => setPage(safePage + 1)} className="rounded-md border border-line px-3 py-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
         </div>
       </div>
+      {detailOpen && <BookingDetailModal detail={detail} onClose={() => setDetailOpen(false)} />}
     </div>
   );
+}
+
+const money = (n: number) => "₹" + n.toLocaleString("en-IN");
+const fmtDay = (d: string | null) =>
+  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-ink/40 p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Booking details">
+        {!detail ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Loading booking…</p>
+            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold">{detail.reference}</h2>
+                  <Badge variant={badgeVariant(detail.status)}>{detail.status}</Badge>
+                </div>
+                <p className="mt-0.5 text-sm text-gray-500">{detail.trekTitle} · {fmtDay(detail.departureDate)}</p>
+              </div>
+              <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailBox title="Contact">
+                <DRow k="Name" v={detail.contact.name || "—"} />
+                <DRow k="Email" v={detail.contact.email || "—"} />
+                <DRow k="Phone" v={detail.contact.phone || "—"} />
+                <DRow k="Travellers" v={`${detail.adults} adult${detail.adults === 1 ? "" : "s"}${detail.children ? ` · ${detail.children} child` : ""} · ${detail.seats} seat(s)`} />
+              </DetailBox>
+              <DetailBox title="Payment">
+                <DRow k="Subtotal" v={money(detail.totals.subtotal)} />
+                {detail.totals.addons > 0 && <DRow k="Add-ons" v={money(detail.totals.addons)} />}
+                <DRow k="Grand total" v={money(detail.totals.grandTotal)} />
+                <DRow k="Paid" v={money(detail.totals.amountPaid)} />
+                {detail.totals.balanceDue > 0 && <DRow k="Balance due" v={money(detail.totals.balanceDue)} />}
+              </DetailBox>
+            </div>
+
+            <DetailBox title={`Travellers (${detail.travellers.length})`} className="mt-4">
+              {detail.travellers.length === 0 ? <p className="text-sm text-gray-400">No traveller details recorded.</p> : (
+                <div className="divide-y divide-line">
+                  {detail.travellers.map((t, i) => (
+                    <div key={i} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                      <span className="font-medium text-ink">{t.name || "—"}{t.isLead && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">Lead</span>}</span>
+                      <span className="text-gray-500">{[t.age ? `${t.age} yrs` : null, t.gender, t.phone, t.emergencyPhone ? `SOS ${t.emergencyPhone}` : null].filter(Boolean).join(" · ") || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DetailBox>
+
+            {detail.addons.length > 0 && (
+              <DetailBox title="Add-ons" className="mt-4">
+                {detail.addons.map((a, i) => (
+                  <DRow key={i} k={`${a.name} ×${a.quantity}`} v={money(a.lineTotal)} />
+                ))}
+              </DetailBox>
+            )}
+
+            <DetailBox title={`Payments (${detail.payments.length})`} className="mt-4">
+              {detail.payments.length === 0 ? <p className="text-sm text-gray-400">No payments recorded.</p> : (
+                <div className="divide-y divide-line">
+                  {detail.payments.map((p, i) => (
+                    <div key={i} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                      <span className="text-ink">{money(p.amount)} <span className="text-gray-400">· {[p.method, p.kind].filter(Boolean).join(" ") || "—"}</span></span>
+                      <span className="text-gray-500">{p.status} · {p.when}{p.txnId ? ` · ${p.txnId}` : ""}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DetailBox>
+
+            {detail.notes && <DetailBox title="Notes" className="mt-4"><p className="text-sm text-gray-600 whitespace-pre-wrap">{detail.notes}</p></DetailBox>}
+
+            <div className="mt-5 flex justify-end"><Button variant="secondary" size="sm" onClick={onClose}>Close</Button></div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailBox({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-xl border border-line p-4", className)}>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{title}</h3>
+      {children}
+    </div>
+  );
+}
+function DRow({ k, v }: { k: string; v: string }) {
+  return <div className="flex items-center justify-between gap-3 py-1 text-sm"><span className="text-gray-500">{k}</span><span className="font-medium text-ink text-right">{v}</span></div>;
+}
+function badgeVariant(status: string): "neutral" | "success" | "warning" | "danger" {
+  if (status === "confirmed" || status === "deposit_paid" || status === "completed") return "success";
+  if (status === "cancelled") return "danger";
+  if (status === "pending_payment" || status === "pending_auth") return "warning";
+  return "neutral";
 }
 
 type DepartureRow = AdminData["departureRows"][number];
