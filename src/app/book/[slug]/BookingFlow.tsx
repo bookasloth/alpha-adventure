@@ -46,6 +46,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   const [payToken, setPayToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authTried, setAuthTried] = useState(false);
 
   const departure = useMemo(() => departures.find((d) => d.id === departureId), [departures, departureId]);
   const pax = adults + children;
@@ -78,7 +79,8 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     return { id: r.bookingId, token: r.token };
   }
   async function authenticate() {
-    setError(null);
+    setError(null); setAuthTried(true);
+    if (authMode === "register" && name.trim().length < 2) return setError("Enter your name.");
     if (!/.+@.+\..+/.test(email)) return setError("Enter a valid email.");
     if (!password) return setError("Enter your password.");
     if (authMode === "register" && name.trim().length < 2) return setError("Enter your name.");
@@ -176,10 +178,11 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
               <Panel eyebrow="Step 3 of 5" title="Traveller details" desc={tIndex === 0 ? "We'll use the lead trekker's details for updates." : "Just a few details for each trekker."}>
                 <div className="bk-tiny" style={{ margin: "-8px 0 16px" }}>Traveller {tIndex + 1} of {pax}{tIndex === 0 ? " · lead trekker" : ""}</div>
                 <TravellerForm
+                  key={tIndex}
                   value={travellers[tIndex]} isLead={tIndex === 0}
                   onChange={(t) => setTravellers((prev) => prev.map((x, i) => (i === tIndex ? t : x)))}
                   back={{ label: tIndex === 0 ? "Back" : "Previous", onClick: () => { if (tIndex === 0) go(1); else setTIndex(tIndex - 1); } }}
-                  next={{ label: tIndex + 1 < pax ? "Save & next" : "Continue", onClick: () => { if (!travellers[tIndex]?.full_name.trim()) return setError("Enter the traveller's name."); setError(null); if (tIndex + 1 < pax) setTIndex(tIndex + 1); else { setTIndex(0); go(3); } } }}
+                  next={{ label: tIndex + 1 < pax ? "Save & next" : "Continue", onClick: () => { setError(null); if (tIndex + 1 < pax) setTIndex(tIndex + 1); else { setTIndex(0); go(3); } } }}
                 />
               </Panel>
             )}
@@ -200,13 +203,16 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
             {step === 4 && pay === "auth" && (
               <Panel eyebrow="Step 5 of 5" title={authMode === "register" ? "Create your account" : "Sign in to book"} desc={authMode === "register" ? "Set a password — you'll use it to manage your bookings." : "Welcome back — sign in to confirm your booking."}>
                 {authMode === "register" && (<>
-                  <label className="bk-fld">Full name</label>
-                  <input className="bk-inp" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                  <label className="bk-fld">Full name <span className="bk-req">*</span></label>
+                  <input className={"bk-inp" + (authTried && name.trim().length < 2 ? " err" : "")} aria-invalid={authTried && name.trim().length < 2} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                  {authTried && name.trim().length < 2 && <span className="bk-fielderr">Please enter your name.</span>}
                 </>)}
-                <label className="bk-fld">Email address</label>
-                <input className="bk-inp" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                <label className="bk-fld">Password</label>
-                <input className="bk-inp" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode === "register" ? "8+ chars, 1 capital, 1 number, 1 symbol" : "Your password"} />
+                <label className="bk-fld">Email address <span className="bk-req">*</span></label>
+                <input className={"bk-inp" + (authTried && !/.+@.+\..+/.test(email) ? " err" : "")} aria-invalid={authTried && !/.+@.+\..+/.test(email)} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                {authTried && !/.+@.+\..+/.test(email) && <span className="bk-fielderr">Enter a valid email address.</span>}
+                <label className="bk-fld">Password <span className="bk-req">*</span></label>
+                <input className={"bk-inp" + (authTried && !password ? " err" : "")} aria-invalid={authTried && !password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode === "register" ? "8+ chars, 1 capital, 1 number, 1 symbol" : "Your password"} />
+                {authTried && !password && <span className="bk-fielderr">Enter your password.</span>}
                 {authMode === "register" && <div className="bk-tiny" style={{ marginTop: 6 }}>At least 8 characters, one capital, one number, one special character.</div>}
                 <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
                   <button type="button" className="bk-linkbtn" onClick={() => { setError(null); setAuthMode(authMode === "register" ? "signin" : "register"); }}>
@@ -271,16 +277,27 @@ function Foot({ back, next }: { back?: { label?: string; onClick: () => void }; 
   );
 }
 function TravellerForm({ value, isLead, onChange, back, next }: { value: Traveller; isLead: boolean; onChange: (t: Traveller) => void; back: { label: string; onClick: () => void }; next: { label: string; onClick: () => void } }) {
+  const [touched, setTouched] = useState(false);
+  const nameInvalid = touched && !value.full_name.trim();
+  const guardedNext = () => { if (!value.full_name.trim()) { setTouched(true); return; } next.onClick(); };
   return (
     <div>
-      <label className="bk-fld">Full name</label>
-      <input className="bk-inp" value={value.full_name} onChange={(e) => onChange({ ...value, full_name: e.target.value })} placeholder="As on ID" />
+      <label className="bk-fld">Full name <span className="bk-req">*</span></label>
+      <input
+        className={"bk-inp" + (nameInvalid ? " err" : "")}
+        aria-invalid={nameInvalid}
+        value={value.full_name}
+        onChange={(e) => onChange({ ...value, full_name: e.target.value })}
+        onBlur={() => setTouched(true)}
+        placeholder="As on ID"
+      />
+      {nameInvalid && <span className="bk-fielderr">Please enter this traveller&apos;s full name.</span>}
       <div className="bk-two">
         <div><label className="bk-fld">Age</label><input className="bk-inp" inputMode="numeric" value={value.age} onChange={(e) => onChange({ ...value, age: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="e.g. 28" /></div>
         <div><label className="bk-fld">Gender</label><select className="bk-inp" value={value.gender} onChange={(e) => onChange({ ...value, gender: e.target.value as Gender })}><option value="">Select</option>{GENDERS.map((g) => <option key={g.v} value={g.v}>{g.label}</option>)}</select></div>
       </div>
       {isLead && (<><label className="bk-fld">Emergency contact phone</label><input className="bk-inp" value={value.emergency_contact_phone ?? ""} onChange={(e) => onChange({ ...value, emergency_contact_phone: e.target.value })} placeholder="+91…" /></>)}
-      <Foot back={back} next={next} />
+      <Foot back={back} next={{ ...next, onClick: guardedNext }} />
     </div>
   );
 }

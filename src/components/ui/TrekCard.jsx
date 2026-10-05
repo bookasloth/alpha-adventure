@@ -5,8 +5,8 @@ import Image from "next/image";
 export default function TrekCard({ trek, href }) {
   const link = href || trek.href || `/treks/${trek.slug}`;
   return (
-    <Link href={link} className="card group block hover:-translate-y-1 transition-transform duration-300">
-      <div className="relative h-56 overflow-hidden">
+    <Link href={link} className="card group flex h-full flex-col overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+      <div className="relative aspect-[4/3] overflow-hidden">
         <Image
           src={trek.image || "/assets/img/home2/destination-img1.jpg"}
           alt={trek.title}
@@ -19,16 +19,18 @@ export default function TrekCard({ trek, href }) {
             {trek.badge}
           </span>
         )}
-        <span className="absolute bottom-3 right-3 bg-ink/80 text-white text-xs font-medium px-3 py-1 rounded-full">
-          {trek.duration}
-        </span>
+        {trek.duration && (
+          <span className="absolute bottom-3 right-3 bg-ink/80 text-white text-xs font-medium px-3 py-1 rounded-full">
+            {trek.duration}
+          </span>
+        )}
       </div>
-      <div className="p-5">
-        <h3 className="text-lg font-bold text-ink group-hover:text-primary transition-colors">
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="text-lg font-bold text-ink group-hover:text-primary transition-colors line-clamp-2">
           {trek.title}
         </h3>
-        <p className="text-sm text-gray-500 mt-1">{trek.location}</p>
-        <div className="mt-4 flex items-center justify-between">
+        {trek.location && <p className="text-sm text-gray-500 mt-1 line-clamp-1">{trek.location}</p>}
+        <div className="mt-auto pt-4 flex items-end justify-between">
           <div>
             <span className="block text-xs text-gray-400">Per Person</span>
             <span className="text-lg font-bold text-primary">₹{trek.price.toLocaleString("en-IN")}</span>

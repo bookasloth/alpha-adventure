@@ -1,24 +1,26 @@
 import Link from "next/link";
 import { img } from "@/lib/assets";
 
-// Reusable inner-page header with breadcrumb + background image.
+// Reusable inner-page header: full-bleed image with a neutral dark scrim for
+// legibility (no brand-orange tint), breadcrumb + heading + subtext centered.
 export default function PageHero({ title, crumb, subtitle, image = img("innerpages/breadcrumb-bg1.jpg") }) {
   return (
     <section className="relative bg-dark text-white">
-      <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url(${image})` }} />
-      <div className="absolute inset-0 bg-hero-pattern" />
-      <div className="container-px relative pt-28 pb-16">
-        <nav className="text-sm text-white/70 mb-3">
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${image})` }} />
+      {/* neutral scrim — keeps text readable without the orange wash */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/45 to-black/65" />
+      <div className="container-px relative pt-32 pb-20 text-center">
+        <nav className="text-sm text-white/80 mb-4 flex items-center justify-center gap-2">
           <Link href="/" className="hover:text-white">Home</Link>
           {crumb && (
             <>
-              <span className="mx-2">/</span>
+              <span className="text-white/50">/</span>
               <span className="text-white">{crumb}</span>
             </>
           )}
         </nav>
-        <h1 className="text-3xl sm:text-4xl font-bold">{title}</h1>
-        {subtitle && <p className="mt-3 text-white/80 max-w-2xl">{subtitle}</p>}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold">{title}</h1>
+        {subtitle && <p className="mt-4 text-white/85 max-w-2xl mx-auto">{subtitle}</p>}
       </div>
     </section>
   );

@@ -88,3 +88,22 @@
 @media (max-width: 767px) {
   .package-card.media-first .package-img-wrap { height: 180px; }
 }
+
+/* Home "Top Treks" destination cards: force one uniform image height so cards
+   stay aligned regardless of each source image's aspect ratio (default
+   object-fit is `fill`, which also distorts). */
+.destination-card2 .destination-img {
+  height: 300px;
+}
+.destination-card2 .destination-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (max-width: 991px) {
+  .destination-card2 .destination-img { height: 260px; }
+}
+@media (max-width: 575px) {
+  .destination-card2 .destination-img { height: 300px; }
+}
