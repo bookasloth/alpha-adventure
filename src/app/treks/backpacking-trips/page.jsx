@@ -1,5 +1,5 @@
 import PageHero from "@/components/layout/PageHero";
-import TrekGrid from "@/components/home/TrekGrid";
+import PackageGrid from "@/components/home/PackageGrid";
 import { getListingTreks } from "@/lib/trekListing";
 
 export const metadata = {
@@ -19,7 +19,7 @@ export default async function BackpackingTripsPage() {
         crumb="Backpacking Trips"
         subtitle="Coastal escapes, desert circuits, hill stations and Himalayan valleys — curated backpacking across India."
       />
-      <TrekGrid treks={items} eyebrow="Backpacking" title="Backpacking Trips Across India" />
+      <PackageGrid treks={items} eyebrow="Backpacking" title="Backpacking Trips Across India" />
     </>
   );
 }
