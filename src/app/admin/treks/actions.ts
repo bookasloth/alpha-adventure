@@ -4,6 +4,76 @@ import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
 
+const toRupees = (paise: number | null) => Math.round((paise || 0) / 100);
+
+export type TrekDetail = {
+  slug: string;
+  title: string;
+  status: string;
+  summary: string;
+  overview: string;
+  heroImage: string;
+  price: number;
+  difficulty: string;
+  group: string;
+  tags: string[];
+  badge: string;
+  facts: { region: string; location: string; state: string; durationDays: string; altitude: string; baseCamp: string; bestSeason: string; groupSize: string };
+  inclusions: string[];
+  exclusions: string[];
+  packages: { name: string; price: number; inclusions: string[]; ctaLabel: string }[];
+  itinerary: { title: string; description: string }[];
+  departures: number;
+};
+
+// Read-only full trek detail for the admin "View details" modal. Service-role
+// read behind requireAdmin() (same gate/pattern as the edit loader).
+export async function getTrekDetail(
+  slug: string,
+): Promise<{ ok: true; detail: TrekDetail } | { ok: false; error: string }> {
+  const { admin } = await requireAdmin();
+  const { data: t } = await admin
+    .from("treks")
+    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size")
+    .eq("slug", slug).is("deleted_at", null).maybeSingle();
+  if (!t) return { ok: false, error: "Trek not found." };
+
+  const [inc, exc, pkgs, iti, deps] = await Promise.all([
+    admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
+    admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
+    admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
+    admin.from("itinerary_days").select("title,description").eq("trek_id", t.id).order("day_no"),
+    admin.from("trek_departures").select("id", { count: "exact", head: true }).eq("trek_id", t.id).neq("status", "cancelled"),
+  ]);
+
+  return {
+    ok: true,
+    detail: {
+      slug: t.slug,
+      title: t.title ?? "",
+      status: t.status ?? "draft",
+      summary: t.summary ?? "",
+      overview: t.overview ?? "",
+      heroImage: t.hero_image ?? "",
+      price: toRupees(t.base_price),
+      difficulty: t.difficulty ?? "—",
+      group: t.group ?? "—",
+      tags: t.tags ?? [],
+      badge: t.badge ?? "",
+      facts: {
+        region: t.region ?? "", location: t.location ?? "", state: t.state ?? "",
+        durationDays: t.duration_days != null ? String(t.duration_days) : "", altitude: t.altitude ?? "",
+        baseCamp: t.base_camp ?? "", bestSeason: t.best_season ?? "", groupSize: t.group_size ?? "",
+      },
+      inclusions: (inc.data ?? []).map((r) => r.text),
+      exclusions: (exc.data ?? []).map((r) => r.text),
+      packages: (pkgs.data ?? []).map((p) => ({ name: p.name ?? "", price: toRupees(p.price), inclusions: p.inclusions ?? [], ctaLabel: p.cta_label ?? "Book Now" })),
+      itinerary: (iti.data ?? []).map((d) => ({ title: d.title ?? "", description: d.description ?? "" })),
+      departures: deps.count ?? 0,
+    },
+  };
+}
+
 // Row-level edit only (basics / listing / facts / status). Child content
 // (itinerary, inclusions, packages, dates) is managed via its own flows.
 const rowSchema = z.object({
