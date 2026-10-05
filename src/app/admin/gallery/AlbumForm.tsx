@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createGalleryAlbum, updateGalleryAlbum } from "./actions";
+import ImageField from "@/app/admin/ImageField";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -64,7 +65,7 @@ export default function AlbumForm({ mode, initial }: { mode: "new" | "edit"; ini
             <Field label="Slug" hint={mode === "edit" ? "(fixed)" : "(URL)"}><input className={inp} value={f.slug} disabled={mode === "edit"} onChange={(e) => { set("slug", e.target.value); setSlugEdited(true); }} /></Field>
           </div>
           <Field label="Subtitle" hint="(optional)"><input className={inp} value={f.subtitle} onChange={(e) => set("subtitle", e.target.value)} /></Field>
-          <Field label="Hero image URL"><input className={inp} value={f.hero} onChange={(e) => set("hero", e.target.value)} placeholder="/assets/img/innerpages/..." /></Field>
+          <Field label="Hero image"><ImageField className={inp} value={f.hero} onChange={(v) => set("hero", v)} folder="gallery" placeholder="/assets/img/... or upload" /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Hero alt" hint="(optional)"><input className={inp} value={f.hero_alt} onChange={(e) => set("hero_alt", e.target.value)} /></Field>
             <Field label="Status"><select className={inp} value={f.status} onChange={(e) => set("status", e.target.value)}><option value="draft">Draft</option><option value="published">Published</option></select></Field>

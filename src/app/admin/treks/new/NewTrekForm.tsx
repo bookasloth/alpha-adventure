@@ -7,6 +7,7 @@ import { Plus, Trash2, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createTrek } from "./actions";
+import ImageField from "@/app/admin/ImageField";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -143,7 +144,7 @@ export default function NewTrekForm() {
           <Field label="Summary" hint="(short, for cards)"><input className={inp} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="A weekend night trek to the Konkan Kada cliff." /></Field>
           <Field label="Overview" hint="(long description)"><textarea className={`${inp} min-h-28`} value={overview} onChange={(e) => setOverview(e.target.value)} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Hero image URL"><input className={inp} value={heroImage} onChange={(e) => setHeroImage(e.target.value)} placeholder="/assets/img/home2/trek-....jpg" /></Field>
+            <Field label="Hero image"><ImageField className={inp} value={heroImage} onChange={setHeroImage} folder="treks" placeholder="/assets/img/... or upload" /></Field>
             <Field label="Base price" hint="(₹)"><input type="number" min={0} className={inp} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="1299" /></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">

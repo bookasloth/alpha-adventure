@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createTestimonial, updateTestimonial } from "./actions";
+import ImageField from "@/app/admin/ImageField";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
@@ -61,7 +62,7 @@ export default function TestimonialForm({ mode, initial }: { mode: "new" | "edit
             <Field label="Role"><input className={inp} value={f.role} onChange={(e) => set("role", e.target.value)} placeholder="Alpha Adventures Trekker" /></Field>
           </div>
           <Field label="Testimonial text"><textarea className={`${inp} min-h-28`} value={f.body} onChange={(e) => set("body", e.target.value)} /></Field>
-          <Field label="Avatar URL" hint="(optional)"><input className={inp} value={f.avatar_url} onChange={(e) => set("avatar_url", e.target.value)} placeholder="/assets/img/home1/testimonial-author-img1.png" /></Field>
+          <Field label="Avatar" hint="(optional)"><ImageField className={inp} value={f.avatar_url} onChange={(v) => set("avatar_url", v)} folder="testimonials" placeholder="/assets/img/... or upload" /></Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Rating"><select className={inp} value={f.rating} onChange={(e) => set("rating", e.target.value)}>{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}</select></Field>
             <Field label="Status"><select className={inp} value={f.status} onChange={(e) => set("status", e.target.value)}><option value="published">Published</option><option value="draft">Draft</option></select></Field>

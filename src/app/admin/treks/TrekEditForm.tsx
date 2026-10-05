@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { updateTrek } from "./actions";
+import ImageField from "@/app/admin/ImageField";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
@@ -108,7 +109,7 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
           <Field label="Summary"><input className={inp} value={f.summary} onChange={(e) => set("summary", e.target.value)} /></Field>
           <Field label="Overview"><textarea className={`${inp} min-h-28`} value={f.overview} onChange={(e) => set("overview", e.target.value)} /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Hero image URL"><input className={inp} value={f.hero_image} onChange={(e) => set("hero_image", e.target.value)} /></Field>
+            <Field label="Hero image"><ImageField className={inp} value={f.hero_image} onChange={(v) => set("hero_image", v)} folder="treks" placeholder="/assets/img/... or upload" /></Field>
             <Field label="Base price" hint="(₹)"><input type="number" min={0} className={inp} value={f.price} onChange={(e) => set("price", e.target.value)} /></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -156,7 +157,7 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
               <div className="space-y-3">
                 <Field label="Title"><input className={inp} value={d.title} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} placeholder="Base to summit" /></Field>
                 <Field label="Description"><textarea className={`${inp} min-h-20`} value={d.description} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} /></Field>
-                <Field label="Image URL" hint="(optional)"><input className={inp} value={d.image} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, image: e.target.value } : x))} placeholder="/assets/img/..." /></Field>
+                <Field label="Image" hint="(optional)"><ImageField className={inp} value={d.image} onChange={(v) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, image: v } : x))} folder="treks/itinerary" placeholder="/assets/img/... or upload" /></Field>
               </div>
             </div>
           ))}
