@@ -19,7 +19,7 @@ import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
 import type { AdminData } from "./data";
 import { createDeparture } from "./actions";
 import { deleteTour } from "./tours/actions";
-import { deleteTrek } from "./treks/actions";
+import { deleteTrek, getTrekDetail, type TrekDetail } from "./treks/actions";
 import { deleteGalleryAlbum } from "./gallery/actions";
 import { deleteTestimonial } from "./testimonials/actions";
 import { updateDeparture, deleteDeparture } from "./actions";
@@ -707,6 +707,99 @@ function badgeVariant(status: string): "neutral" | "success" | "warning" | "dang
   return "neutral";
 }
 
+function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClose: () => void }) {
+  const facts = detail
+    ? ([
+        ["Group", detail.group], ["Difficulty", detail.difficulty], ["Base price", money(detail.price)],
+        ["Departures", String(detail.departures)], ["Region", detail.facts.region], ["Location", detail.facts.location],
+        ["State", detail.facts.state], ["Duration", detail.facts.durationDays ? `${detail.facts.durationDays} days` : ""],
+        ["Altitude", detail.facts.altitude], ["Base camp", detail.facts.baseCamp],
+        ["Best season", detail.facts.bestSeason], ["Group size", detail.facts.groupSize],
+      ].filter(([, v]) => v) as [string, string][])
+    : [];
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-ink/40 p-4 sm:p-6">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Trek details">
+        {!detail ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Loading trek…</p>
+            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                {detail.heroImage && <img src={detail.heroImage} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />}
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg font-bold">{detail.title}</h2>
+                    <Badge variant={detail.status === "published" ? "success" : "neutral"}>{detail.status}</Badge>
+                    {detail.badge && <Badge variant="brand">{detail.badge}</Badge>}
+                  </div>
+                  <p className="mt-0.5 text-sm text-gray-500">/{detail.slug}</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
+            </div>
+
+            {detail.summary && <p className="mb-4 text-sm text-gray-600">{detail.summary}</p>}
+
+            <DetailBox title="Facts">
+              <div className="grid gap-x-4 sm:grid-cols-2">
+                {facts.map(([k, v]) => <DRow key={k} k={k} v={v} />)}
+              </div>
+            </DetailBox>
+
+            {detail.overview && <DetailBox title="Overview" className="mt-4"><p className="text-sm text-gray-600 whitespace-pre-wrap">{detail.overview}</p></DetailBox>}
+
+            {(detail.inclusions.length > 0 || detail.exclusions.length > 0) && (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {detail.inclusions.length > 0 && (
+                  <DetailBox title="Inclusions"><ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">{detail.inclusions.map((x, i) => <li key={i}>{x}</li>)}</ul></DetailBox>
+                )}
+                {detail.exclusions.length > 0 && (
+                  <DetailBox title="Exclusions"><ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">{detail.exclusions.map((x, i) => <li key={i}>{x}</li>)}</ul></DetailBox>
+                )}
+              </div>
+            )}
+
+            {detail.packages.length > 0 && (
+              <DetailBox title="Pricing packages" className="mt-4">
+                <div className="divide-y divide-line">
+                  {detail.packages.map((p, i) => (
+                    <div key={i} className="py-2">
+                      <div className="flex items-center justify-between text-sm"><span className="font-medium text-ink">{p.name}</span><span className="font-semibold text-primary">{money(p.price)}</span></div>
+                      {p.inclusions.length > 0 && <p className="mt-0.5 text-xs text-gray-500">{p.inclusions.join(" · ")}</p>}
+                    </div>
+                  ))}
+                </div>
+              </DetailBox>
+            )}
+
+            {detail.itinerary.length > 0 && (
+              <DetailBox title={`Itinerary (${detail.itinerary.length} day${detail.itinerary.length === 1 ? "" : "s"})`} className="mt-4">
+                <ol className="space-y-2">
+                  {detail.itinerary.map((d, i) => (
+                    <li key={i} className="text-sm">
+                      <span className="font-medium text-ink">Day {i + 1}: {d.title}</span>
+                      {d.description && <p className="mt-0.5 text-gray-500">{d.description}</p>}
+                    </li>
+                  ))}
+                </ol>
+              </DetailBox>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <a href={`/treks/${detail.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-slate-100">View on site ↗</a>
+              <Button variant="secondary" size="sm" onClick={onClose}>Close</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type DepartureRow = AdminData["departureRows"][number];
 function DeparturesPage({ actions }: { actions: AdminActions }) {
   const rows = actions.departureRows;
@@ -888,7 +981,19 @@ function ReplyModal({ lead, onClose, onSent }: { lead: LeadRow; onClose: () => v
 function TreksPage({ actions }: { actions: AdminActions }) {
   const treks = actions.trekCatalog;
   const router = useRouter();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detail, setDetail] = useState<TrekDetail | null>(null);
+
+  const openDetail = async (slug: string) => {
+    setDetail(null); setDetailOpen(true);
+    const r = await getTrekDetail(slug);
+    if (r.ok) setDetail(r.detail);
+    else { setDetailOpen(false); actions.notify(r.error); }
+  };
+
   const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "View details", onClick: () => openDetail(slug) },
+    { label: "View on site", onClick: () => window.open(`/treks/${slug}`, "_blank", "noopener") },
     { label: "Edit", onClick: () => router.push(`/admin/treks/${slug}/edit`) },
     {
       label: "Delete", tone: "danger",
@@ -902,6 +1007,7 @@ function TreksPage({ actions }: { actions: AdminActions }) {
   ];
   return (
     <div>
+      {detailOpen && <TrekDetailModal detail={detail} onClose={() => setDetailOpen(false)} />}
       <PageHead title="Treks" sub="Your catalogue — pricing, difficulty and publish state." action={<Button asChild size="sm"><Link href="/admin/treks/new"><Plus size={16} /> Add trek</Link></Button>} />
       <Card><CardContent className="p-0">
         <Table>
@@ -931,6 +1037,7 @@ function ToursPage({ actions }: { actions: AdminActions }) {
   const tours = actions.tours;
   const router = useRouter();
   const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "View on site", onClick: () => window.open(`/tour-packages/${slug}`, "_blank", "noopener") },
     { label: "Edit", onClick: () => router.push(`/admin/tours/${slug}/edit`) },
     {
       label: "Delete", tone: "danger",
