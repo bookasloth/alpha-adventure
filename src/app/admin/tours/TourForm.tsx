@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createTour, updateTour } from "./actions";
+import ImageField from "@/app/admin/ImageField";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -84,7 +85,7 @@ export default function TourForm({ mode, initial }: { mode: "new" | "edit"; init
             <Field label="Slug" hint={mode === "edit" ? "(fixed)" : "(URL)"}><input className={inp} value={slug} disabled={mode === "edit"} onChange={(e) => { setSlug(e.target.value); setSlugEdited(true); }} placeholder="royal-rajasthan-heritage" /></Field>
           </div>
           <Field label="Description"><textarea className={`${inp} min-h-24`} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
-          <Field label="Image URL"><input className={inp} value={image} onChange={(e) => setImage(e.target.value)} placeholder="/assets/img/home1/tour-package-img1.jpg" /></Field>
+          <Field label="Image"><ImageField className={inp} value={image} onChange={setImage} folder="tours" placeholder="/assets/img/... or upload" /></Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Type"><select className={inp} value={type} onChange={(e) => setType(e.target.value)}><option value="Domestic">Domestic</option><option value="International">International</option></select></Field>
             <Field label="Duration" hint="(e.g. 6D/5N)"><input className={inp} value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="6D/5N" /></Field>
