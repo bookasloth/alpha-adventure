@@ -3,6 +3,7 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 import SiteChrome from "@/components/layout/SiteChrome";
 import MagicCursor from "@/components/layout/MagicCursor";
+import MegaMenu from "@/components/layout/MegaMenu";
 import TemplateScripts from "@/components/TemplateScripts";
 import { site } from "@/data/site";
 import { SITE_URL } from "@/lib/seo";
@@ -59,6 +60,7 @@ export default function RootLayout({ children }) {
         <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>
           {children}
         </SiteChrome>
+        <MegaMenu />
         <TemplateScripts />
       </body>
     </html>
