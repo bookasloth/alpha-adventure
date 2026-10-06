@@ -39,43 +39,43 @@ export const navLinks = [
   },
   {
     label: "Upcoming Treks",
-    href: "/treks/upcoming-treks",
+    href: "/treks",
     children: [
       {
         label: "Sahyadri Treks",
-        href: "/treks/upcoming-treks/sahyadri-treks",
+        href: "/treks/sahyadri-treks",
       },
       {
         label: "Himalayan Treks",
-        href: "/treks/upcoming-treks/himalayan-treks",
+        href: "/treks/himalayan-treks",
       },
       {
         label: "Central India Treks",
-        href: "/treks/upcoming-treks/central-india-treks",
+        href: "/treks/central-india-treks",
       },
     ],
   },
   {
     label: "Backpacking Trips",
-    href: "/treks/backpacking-trips",
+    href: "/backpacking-trips",
     // Per-region backpacking routes don't exist yet (Phase 3 adds filtering);
     // point each region at the real backpacking listing so no link dead-ends.
     children: [
-      { label: "Maharashtra", href: "/treks/backpacking-trips" },
-      { label: "Gujarat", href: "/treks/backpacking-trips" },
-      { label: "Madhya Pradesh", href: "/treks/backpacking-trips" },
-      { label: "Rajasthan", href: "/treks/backpacking-trips" },
+      { label: "Maharashtra", href: "/backpacking-trips" },
+      { label: "Gujarat", href: "/backpacking-trips" },
+      { label: "Madhya Pradesh", href: "/backpacking-trips" },
+      { label: "Rajasthan", href: "/backpacking-trips" },
       {
         label: "Himachal Pradesh",
-        href: "/treks/backpacking-trips",
+        href: "/backpacking-trips",
         children: [{ label: "Spiti Valley", href: "/backpacking-trips/detail/spiti-backpacking-trip" }],
       },
-      { label: "Ladakh", href: "/treks/backpacking-trips" },
+      { label: "Ladakh", href: "/backpacking-trips" },
     ],
   },
   {
     label: "Trips Near Nagpur",
-    href: "/treks/trips-near-nagpur",
+    href: "/trips-near-nagpur",
     children: [
       { label: "Seven Sisters Hill Trek", href: "/trips-near-nagpur/detail/seven-sisters-hill-trek" },
       { label: "Silver Falls", href: "/trips-near-nagpur/detail/silver-falls" },
@@ -93,10 +93,10 @@ export const footerColumns = [
   {
     title: "Explore Treks",
     links: [
-      { label: "Upcoming Treks", href: "/treks/upcoming-treks" },
-      { label: "Weekend Treks", href: "/treks/upcoming-treks/weekend-treks" },
-      { label: "Himalayan Treks", href: "/treks/upcoming-treks/himalayan-treks" },
-      { label: "Sahyadri Treks", href: "/treks/upcoming-treks/sahyadri-treks" },
+      { label: "Upcoming Treks", href: "/treks" },
+      { label: "Weekend Treks", href: "/treks/weekend-treks" },
+      { label: "Himalayan Treks", href: "/treks/himalayan-treks" },
+      { label: "Sahyadri Treks", href: "/treks/sahyadri-treks" },
       { label: "Beginner Friendly Treks", href: "/beginner-trek-guide" },
       { label: "Monsoon Treks", href: "/gallery" },
     ],

@@ -1,16 +1,34 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import PageHero from "@/components/layout/PageHero";
+import TrekGrid from "@/components/home/TrekGrid";
 import TrekDetail from "@/components/treks/TrekDetail";
 import TrekCollection from "@/components/treks/TrekCollection";
-import { getTrekBySlug } from "@/lib/trekDetail";
+import { trekGroups } from "@/data/treks";
+import { getListingTreks } from "@/lib/trekListing";
+import { trekJsonLd } from "@/lib/trekDetail";
 import { getCollection } from "@/lib/trekCollection";
-import { abs, SITE_URL } from "@/lib/seo";
+import { resolveSectionItem } from "@/lib/sectionRoute";
+import { GROUP_ALIASES } from "@/lib/sections";
+import { abs } from "@/lib/seo";
 
 export const revalidate = 300;
 
-// /treks/[slug] resolves either a trek detail OR a collection (state/difficulty).
+const SECTION = "treks";
+const WEEKEND_TAGS = ["beginner", "weekend", "half-day"];
+
+// /treks/[slug] resolves, in order: a group-alias listing (sahyadri-treks…) or
+// weekend-treks tag listing → a trek detail (treks-group item) → a wrong-section
+// 301 → a state/difficulty collection → 404.
+
 export async function generateMetadata({ params }) {
-  const trek = await getTrekBySlug(params.slug);
-  if (trek) {
+  const { slug } = params;
+  const groupKey = GROUP_ALIASES[slug];
+  if (groupKey) return { title: trekGroups[groupKey].title };
+  if (slug === "weekend-treks") return { title: "Weekend Treks" };
+
+  const hit = await resolveSectionItem(SECTION, slug);
+  if (hit?.trek) {
+    const trek = hit.trek;
     const canonical = `/treks/${trek.slug}`;
     const desc = trek.summary ?? trek.overview?.slice(0, 155) ?? undefined;
     return {
@@ -20,42 +38,50 @@ export async function generateMetadata({ params }) {
       openGraph: { title: trek.title, description: desc, url: abs(canonical), images: trek.hero_image ? [abs(trek.hero_image)] : undefined },
     };
   }
-  const col = await getCollection(params.slug);
-  if (col) {
-    const canonical = `/treks/${params.slug}`;
-    return { title: col.label, description: col.subtitle, alternates: { canonical }, openGraph: { title: col.label, description: col.subtitle, url: abs(canonical) } };
-  }
+  const col = await getCollection(slug, SECTION);
+  if (col) return { title: col.label, description: col.subtitle, alternates: { canonical: `/treks/${slug}` } };
   return { title: "Trek" };
 }
 
-function trekJsonLd(trek) {
-  const price = trek.base_price != null ? (trek.base_price / 100).toFixed(0) : undefined;
-  return {
-    "@context": "https://schema.org",
-    "@type": "TouristTrip",
-    name: trek.title,
-    description: trek.overview ?? trek.summary ?? undefined,
-    image: trek.hero_image ? abs(trek.hero_image) : undefined,
-    url: abs(`/treks/${trek.slug}`),
-    touristType: trek.difficulty,
-    provider: { "@type": "TravelAgency", name: "Alpha Adventures", url: SITE_URL },
-    ...(price && {
-      offers: { "@type": "Offer", price, priceCurrency: "INR", availability: "https://schema.org/InStock", url: abs(`/book/${trek.slug}`) },
-    }),
-  };
-}
+export default async function TrekPage({ params }) {
+  const { slug } = params;
 
-export default async function TrekOrCollectionPage({ params }) {
-  const trek = await getTrekBySlug(params.slug);
-  if (trek) {
+  // Group-alias + weekend listings (treks only).
+  const groupKey = GROUP_ALIASES[slug];
+  if (groupKey) {
+    const items = (await getListingTreks()).filter((t) => t.group === groupKey);
+    const g = trekGroups[groupKey];
     return (
       <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(trekJsonLd(trek)).replace(/</g, "\\u003c") }} />
-        <TrekDetail trek={trek} />
+        <PageHero title={g.title} crumb={`Treks / ${g.title}`} subtitle={g.blurb} />
+        <TrekGrid treks={items} eyebrow={g.title} title={g.title} subtitle={g.blurb} />
       </>
     );
   }
-  const col = await getCollection(params.slug);
+  if (slug === "weekend-treks") {
+    const weekend = (await getListingTreks()).filter((t) => t.tags?.some((tag) => WEEKEND_TAGS.includes(tag)));
+    return (
+      <>
+        <PageHero title="Weekend Treks" crumb="Treks / Weekend Treks" subtitle="Quick, beginner-friendly escapes for a perfect weekend." />
+        <TrekGrid treks={weekend} eyebrow="Weekend" title="Weekend Friendly Treks" />
+      </>
+    );
+  }
+
+  // Item detail / wrong-section redirect.
+  const hit = await resolveSectionItem(SECTION, slug);
+  if (hit?.redirectTo) redirect(hit.redirectTo);
+  if (hit?.trek) {
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(trekJsonLd(hit.trek)).replace(/</g, "\\u003c") }} />
+        <TrekDetail trek={hit.trek} />
+      </>
+    );
+  }
+
+  // State / difficulty collection.
+  const col = await getCollection(slug, SECTION);
   if (col) return <TrekCollection label={col.label} subtitle={col.subtitle} treks={col.treks} />;
   return notFound();
 }

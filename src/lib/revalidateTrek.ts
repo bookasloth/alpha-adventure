@@ -1,7 +1,5 @@
 import { revalidatePath } from "next/cache";
-
-// Trek group keys used by /treks/upcoming-treks/[group] (href: `${key}-treks`).
-const TREK_GROUPS = ["sahyadri", "himalayan", "central"] as const;
+import { GROUP_ALIASES } from "./sections";
 
 // Revalidate every public surface a trek change can affect, so an admin edit
 // (content OR departures) shows on the live site immediately instead of waiting
@@ -10,12 +8,16 @@ const TREK_GROUPS = ["sahyadri", "himalayan", "central"] as const;
 export function revalidatePublicTrek(slug?: string | null) {
   revalidatePath("/admin");
   revalidatePath("/"); // home "Popular/Top Treks" sliders
-  revalidatePath("/treks/upcoming-treks");
-  revalidatePath("/treks/trips-near-nagpur");
-  revalidatePath("/treks/backpacking-trips");
-  for (const g of TREK_GROUPS) revalidatePath(`/treks/upcoming-treks/${g}-treks`);
+  revalidatePath("/treks");
+  revalidatePath("/backpacking-trips");
+  revalidatePath("/trips-near-nagpur");
+  for (const alias of Object.keys(GROUP_ALIASES)) revalidatePath(`/treks/${alias}`);
   if (slug) {
+    // The slug's canonical detail lives under exactly one section; revalidate
+    // all three (the other two are harmless no-ops) plus its booking page.
     revalidatePath(`/treks/${slug}`);
+    revalidatePath(`/backpacking-trips/${slug}`);
+    revalidatePath(`/trips-near-nagpur/${slug}`);
     revalidatePath(`/book/${slug}`);
   }
 }
