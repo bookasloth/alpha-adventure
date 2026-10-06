@@ -23,7 +23,7 @@ export async function listPublishedTreks() {
   if (!isPublicSupabaseConfigured) return [];
   const { data } = await publicClient()
     .from("treks")
-    .select("slug,title,state,difficulty,updated_at")
+    .select("slug,title,state,difficulty,updated_at,group")
     .eq("status", "published")
     .is("deleted_at", null);
   return data ?? [];

@@ -387,7 +387,7 @@ function Empty({ label = "No bookings yet." }: { label?: string }) {
     <div className="flex flex-col items-center gap-3 py-10 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-full bg-slate-100 text-gray-400"><Mountain size={26} /></div>
       <p className="text-gray-500">{label}</p>
-      <Link href="/treks/upcoming-treks"><Button size="sm">Browse treks</Button></Link>
+      <Link href="/treks"><Button size="sm">Browse treks</Button></Link>
     </div>
   );
 }

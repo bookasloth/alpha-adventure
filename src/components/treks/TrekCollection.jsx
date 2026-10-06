@@ -10,7 +10,7 @@ export default function TrekCollection({ label, subtitle, treks }) {
         <div className="container-px relative py-16 sm:py-20">
           <nav className="mb-3 text-sm text-white/70">
             <Link href="/" className="hover:text-white">Home</Link><span className="mx-2">›</span>
-            <Link href="/treks/upcoming-treks" className="hover:text-white">Treks</Link><span className="mx-2">›</span>
+            <Link href="/treks" className="hover:text-white">Treks</Link><span className="mx-2">›</span>
             <span className="text-white">{label}</span>
           </nav>
           <h1 className="text-3xl font-bold sm:text-4xl">{label}</h1>

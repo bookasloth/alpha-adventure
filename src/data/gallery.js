@@ -36,8 +36,8 @@ export const stats = [
 
 // "What You Get With Alpha Adventures" feature cards
 export const features = [
-  { title: "Weekend Fort Treks", href: "/treks/upcoming-treks" },
-  { title: "Signature Fort Circuits", href: "/treks/upcoming-treks/sahyadri-treks" },
+  { title: "Weekend Fort Treks", href: "/treks" },
+  { title: "Signature Fort Circuits", href: "/treks/sahyadri-treks" },
   { title: "Forest Permits And Safety", href: "/safety-guidelines" },
   { title: "Group And Corporate Treks", href: "/corporate-treks" },
   { title: "Custom Trek Itineraries", href: "/contact" },

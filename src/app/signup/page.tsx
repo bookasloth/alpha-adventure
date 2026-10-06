@@ -11,7 +11,7 @@ export default function SignupPage() {
       topRight={
         <>
           <Link href="/login" className="rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/15">Already a member? Sign in</Link>
-          <Link href="/treks/upcoming-treks" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-ink">Find a Trek</Link>
+          <Link href="/treks" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-ink">Find a Trek</Link>
         </>
       }
     >

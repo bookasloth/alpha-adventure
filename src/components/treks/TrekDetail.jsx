@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { site } from "@/data/site";
+import { sectionOf, SECTION_META } from "@/lib/sections";
 import Accordion from "./Accordion";
 
 const rupees = (paise) => "₹" + (paise / 100).toLocaleString("en-IN");
@@ -34,6 +35,7 @@ function Fact({ icon, label, value }) {
 export default function TrekDetail({ trek }) {
   const durationLabel = trek.duration_days ? `${trek.duration_days} Day${trek.duration_days > 1 ? "s" : ""}` : null;
   const bookHref = `/book/${trek.slug}`;
+  const section = SECTION_META[sectionOf(trek.group) ?? "treks"];
 
   return (
     <div className="trek-detail">
@@ -49,7 +51,7 @@ export default function TrekDetail({ trek }) {
             <div className="banner-content" style={{ color: "#fff" }}>
               <nav style={{ marginBottom: 12, fontSize: 14, color: "rgba(255,255,255,.8)" }}>
                 <Link href="/" style={{ color: "inherit" }}>Home</Link><span className="mx-2">›</span>
-                <Link href="/treks/backpacking-trips" style={{ color: "inherit" }}>Backpacking Trips</Link><span className="mx-2">›</span>
+                <Link href={section.href} style={{ color: "inherit" }}>{section.label}</Link><span className="mx-2">›</span>
                 {trek.state && <><span>{trek.state}</span><span className="mx-2">›</span></>}
                 <span style={{ color: "#fff" }}>{trek.title}</span>
               </nav>

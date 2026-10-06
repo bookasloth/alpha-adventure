@@ -34,13 +34,24 @@ const nextConfig = {
     config.resolve.alias["@"] = path.resolve(__dirname, "src");
     return config;
   },
-  // 301s: one canonical trek URL (/treks/<slug>) + guides grouped under /guides.
+  // 301s: four flat sections (/treks, /backpacking-trips, /trips-near-nagpur,
+  // /tour-packages) + guides grouped under /guides. Old /treks/<leisure-slug>
+  // detail links are redirected to their canonical section at runtime by the
+  // wrong-section guard in each [slug] route, so no static rule is needed here.
   async redirects() {
     const guides = ["packing-checklist", "fitness-requirements", "beginner-trek-guide", "safety-guidelines", "responsible-travel"];
     return [
-      { source: "/backpacking-trips/detail/spiti-backpacking-trip", destination: "/treks/spiti-valley", permanent: true },
-      { source: "/backpacking-trips/detail/:slug", destination: "/treks/:slug", permanent: true },
-      { source: "/trips-near-nagpur/detail/:slug", destination: "/treks/:slug", permanent: true },
+      // Old nested sections -> flat top-level sections.
+      { source: "/treks/upcoming-treks", destination: "/treks", permanent: true },
+      { source: "/treks/upcoming-treks/:group", destination: "/treks/:group", permanent: true },
+      { source: "/treks/backpacking-trips", destination: "/backpacking-trips", permanent: true },
+      { source: "/treks/backpacking-trips/:rest*", destination: "/backpacking-trips/:rest*", permanent: true },
+      { source: "/treks/trips-near-nagpur", destination: "/trips-near-nagpur", permanent: true },
+      { source: "/treks/trips-near-nagpur/:rest*", destination: "/trips-near-nagpur/:rest*", permanent: true },
+      // Legacy /<section>/detail/<slug> -> canonical /<section>/<slug>.
+      { source: "/backpacking-trips/detail/spiti-backpacking-trip", destination: "/backpacking-trips/spiti-valley", permanent: true },
+      { source: "/backpacking-trips/detail/:slug", destination: "/backpacking-trips/:slug", permanent: true },
+      { source: "/trips-near-nagpur/detail/:slug", destination: "/trips-near-nagpur/:slug", permanent: true },
       ...guides.map((g) => ({ source: `/${g}`, destination: `/guides/${g}`, permanent: true })),
     ];
   },

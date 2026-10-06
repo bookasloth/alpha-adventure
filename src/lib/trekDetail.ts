@@ -1,5 +1,6 @@
 import { cache } from "react";
-import { publicClient } from "@/lib/seo";
+import { publicClient, abs, SITE_URL } from "@/lib/seo";
+import { canonicalPath } from "@/lib/sections";
 
 // Public read of a trek + all detail sections. Anon key + RLS (published,
 // non-deleted). Returns null when not found so the page can 404.
@@ -11,7 +12,7 @@ export const getTrekBySlug = cache(async (slug: string) => {
   const { data: trek } = await supabase
     .from("treks")
     .select(
-      "id,slug,title,summary,overview,location,state,region,difficulty,duration_days,base_price,altitude,base_camp,best_season,group_size,hero_image",
+      "id,slug,title,summary,overview,location,state,region,difficulty,duration_days,base_price,altitude,base_camp,best_season,group_size,hero_image,group",
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -42,3 +43,22 @@ export const getTrekBySlug = cache(async (slug: string) => {
 });
 
 export type TrekDetailData = NonNullable<Awaited<ReturnType<typeof getTrekBySlug>>>;
+
+// schema.org TouristTrip JSON-LD for a detail page. URL is section-canonical.
+export function trekJsonLd(trek: TrekDetailData) {
+  const path = canonicalPath({ group: trek.group, slug: trek.slug });
+  const price = trek.base_price != null ? (trek.base_price / 100).toFixed(0) : undefined;
+  return {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: trek.title,
+    description: trek.overview ?? trek.summary ?? undefined,
+    image: trek.hero_image ? abs(trek.hero_image) : undefined,
+    url: abs(path),
+    touristType: trek.difficulty,
+    provider: { "@type": "TravelAgency", name: "Alpha Adventures", url: SITE_URL },
+    ...(price && {
+      offers: { "@type": "Offer", price, priceCurrency: "INR", availability: "https://schema.org/InStock", url: abs(`/book/${trek.slug}`) },
+    }),
+  };
+}
