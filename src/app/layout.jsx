@@ -1,13 +1,14 @@
 import "./globals.css";
-import SiteHeader from "@/components/layout/SiteHeader";
-import SiteFooter from "@/components/layout/SiteFooter";
-import SiteChrome from "@/components/layout/SiteChrome";
-import MagicCursor from "@/components/layout/MagicCursor";
-import MegaMenu from "@/components/layout/MegaMenu";
-import TemplateScripts from "@/components/TemplateScripts";
 import { site } from "@/data/site";
 import { SITE_URL } from "@/lib/seo";
 
+// Root layout is intentionally minimal: <html>/<body> + Tailwind (globals.css)
+// + global metadata, nothing else. The legacy jQuery/Bootstrap/GSAP template
+// (13 vendor stylesheets + its scripts + site chrome) lives in the (site) route
+// group's layout so the Tailwind-only trees that sit directly under app/
+// — login, signup, forgot/reset-password, verify-email, admin — don't pay the
+// render-blocking cost of CSS they never use (audit §3.5). URLs are unchanged:
+// route groups are URL-transparent.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -30,39 +31,14 @@ export const viewport = {
   initialScale: 1,
 };
 
-const templateCss = [
-  "bootstrap.min.css",
-  "jquery-ui.css",
-  "bootstrap-icons.css",
-  "animate.min.css",
-  "jquery.fancybox.min.css",
-  "swiper-bundle.min.css",
-  "slick.css",
-  "slick-theme.css",
-  "daterangepicker.css",
-  "boxicons.min.css",
-  "style.css?v=1786605966",
-  "card-custom.css",
-  "search.css?v=1786605966",
-];
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
         <base href="/" />
-        {templateCss.map((f) => (
-          <link key={f} rel="stylesheet" href={`/assets/css/${f}`} />
-        ))}
       </head>
-      <body className="tt-magic-cursor">
-        <MagicCursor />
-        <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>
-          {children}
-        </SiteChrome>
-        <MegaMenu />
-        <TemplateScripts />
-      </body>
+      {/* tt-magic-cursor is inert without style.css (which only (site) loads). */}
+      <body className="tt-magic-cursor">{children}</body>
     </html>
   );
 }
