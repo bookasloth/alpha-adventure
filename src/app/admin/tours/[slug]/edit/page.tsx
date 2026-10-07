@@ -5,7 +5,8 @@ import TourForm from "../../TourForm";
 export const metadata = { title: "Edit tour", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function EditTourPage({ params }: { params: { slug: string } }) {
+export default async function EditTourPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("tours")

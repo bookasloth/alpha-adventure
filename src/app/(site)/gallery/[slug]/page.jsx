@@ -13,7 +13,8 @@ const galleryDetailInit = fs.readFileSync(
   "utf8",
 );
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const album = await getGalleryAlbum(params.slug);
   if (!album) return { title: "Gallery - Alpha Adventures" };
   return {
@@ -22,7 +23,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function GalleryDetailPage({ params }) {
+export default async function GalleryDetailPage(props) {
+  const params = await props.params;
   const album = await getGalleryAlbum(params.slug);
   if (!album) notFound();
 

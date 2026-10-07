@@ -5,7 +5,7 @@ const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE
 const supabaseKey =
   process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
+export const createClient = (cookieStore: Awaited<Awaited<ReturnType<typeof cookies>>>) => {
   return createServerClient(supabaseUrl!, supabaseKey!, {
     cookies: {
       getAll() {

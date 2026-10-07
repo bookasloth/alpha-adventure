@@ -6,12 +6,14 @@ import BookingFlow from "./BookingFlow";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   return { title: `Book — ${params.slug}` };
 }
 
-export default async function BookPage({ params }: { params: { slug: string } }) {
-  const supabase = createClient(cookies());
+export default async function BookPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
+  const supabase = createClient(await cookies());
 
   const { data: trek } = await supabase
     .from("treks")

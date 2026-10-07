@@ -5,7 +5,8 @@ import Link from "next/link";
 // thin placeholders (avoids soft-404s). Replace with a real route to publish.
 export const metadata = { robots: { index: false, follow: true } };
 
-export default function PlaceholderPage({ params }) {
+export default async function PlaceholderPage(props) {
+  const params = await props.params;
   const slug = Array.isArray(params.slug) ? params.slug : [params.slug];
   const title = slug[slug.length - 1]
     .split("-")

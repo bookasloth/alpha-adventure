@@ -50,8 +50,8 @@ async function payUserId(supabase: ReturnType<typeof createClient>, payToken?: s
   return user?.id ?? verifyPay(payToken);
 }
 
-function setDraftCookie(token: string) {
-  cookies().set(DRAFT_COOKIE, token, {
+async function setDraftCookie(token: string) {
+  (await cookies()).set(DRAFT_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -63,8 +63,8 @@ function setDraftCookie(token: string) {
 // The draft token is a per-guest bearer secret. Primary store is an httpOnly
 // cookie; the client also holds it (from createDraft) as a fallback so the flow
 // survives a reload/HMR blip.
-function draftTokenFrom(fallback?: string) {
-  return cookies().get(DRAFT_COOKIE)?.value ?? fallback ?? null;
+async function draftTokenFrom(fallback?: string) {
+  return (await cookies()).get(DRAFT_COOKIE)?.value ?? fallback ?? null;
 }
 
 // ── 1. Guest creates a booking draft (no account). Server prices it. ────────
@@ -73,7 +73,7 @@ export async function createDraft(raw: unknown): Promise<Result<{ bookingId: str
   try {
     const admin = createAdminClient();
     const { bookingId, draftToken, total } = await createDraftBooking(admin, raw);
-    setDraftCookie(draftToken);
+    await setDraftCookie(draftToken);
     return { ok: true, bookingId, total, token: draftToken };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
@@ -93,7 +93,7 @@ export async function authenticateBooking(
   if (!email.success) return { ok: false, error: "Invalid email." };
   if (typeof raw.password !== "string" || !raw.password) return { ok: false, error: "Enter your password." };
 
-  const draftToken = draftTokenFrom(token);
+  const draftToken = await draftTokenFrom(token);
   if (!draftToken) return { ok: false, error: "Your booking session expired. Please start again." };
 
   const admin = createAdminClient();
@@ -103,7 +103,7 @@ export async function authenticateBooking(
     return { ok: false, error: "This booking can no longer be verified." };
   await admin.from("bookings").update({ contact_email: email.data, status: "pending_auth" }).eq("id", bookingId);
 
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   let userId: string;
   if (raw.mode === "register") {
     const name = nameSchema.safeParse(raw.name);
@@ -142,7 +142,7 @@ export async function authenticateBooking(
 
   try {
     const finalized = await linkAndFinalize(admin, bookingId, draftToken, userId);
-    cookies().delete(DRAFT_COOKIE);
+    (await cookies()).delete(DRAFT_COOKIE);
     const payToken = signPay(userId); // authorises the pay step; session cookie doesn't survive this action
     // Non-blocking: a "we've held your spot" notice must not delay confirming
     // the reservation, and a mail failure must not fail a finalized booking.
@@ -168,7 +168,7 @@ export async function authenticateBooking(
 // ── 4b. Start payment. PhonePe (sandbox) when configured, else the mock path.
 // Returns a redirectUrl (PhonePe hosted page) or a reference (mock = done).
 export async function startPayment(bookingId: string, payToken?: string): Promise<Result<{ redirectUrl?: string; reference?: string }>> {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const userId = await payUserId(supabase, payToken);
   if (!userId) return { ok: false, error: "Please verify your email first." };
 
@@ -198,7 +198,7 @@ export async function payMockBooking(bookingId: string, payToken?: string): Prom
   // live. startPayment only routes here when PhonePe is disabled, but this is an
   // exported Server Action (directly callable), so it guards itself too.
   if (isPhonePeEnabled()) return { ok: false, error: "Payment required." };
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const userId = await payUserId(supabase, payToken);
   if (!userId) return { ok: false, error: "Please verify your email first." };
 

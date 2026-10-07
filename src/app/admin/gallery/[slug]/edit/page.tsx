@@ -5,7 +5,8 @@ import AlbumForm from "../../AlbumForm";
 export const metadata = { title: "Edit album", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function EditAlbumPage({ params }: { params: { slug: string } }) {
+export default async function EditAlbumPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { admin } = await requireAdmin();
   const { data: a } = await admin
     .from("gallery_albums")

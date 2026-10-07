@@ -8,7 +8,8 @@ export const revalidate = 300;
 
 const SECTION = "trips-near-nagpur";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const hit = await resolveSectionItem(SECTION, params.slug);
   if (hit?.trek) {
     const trek = hit.trek;
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }) {
   return { title: "Trips Near Nagpur" };
 }
 
-export default async function NearNagpurDetailPage({ params }) {
+export default async function NearNagpurDetailPage(props) {
+  const params = await props.params;
   const hit = await resolveSectionItem(SECTION, params.slug);
   if (hit?.redirectTo) redirect(hit.redirectTo);
   if (hit?.trek) {
