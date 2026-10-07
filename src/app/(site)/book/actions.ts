@@ -12,6 +12,7 @@ import { sendVerifyEmail } from "@/lib/verifyEmail";
 import { withTimeout } from "@/lib/withTimeout";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
+import { tokenSigningSecret } from "@/lib/signing";
 
 const DRAFT_COOKIE = "aa_draft";
 
@@ -25,9 +26,7 @@ type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 // token), and they authorise off it — falling back to a real session if one is
 // present. The bearer only authorises paying the caller's own finalized
 // booking, and can't be forged without the service-role key.
-function paySecret() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.CRON_SECRET ?? "dev-only-insecure";
-}
+const paySecret = tokenSigningSecret;
 function signPay(userId: string) {
   const mac = crypto.createHmac("sha256", paySecret()).update(userId).digest("hex");
   return `${userId}.${mac}`;
@@ -195,6 +194,10 @@ export async function startPayment(bookingId: string, payToken?: string): Promis
 // ── 4. Mock payment (test mode) -> confirmed. Authorised via the signed-in user.
 // PhonePe replaces this with a server-verified webhook flow.
 export async function payMockBooking(bookingId: string, payToken?: string): Promise<Result<{ reference: string }>> {
+  // Audit H1: the mock path must never confirm a booking once a real gateway is
+  // live. startPayment only routes here when PhonePe is disabled, but this is an
+  // exported Server Action (directly callable), so it guards itself too.
+  if (isPhonePeEnabled()) return { ok: false, error: "Payment required." };
   const supabase = createClient(cookies());
   const userId = await payUserId(supabase, payToken);
   if (!userId) return { ok: false, error: "Please verify your email first." };

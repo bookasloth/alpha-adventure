@@ -187,9 +187,16 @@ export async function createPhonePePayment(admin: Admin, bookingId: string): Pro
 
 // PhonePe: after a server-verified success, mark the payment + confirm the
 // booking. Idempotent — a duplicate callback is a no-op.
-export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null): Promise<BookingRow | null> {
-  const { data: pay } = await admin.from("payments").select("id,booking_id,status").eq("merchant_order_id", merchantTransactionId).maybeSingle();
+export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<BookingRow | null> {
+  const { data: pay } = await admin.from("payments").select("id,booking_id,status,amount").eq("merchant_order_id", merchantTransactionId).maybeSingle();
   if (!pay) return null;
+  // Audit L1: never confirm if the gateway-reported amount doesn't match the
+  // amount we recorded for this payment (defense-in-depth against a mis-reported
+  // or tampered success).
+  if (paidAmount != null && Number(paidAmount) !== Number((pay as { amount: number }).amount)) {
+    console.error(`[phonepe] amount mismatch for ${merchantTransactionId}: paid ${paidAmount} vs expected ${(pay as { amount: number }).amount}`);
+    return null;
+  }
 
   const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", pay.booking_id).single();
   if (b?.status === "confirmed") return b as BookingRow; // already done
