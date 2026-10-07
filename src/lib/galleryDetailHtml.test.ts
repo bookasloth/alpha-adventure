@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-// @ts-expect-error — plain JS module, no types
 import { galleryDetailHtml } from "./galleryDetailHtml";
 
 // Audit M1: DB-sourced album fields must be HTML-escaped before injection.
