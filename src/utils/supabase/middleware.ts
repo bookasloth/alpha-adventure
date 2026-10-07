@@ -5,7 +5,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY =
   process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-const GATED = ["/account", "/user-dashboard"];
+// /admin is also gated server-side by requireAdmin() in src/app/admin/data.ts;
+// listing it here adds an earlier redirect + defense-in-depth (audit §3.3).
+const GATED = ["/account", "/user-dashboard", "/admin"];
 
 // Refreshes the Supabase auth session cookie on each request and gates
 // /account/** behind a signed-in user.

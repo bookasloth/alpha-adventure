@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "./LoginForm";
 
-export const metadata = { title: "Sign in" };
+export const metadata = { title: "Sign in", robots: { index: false, follow: false } };
 
 export default function LoginPage() {
   return (

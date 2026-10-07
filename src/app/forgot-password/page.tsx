@@ -2,7 +2,7 @@ import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import ForgotForm from "./ForgotForm";
 
-export const metadata = { title: "Trouble signing in" };
+export const metadata = { title: "Trouble signing in", robots: { index: false, follow: false } };
 
 export default function ForgotPasswordPage() {
   return (

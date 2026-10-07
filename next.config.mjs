@@ -3,6 +3,35 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// CSP (audit §3.2). The legacy jQuery/Bootstrap/GSAP template relies on inline
+// scripts/styles and eval, so a nonce-based policy would break every Pattern B
+// page — we keep 'unsafe-inline'/'unsafe-eval' for scripts+styles and instead
+// bank the directives that are pure wins here: frame-ancestors/object-src/
+// base-uri lock out clickjacking + plugin/base-tag injection, and the src
+// allow-lists pin network/asset origins to self + Supabase + the legacy image
+// host. Tighten script-src with nonces if/when Pattern B is retired.
+const supabaseOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+  } catch {
+    return "";
+  }
+})();
+const supabaseWs = supabaseOrigin ? supabaseOrigin.replace(/^https/, "wss") : "";
+const csp = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  `img-src 'self' data: blob: https://alpha.thegreyhawks.com https://www.google.com ${supabaseOrigin}`.trim(),
+  `connect-src 'self' ${supabaseOrigin} ${supabaseWs}`.trim(),
+  "frame-src 'self'",
+].join("; ");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // ponytail: keep Supabase out of server vendor-chunks. A cached/incremental
@@ -38,6 +67,19 @@ const nextConfig = {
   // /tour-packages) + guides grouped under /guides. Old /treks/<leisure-slug>
   // detail links are redirected to their canonical section at runtime by the
   // wrong-section guard in each [slug] route, so no static rule is needed here.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: csp },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     const guides = ["packing-checklist", "fitness-requirements", "beginner-trek-guide", "safety-guidelines", "responsible-travel"];
     return [

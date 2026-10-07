@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import ResetForm from "./ResetForm";
 
-export const metadata = { title: "Reset password" };
+export const metadata = { title: "Reset password", robots: { index: false, follow: false } };
 
 export default function ResetPasswordPage() {
   return (
