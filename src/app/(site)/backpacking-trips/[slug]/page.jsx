@@ -10,7 +10,8 @@ export const revalidate = 300;
 
 const SECTION = "backpacking-trips";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const hit = await resolveSectionItem(SECTION, params.slug);
   if (hit?.trek) {
     const trek = hit.trek;
@@ -31,7 +32,8 @@ export async function generateMetadata({ params }) {
   return { title: "Backpacking Trips" };
 }
 
-export default async function BackpackingDetailPage({ params }) {
+export default async function BackpackingDetailPage(props) {
+  const params = await props.params;
   const hit = await resolveSectionItem(SECTION, params.slug);
   if (hit?.redirectTo) redirect(hit.redirectTo);
   if (hit?.trek) {

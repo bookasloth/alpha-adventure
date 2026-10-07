@@ -16,7 +16,7 @@ export type AdminData = Awaited<ReturnType<typeof getAdminData>>;
 // everything downstream is then read with service role behind this gate.
 // Exported so admin write actions (e.g. create trek) reuse the same gate.
 export async function requireAdmin() {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/admin");
 

@@ -16,7 +16,7 @@ const CANCELLABLE = new Set(["draft", "pending_auth", "pending_payment", "paymen
 
 // Update the signed-in user's profile (own-row RLS: profiles_update_own).
 export async function updateProfile(data: Record<string, unknown>): Promise<Result> {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
 
@@ -41,7 +41,7 @@ export async function updateProfile(data: Record<string, unknown>): Promise<Resu
 
 // Travellers for one of the user's own bookings (own-row RLS: trav_owner).
 export async function getBookingTravellers(bookingId: string): Promise<Result<{ travellers: any[] }>> {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
   // Audit L5: explicit app-level ownership check, not just the trav_owner RLS
@@ -61,7 +61,7 @@ export async function getBookingTravellers(bookingId: string): Promise<Result<{ 
 
 // Cancel a booking the user owns (respects the DB state-machine trigger).
 export async function cancelBooking(bookingId: string): Promise<Result> {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
 

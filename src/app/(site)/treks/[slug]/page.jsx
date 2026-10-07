@@ -20,7 +20,8 @@ const WEEKEND_TAGS = ["beginner", "weekend", "half-day"];
 // weekend-treks tag listing → a trek detail (treks-group item) → a wrong-section
 // 301 → a state/difficulty collection → 404.
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { slug } = params;
   const groupKey = GROUP_ALIASES[slug];
   if (groupKey) return { title: trekGroups[groupKey].title };
@@ -43,7 +44,8 @@ export async function generateMetadata({ params }) {
   return { title: "Trek" };
 }
 
-export default async function TrekPage({ params }) {
+export default async function TrekPage(props) {
+  const params = await props.params;
   const { slug } = params;
 
   // Group-alias + weekend listings (treks only).

@@ -5,7 +5,8 @@ import TrekEditForm from "../../TrekEditForm";
 export const metadata = { title: "Edit trek", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function EditTrekPage({ params }: { params: { slug: string } }) {
+export default async function EditTrekPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("treks")

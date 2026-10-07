@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const PAID = new Set(["confirmed", "deposit_paid", "completed"]);
 
 export default async function UserDashboardPage() {
-  const supabase = createClient(cookies());
+  const supabase = createClient(await cookies());
   const {
     data: { user },
   } = await supabase.auth.getUser();

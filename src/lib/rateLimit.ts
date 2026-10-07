@@ -6,8 +6,9 @@ import { createAdminClient } from "@/utils/supabase/admin";
 // the true client and sanitises inbound XFF), then the first x-forwarded-for hop.
 // NOTE: off a trusted proxy, x-forwarded-for is client-spoofable — this is only
 // sound behind Vercel/a proxy that overwrites these headers.
-export function clientIp(): string {
-  const h = headers();
+// Next 15: headers() is async.
+export async function clientIp(): Promise<string> {
+  const h = await headers();
   return (
     h.get("x-real-ip")?.trim() ||
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -52,5 +53,5 @@ export async function limitByIp(
   windowSec: number,
   opts?: { failClosed?: boolean },
 ): Promise<boolean> {
-  return rateLimit(`${bucket}:${clientIp()}`, max, windowSec, opts);
+  return rateLimit(`${bucket}:${await clientIp()}`, max, windowSec, opts);
 }

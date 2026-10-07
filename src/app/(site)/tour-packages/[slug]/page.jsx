@@ -5,12 +5,14 @@ import { getTourBySlug } from "@/lib/tourListing";
 
 export const revalidate = 300;
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const tour = await getTourBySlug(params.slug);
   return { title: tour ? tour.title : "Tour" };
 }
 
-export default async function TourDetailPage({ params }) {
+export default async function TourDetailPage(props) {
+  const params = await props.params;
   const tour = await getTourBySlug(params.slug);
   if (!tour) return notFound();
   return (

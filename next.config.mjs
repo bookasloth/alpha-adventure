@@ -38,16 +38,15 @@ const nextConfig = {
   // build can emit a page.js that requires ./vendor-chunks/@supabase.js without
   // re-emitting the chunk -> MODULE_NOT_FOUND -> 500 on every DB route. Loading
   // it from node_modules at runtime avoids that entirely.
-  experimental: {
-    serverComponentsExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
-    // Pattern B pages read src/data/orig-*.html and *-init.js at runtime via
-    // fs.readFileSync(path.join(process.cwd(), ...)). process.cwd() is not
-    // statically analyzable, so Next's file tracer never bundles those files
-    // into the serverless function -> ENOENT -> 500 on every dynamic route on
-    // Vercel (works locally because the files sit on disk). Force-include them.
-    outputFileTracingIncludes: {
-      "/**": ["./src/data/**"],
-    },
+  // Next 15: both moved out of `experimental` to stable top-level keys.
+  serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+  // Pattern B pages read src/data/orig-*.html and *-init.js at runtime via
+  // fs.readFileSync(path.join(process.cwd(), ...)). process.cwd() is not
+  // statically analyzable, so Next's file tracer never bundles those files
+  // into the serverless function -> ENOENT -> 500 on every dynamic route on
+  // Vercel (works locally because the files sit on disk). Force-include them.
+  outputFileTracingIncludes: {
+    "/**": ["./src/data/**"],
   },
   // All images are self-hosted under public/assets (served locally via
   // next/image), so no `images.remotePatterns` entry is needed — the old

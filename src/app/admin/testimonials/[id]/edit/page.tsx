@@ -5,7 +5,8 @@ import TestimonialForm from "../../TestimonialForm";
 export const metadata = { title: "Edit testimonial", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function EditTestimonialPage({ params }: { params: { id: string } }) {
+export default async function EditTestimonialPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("testimonials")

@@ -6,7 +6,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 export const metadata = { title: "Email verified", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function VerifyEmailPage({ searchParams }: { searchParams: { token?: string } }) {
+export default async function VerifyEmailPage(props: { searchParams: Promise<{ token?: string }> }) {
+  const searchParams = await props.searchParams;
   const userId = verifyVerifyToken(searchParams.token);
   let ok = false;
   if (userId) {
