@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import "./booking.css";
 import { createDraft, authenticateBooking, startPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
@@ -116,7 +117,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
             <div className="bk-pl"><span>{trek.title}</span><b>{departure ? label(departure) : ""}</b></div>
             <div className="bk-pl"><span>{pax} traveller(s)</span><b>{rupees(total)} paid</b></div>
           </div>
-          <div style={{ marginTop: 24 }}><a className="bk-btn bk-btn-primary" href="/account">View my bookings <Arrow /></a></div>
+          <div style={{ marginTop: 24 }}><Link className="bk-btn bk-btn-primary" href="/account">View my bookings <Arrow /></Link></div>
         </div>
       </div></div>
     );
