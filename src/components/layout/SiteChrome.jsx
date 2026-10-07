@@ -1,13 +1,7 @@
-"use client";
-import { usePathname } from "next/navigation";
-
-// Auth pages render full-screen (their own split-screen layout), so the site
-// header/footer are hidden there. Everywhere else keeps the normal chrome.
-const BARE = ["/login", "/signup", "/forgot-password", "/admin"];
-
+// Renders the site chrome around (site)-group routes. Auth + admin live outside
+// this group (app/ root, Tailwind-only) and never reach here, so there is no
+// per-path bare/full branch — chrome always wraps its children.
 export default function SiteChrome({ header, footer, children }) {
-  const path = usePathname() || "";
-  if (BARE.some((p) => path.startsWith(p))) return <>{children}</>;
   return (
     <>
       {header}
