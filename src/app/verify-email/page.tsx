@@ -3,7 +3,7 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import { verifyVerifyToken } from "@/lib/verifyEmail";
 import { createAdminClient } from "@/utils/supabase/admin";
 
-export const metadata = { title: "Email verified" };
+export const metadata = { title: "Email verified", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 export default async function VerifyEmailPage({ searchParams }: { searchParams: { token?: string } }) {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "../login/LoginForm";
 
-export const metadata = { title: "Create account" };
+export const metadata = { title: "Create account", robots: { index: false, follow: false } };
 
 export default function SignupPage() {
   return (

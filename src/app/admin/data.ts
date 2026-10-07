@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { istToday } from "@/lib/date";
 
 // Statuses that count as money in (mirrors user-dashboard).
 const PAID = new Set(["confirmed", "deposit_paid", "completed"]);
@@ -177,7 +178,7 @@ export async function getAdminData() {
   const now = new Date();
   const monthKey = (iso: string) => new Date(iso).toISOString().slice(0, 7);
   const thisMonth = now.toISOString().slice(0, 7);
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = istToday();
 
   const revenueMonth = rupees(
     bookings

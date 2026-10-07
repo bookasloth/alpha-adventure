@@ -68,8 +68,11 @@ export default function LoginForm({
       // 2. Client: establish the session in the browser (server-action cookies
       //    don't reach the browser in this app), then navigate.
       const supabase = createClient();
+      // This is the single credential check (server only rate-limited + validated).
+      // On login, a failure here means bad credentials; on register it shouldn't
+      // happen (account was just created), so keep the generic message.
       const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signErr) { setError(NET_ERR); setBusy(false); return; }
+      if (signErr) { setError(isRegister ? NET_ERR : "Email or password is incorrect."); setBusy(false); return; }
       router.push(next);
       router.refresh(); // drop the pre-auth router cache so the dashboard renders authed
     } catch {

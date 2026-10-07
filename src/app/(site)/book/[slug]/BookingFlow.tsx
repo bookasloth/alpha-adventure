@@ -5,7 +5,7 @@ import "./booking.css";
 import { createDraft, authenticateBooking, startPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
 
-type Trek = { id: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
+type Trek = { id: string; slug: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
 type Addon = { id: string; name: string; price: number };
 type Gender = "male" | "female" | "other" | "prefer_not_to_say";
@@ -128,7 +128,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     <div className="bk-root">
       <div className="bk-wrap">
         <div className="bk-deco">Mountains<br />call different.</div>
-        <div className="bk-top"><a className="bk-back" href={`/treks/${""}`} onClick={(e) => { e.preventDefault(); history.back(); }}><Chevron /> Back to trek</a></div>
+        <div className="bk-top"><a className="bk-back" href={`/treks/${trek.slug}`} onClick={(e) => { e.preventDefault(); history.back(); }}><Chevron /> Back to trek</a></div>
         <div className="bk-brand">
           <span className="bk-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 20L9 8l4 7 2-3 6 8z" fill="#fe5100" /><path d="M9 8l4 7-2.4 5H3z" fill="#ff8a4d" /><circle cx="17" cy="6" r="2.2" fill="#FFB52A" /></svg></span>
           <div><h1>{trek.title}</h1>{trek.summary ? <p>{trek.summary}</p> : null}</div>

@@ -1,7 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { sendVerifyEmail } from "@/lib/verifyEmail";
 import { siteUrl } from "@/lib/siteUrl";
@@ -14,23 +12,16 @@ type Result = { ok: true } | { ok: false; error: string };
 
 const BAD_CREDS = "Email or password is incorrect.";
 
-// Validates credentials + rate-limits, but does NOT establish the session here:
-// cookies set inside a Server Action don't reach the browser in this app (see
-// book/actions.ts). The client sets the session via the browser Supabase client
-// after this returns ok. Server sign-in here is only the rate-limited credential
-// check (brute-force guard the client can't enforce).
+// Rate-limits the sign-in attempt and validates the email shape — the actual
+// credential check happens once, in the browser client right after this returns
+// (server-action cookies don't reach the browser in this app, so a server
+// signInWithPassword would only mint an orphaned refresh token and double the
+// auth round-trip; audit §3.2). The IP rate limit — the brute-force guard the
+// client can't enforce — is applied here regardless of credential validity.
 export async function signIn(rawEmail: unknown, rawPassword: unknown): Promise<Result> {
   if (!(await limitByIp("signin", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const e = emailSchema.safeParse(rawEmail);
   if (!e.success || typeof rawPassword !== "string" || !rawPassword) return { ok: false, error: BAD_CREDS };
-  const supabase = createClient(cookies());
-  let res;
-  try {
-    res = await withTimeout(supabase.auth.signInWithPassword({ email: e.data, password: rawPassword }), 10000);
-  } catch {
-    return { ok: false, error: "That took too long — please try again." };
-  }
-  if (res.error || !res.data.user) return { ok: false, error: BAD_CREDS };
   return { ok: true };
 }
 
