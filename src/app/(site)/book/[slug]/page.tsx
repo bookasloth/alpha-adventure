@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { istToday } from "@/lib/date";
 import BookingFlow from "./BookingFlow";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = istToday();
   const { data: departures } = await supabase
     .from("trek_departures")
     .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
@@ -39,6 +40,7 @@ export default async function BookPage({ params }: { params: { slug: string } })
     <BookingFlow
       trek={{
         id: trek.id,
+        slug: trek.slug,
         title: trek.title,
         summary: trek.summary,
         base_price: trek.base_price ?? 0,

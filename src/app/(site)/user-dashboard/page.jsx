@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { istToday } from "@/lib/date";
 import Dashboard from "./Dashboard";
 
 export const metadata = { title: "My Dashboard" };
@@ -25,7 +26,7 @@ export default async function UserDashboardPage() {
   ]);
 
   const rows = bookings ?? [];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = istToday();
   const stats = {
     total: rows.length,
     upcoming: rows.filter((b) => PAID.has(b.status) && (b.departure_date ?? "") >= today).length,

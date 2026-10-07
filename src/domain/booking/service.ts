@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { istToday } from "@/lib/date";
 import { createDraftSchema } from "./schema";
 
 // Booking core — pure of Next/cookies so it is reusable by server actions AND
@@ -30,7 +31,7 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
     .maybeSingle();
   // IST "today" (business tz) — reject client-tampered past/unlisted departures.
   // price_booking enforces the same gate in SQL; this gives a clean early error.
-  const todayIST = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  const todayIST = istToday();
   if (
     !dep ||
     dep.trek_id !== input.trek_id ||

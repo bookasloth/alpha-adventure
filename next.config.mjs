@@ -27,7 +27,7 @@ const csp = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  `img-src 'self' data: blob: https://alpha.thegreyhawks.com https://www.google.com ${supabaseOrigin}`.trim(),
+  `img-src 'self' data: blob: https://alpha.thegreyhawks.com https://www.google.com https://images.unsplash.com ${supabaseOrigin}`.trim(),
   `connect-src 'self' ${supabaseOrigin} ${supabaseWs}`.trim(),
   "frame-src 'self'",
 ].join("; ");
@@ -49,14 +49,9 @@ const nextConfig = {
       "/**": ["./src/data/**"],
     },
   },
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "alpha.thegreyhawks.com",
-      },
-    ],
-  },
+  // All images are self-hosted under public/assets (served locally via
+  // next/image), so no `images.remotePatterns` entry is needed — the old
+  // alpha.thegreyhawks.com pattern was dead config (audit §3.5).
   // `@/` alias defined here (not only in tsconfig) so it survives Next's
   // tsconfig auto-rewrites and works for both JS and TS files.
   webpack: (config) => {
