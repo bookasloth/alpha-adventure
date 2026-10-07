@@ -44,6 +44,12 @@ export async function getBookingTravellers(bookingId: string): Promise<Result<{ 
   const supabase = createClient(cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
+  // Audit L5: explicit app-level ownership check, not just the trav_owner RLS
+  // policy. The RLS client only returns the booking if it belongs to the caller
+  // (bookings_select), so a non-owner id yields no row and we stop here.
+  const { data: own } = await supabase
+    .from("bookings").select("id").eq("id", bookingId).eq("user_id", user.id).maybeSingle();
+  if (!own) return { ok: false, error: "Booking not found." };
   const { data, error } = await supabase
     .from("booking_travellers")
     .select("full_name,gender,is_lead,phone,emergency_contact_phone,position")

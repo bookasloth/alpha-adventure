@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 
 // PhonePe PG (legacy X-VERIFY) integration. Enabled only when env is set;
 // otherwise the booking flow falls back to the mock path. Sandbox test creds
@@ -57,7 +57,9 @@ export async function phonePeInitiate(opts: {
 }
 
 // Server-side status check (source of truth — never trust the redirect alone).
-export async function phonePeStatus(merchantTransactionId: string): Promise<{ paid: boolean; providerTxnId: string | null; code: string }> {
+// Returns the gateway-reported `amount` (paise) so the caller can assert it
+// matches the booking total before confirming (audit L1).
+export async function phonePeStatus(merchantTransactionId: string): Promise<{ paid: boolean; providerTxnId: string | null; code: string; amount: number | null }> {
   const path = `/pg/v1/status/${MID}/${merchantTransactionId}`;
   try {
     const res = await fetch(`${HOST}${path}`, {
@@ -66,13 +68,26 @@ export async function phonePeStatus(merchantTransactionId: string): Promise<{ pa
     });
     const json = await res.json().catch(() => ({}));
     const code = json?.code || "UNKNOWN";
+    const amt = Number(json?.data?.amount);
     return {
       paid: json?.success === true && code === "PAYMENT_SUCCESS",
       providerTxnId: json?.data?.transactionId ?? null,
       code,
+      amount: Number.isFinite(amt) ? amt : null,
     };
   } catch (e) {
     console.error("[phonepe] status error:", (e as Error).message);
-    return { paid: false, providerTxnId: null, code: "ERROR" };
+    return { paid: false, providerTxnId: null, code: "ERROR", amount: null };
   }
+}
+
+// Verify the X-VERIFY checksum PhonePe sends on the server-to-server callback
+// POST (audit L2). The body is `{ response: <base64> }`; checksum is
+// sha256(base64 + salt)###saltIndex. Returns true when valid.
+export function verifyCallbackChecksum(base64Response: string, xVerifyHeader: string | null): boolean {
+  if (!xVerifyHeader || !base64Response) return false;
+  const expected = `${sha256(base64Response + SALT)}###${SALT_INDEX}`;
+  const a = Buffer.from(xVerifyHeader);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }

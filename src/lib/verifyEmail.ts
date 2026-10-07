@@ -2,13 +2,12 @@ import "server-only";
 import crypto from "crypto";
 import { sendVerifyEmail as mailVerify } from "./email";
 import { siteUrl } from "./siteUrl";
+import { tokenSigningSecret } from "./signing";
 
 // Non-blocking email ownership check: an HMAC-signed link (like the booking
 // payToken bearer) delivered by our own mailer. Clicking it sets
 // profiles.email_verified; it gates nothing.
-function secret() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.CRON_SECRET ?? "dev-only-insecure";
-}
+const secret = tokenSigningSecret;
 export function signVerifyToken(userId: string): string {
   const mac = crypto.createHmac("sha256", secret()).update(`verify:${userId}`).digest("hex");
   return `${userId}.${mac}`;
