@@ -2,19 +2,28 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard, CalendarRange, Inbox, Mountain, Package, FileText, Image as ImageIcon,
   Users, Star, CreditCard, RotateCcw, Banknote, Settings as Cog, Mail, ShieldCheck,
   Search, Bell, ChevronRight, Plus, Filter, MoreHorizontal, TrendingUp, TrendingDown, Ticket,
-  X, Check,
+  X, Check, AlertCircle, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RevenueArea, StatusDonut, TopTreksBar } from "./Charts";
+import { Skeleton, SkeletonGroup } from "@/components/ui/skeleton";
+// recharts is heavy and only the Dashboard tab uses it - split it out of the
+// shell bundle. ssr:false because ResponsiveContainer has no width on the
+// server anyway; the placeholder reserves the chart's height (no layout shift).
+const ChartSkeletonTall = () => <Skeleton className="h-[250px] w-full" />;
+const ChartSkeleton = () => <Skeleton className="h-[220px] w-full" />;
+const RevenueArea = dynamic(() => import("./Charts").then((m) => m.RevenueArea), { ssr: false, loading: ChartSkeletonTall });
+const StatusDonut = dynamic(() => import("./Charts").then((m) => m.StatusDonut), { ssr: false, loading: ChartSkeleton });
+const TopTreksBar = dynamic(() => import("./Charts").then((m) => m.TopTreksBar), { ssr: false, loading: ChartSkeleton });
 import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
 import type { AdminData } from "./data";
 import { createDeparture } from "./actions";
@@ -30,7 +39,7 @@ import { updateLeadStatus, replyToLead } from "./leads/actions";
 type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
 type Trek = { title: string; region: string; difficulty: string; price: number; departures: number; status: string };
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
-type MenuItem = { label: string; onClick: () => void; tone?: "danger" };
+type MenuItem = { label: string; onClick: () => void | Promise<unknown>; tone?: "danger" };
 type ModalType = "booking" | "departure" | "trek";
 type DeparturePayload = {
   trek_id: string; start_date: string; end_date: string; start_time: string;
@@ -38,7 +47,7 @@ type DeparturePayload = {
 };
 type AdminActions = {
   go: (next: string) => void;
-  notify: (msg: string) => void;
+  notify: (msg: string, ok?: boolean) => void;
   addBooking: (b: Omit<Booking, "ref">) => void;
   addTrek: (t: Trek) => void;
   saveDeparture: (d: DeparturePayload) => Promise<{ ok: boolean; error?: string }>;
@@ -69,7 +78,6 @@ type AdminActions = {
   galleryAlbums: AdminData["galleryRows"];
   testimonials: AdminData["testimonialRows"];
   departureRows: AdminData["departureRows"];
-  refresh: () => void;
 };
 
 /* ─────────────────────────── nav ─────────────────────────── */
@@ -139,17 +147,20 @@ export default function AdminShell({ data }: { data: AdminData }) {
   const [gallery, setGallery] = useState<GalleryImage[]>(seedGallery());
   const [treks, setTreks] = useState<Trek[]>(TREKS);
   const [departures, setDepartures] = useState<Departure[]>(data.departureRows);
+  // Server actions revalidate /admin and stream fresh props; re-seed the
+  // editable copies so a cancelled booking/edited date shows without reload.
+  useEffect(() => setBookings(data.bookingRows), [data.bookingRows]);
+  useEffect(() => setDepartures(data.departureRows), [data.departureRows]);
   const [notifs, setNotifs] = useState(NOTIFS);
   const [bellOpen, setBellOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | { type: ModalType }>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const active = NAV.find((n) => n.key === section)!;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const router = useRouter();
 
-  const notify = (msg: string) => {
-    setToast(msg);
+  const notify = (msg: string, ok = true) => {
+    setToast({ msg, ok });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setToast(null), 3000);
   };
@@ -169,7 +180,6 @@ export default function AdminShell({ data }: { data: AdminData }) {
     if (r.ok) {
       const title = data.trekOptions.find((t) => t.id === p.trek_id)?.title ?? "Trek";
       notify(`Date added to ${title}`);
-      router.refresh();
     }
     return r;
   };
@@ -218,7 +228,6 @@ export default function AdminShell({ data }: { data: AdminData }) {
     galleryAlbums: data.galleryRows,
     testimonials: data.testimonialRows,
     departureRows: data.departureRows,
-    refresh: () => router.refresh(),
   };
 
   return (
@@ -314,8 +323,8 @@ export default function AdminShell({ data }: { data: AdminData }) {
 
       {modal && <EntityModal type={modal.type} treks={actions.treks} trekOptions={actions.trekOptions} onSave={modal.type === "booking" ? actions.addBooking : modal.type === "trek" ? actions.addTrek : actions.saveDeparture} onClose={() => setModal(null)} />}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-xl border border-line bg-ink px-4 py-3 text-sm font-medium text-white shadow-xl">
-          <Check size={16} className="text-green-400" /> {toast}
+        <div role={toast.ok ? "status" : "alert"} className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 rounded-xl border border-line bg-ink px-4 py-3 text-sm font-medium text-white shadow-xl">
+          {toast.ok ? <Check size={16} className="text-green-400" /> : <AlertCircle size={16} className="text-red-400" />} {toast.msg}
         </div>
       )}
     </div>
@@ -454,18 +463,27 @@ function Toolbar({
 
 function RowMenu({ options }: { options: MenuItem[] }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   if (!options.length) return null;
+  // Spinner + disabled trigger while the chosen action runs, so a row can't
+  // fire a second delete/cancel before the first settles.
+  const run = async (o: MenuItem) => {
+    setOpen(false);
+    setBusy(true);
+    try { await o.onClick(); } finally { setBusy(false); }
+  };
   return (
     <div className="relative">
-      <button onClick={() => setOpen((v) => !v)} className="grid h-7 w-7 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink" aria-label="Row actions">
-        <MoreHorizontal size={16} />
+      <button onClick={() => setOpen((v) => !v)} disabled={busy} aria-busy={busy}
+        className="grid h-7 w-7 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink active:scale-95 disabled:cursor-wait" aria-label="Row actions">
+        {busy ? <Loader2 size={16} className="animate-spin text-primary" /> : <MoreHorizontal size={16} />}
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-8 z-20 min-w-40 rounded-lg border border-line bg-white py-1 shadow-xl">
             {options.map((o) => (
-              <button key={o.label} onClick={() => { setOpen(false); o.onClick(); }}
+              <button key={o.label} onClick={() => run(o)}
                 className={cn("block w-full px-3 py-2 text-left text-sm hover:bg-slate-100", o.tone === "danger" ? "text-red-600" : "text-ink")}>
                 {o.label}
               </button>
@@ -527,18 +545,21 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
   const [page, setPage] = useState(0);
 
   const { bookings, setSearch, notify, openModal } = actions;
-  const router = useRouter();
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<BookingDetail | null>(null);
 
+  const reqId = useRef(0);
   const openDetail = async (b: Booking) => {
-    if (!b.id) { notify("This booking isn't saved yet."); return; }
+    if (!b.id) { notify("This booking isn't saved yet.", false); return; }
+    const id = ++reqId.current;
     setDetail(null); setDetailOpen(true);
-    const r = await getBookingDetail(b.id);
+    const r = await getBookingDetail(b.id).catch(() => ({ ok: false as const, error: "Could not load the booking." }));
+    if (id !== reqId.current) return; // a newer open superseded this one
     if (r.ok) setDetail(r.detail);
-    else { setDetailOpen(false); notify(r.error); }
+    else { setDetailOpen(false); notify(r.error, false); }
   };
-  const query = actions.search;
+  // Deferred so typing stays instant while the table re-filters.
+  const query = useDeferredValue(actions.search);
   const trekOptions: string[] = [...new Set(bookings.map((b: Booking) => b.trek))];
   const status = BOOKING_TAB_STATUS[tab];
   const q = query.trim().toLowerCase();
@@ -560,8 +581,7 @@ function BookingsPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Cancel booking ${b.ref}?`)) return;
         const r = await cancelBooking(b.id!);
-        notify(r.ok ? `${b.ref} cancelled` : r.error);
-        if (r.ok) router.refresh();
+        notify(r.ok ? `${b.ref} cancelled` : r.error, r.ok);
       },
     }] : []),
   ];
@@ -612,10 +632,16 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
     <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-ink/40 p-4 sm:p-6">
       <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Booking details">
         {!detail ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Loading booking…</p>
-            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
-          </div>
+          <SkeletonGroup label="Loading booking">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="space-y-2"><Skeleton className="h-6 w-40" /><Skeleton className="h-4 w-56" /></div>
+              <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink" aria-label="Close"><X size={18} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {Array.from({ length: 6 }, (_, i) => <div key={i} className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-4 w-24" /></div>)}
+            </div>
+            <Skeleton className="mt-6 h-24 w-full" />
+          </SkeletonGroup>
         ) : (
           <>
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -721,10 +747,16 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
     <div className="fixed inset-0 z-50 grid place-items-start overflow-y-auto bg-ink/40 p-4 sm:p-6">
       <div className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-label="Trek details">
         {!detail ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Loading trek…</p>
-            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink"><X size={18} /></button>
-          </div>
+          <SkeletonGroup label="Loading trek">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="space-y-2"><Skeleton className="h-6 w-40" /><Skeleton className="h-4 w-56" /></div>
+              <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-ink" aria-label="Close"><X size={18} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {Array.from({ length: 6 }, (_, i) => <div key={i} className="space-y-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-4 w-24" /></div>)}
+            </div>
+            <Skeleton className="mt-6 h-24 w-full" />
+          </SkeletonGroup>
         ) : (
           <>
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -811,8 +843,7 @@ function DeparturesPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Delete this ${d.trek} date (${d.start})?`)) return;
         const r = await deleteDeparture(d.id);
-        actions.notify(r.ok ? "Date deleted" : r.error);
-        if (r.ok) actions.refresh();
+        actions.notify(r.ok ? "Date deleted" : r.error, r.ok);
       },
     },
   ];
@@ -848,7 +879,7 @@ function DeparturesPage({ actions }: { actions: AdminActions }) {
           </TableBody>
         </Table>
       </CardContent></Card>
-      {editing && <DepartureEditModal dep={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); actions.notify("Date updated"); actions.refresh(); }} />}
+      {editing && <DepartureEditModal dep={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); actions.notify("Date updated"); }} />}
     </div>
   );
 }
@@ -901,14 +932,12 @@ function DepartureEditModal({ dep, onClose, onSaved }: { dep: DepartureRow; onCl
 type LeadRow = AdminData["leadRows"][number];
 function LeadsPage({ actions }: { actions: AdminActions }) {
   const leads = actions.leads;
-  const router = useRouter();
   const { notify } = actions;
   const [reply, setReply] = useState<LeadRow | null>(null);
 
   const setStatus = async (id: string, status: string, label: string) => {
     const r = await updateLeadStatus(id, status);
-    notify(r.ok ? `Marked ${label}` : r.error);
-    if (r.ok) router.refresh();
+    notify(r.ok ? `Marked ${label}` : r.error, r.ok);
   };
   const rowMenu = (l: LeadRow): MenuItem[] => [
     { label: "Reply", onClick: () => setReply(l) },
@@ -939,7 +968,7 @@ function LeadsPage({ actions }: { actions: AdminActions }) {
           </TableBody>
         </Table>
       </CardContent></Card>
-      {reply && <ReplyModal lead={reply} onClose={() => setReply(null)} onSent={() => { setReply(null); notify("Reply sent"); router.refresh(); }} />}
+      {reply && <ReplyModal lead={reply} onClose={() => setReply(null)} onSent={() => { setReply(null); notify("Reply sent"); }} />}
     </div>
   );
 }
@@ -984,11 +1013,14 @@ function TreksPage({ actions }: { actions: AdminActions }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<TrekDetail | null>(null);
 
+  const reqId = useRef(0);
   const openDetail = async (slug: string) => {
+    const id = ++reqId.current;
     setDetail(null); setDetailOpen(true);
-    const r = await getTrekDetail(slug);
+    const r = await getTrekDetail(slug).catch(() => ({ ok: false as const, error: "Could not load the trek." }));
+    if (id !== reqId.current) return;
     if (r.ok) setDetail(r.detail);
-    else { setDetailOpen(false); actions.notify(r.error); }
+    else { setDetailOpen(false); actions.notify(r.error, false); }
   };
 
   const rowMenu = (slug: string, title: string): MenuItem[] => [
@@ -1000,8 +1032,7 @@ function TreksPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Delete "${title}"? It will be removed from every listing.`)) return;
         const r = await deleteTrek(slug);
-        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
-        if (r.ok) router.refresh();
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error, r.ok);
       },
     },
   ];
@@ -1044,8 +1075,7 @@ function ToursPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Delete "${title}"? It will be removed from the site.`)) return;
         const r = await deleteTour(slug);
-        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
-        if (r.ok) router.refresh();
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error, r.ok);
       },
     },
   ];
@@ -1086,8 +1116,7 @@ function GalleryAlbumsPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Delete album "${title}"?`)) return;
         const r = await deleteGalleryAlbum(slug);
-        actions.notify(r.ok ? `Deleted "${title}"` : r.error);
-        if (r.ok) router.refresh();
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error, r.ok);
       },
     },
   ];
@@ -1124,8 +1153,7 @@ function TestimonialsPage({ actions }: { actions: AdminActions }) {
       onClick: async () => {
         if (!confirm(`Delete testimonial by ${author}?`)) return;
         const r = await deleteTestimonial(id);
-        actions.notify(r.ok ? `Deleted testimonial by ${author}` : r.error);
-        if (r.ok) router.refresh();
+        actions.notify(r.ok ? `Deleted testimonial by ${author}` : r.error, r.ok);
       },
     },
   ];

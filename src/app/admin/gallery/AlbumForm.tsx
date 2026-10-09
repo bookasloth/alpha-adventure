@@ -1,5 +1,6 @@
 "use client";
 
+import { revealOnMount } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,7 +57,7 @@ export default function AlbumForm({ mode, initial }: { mode: "new" | "edit"; ini
           <Button type="submit" size="sm" disabled={busy}>{busy ? "Saving…" : cta}</Button>
         </div>
       </div>
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
+      {error && <div ref={revealOnMount} role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
       <Card>
         <CardHeader><CardTitle>Album</CardTitle></CardHeader>
         <CardContent className="space-y-4">

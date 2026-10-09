@@ -28,6 +28,14 @@ module.exports = {
       borderRadius: {
         xl2: "1.25rem",
       },
+      // Skeletons fade in after a short delay so fast loads never flash a
+      // placeholder (no JS timers -> no stale-timer/unmount races).
+      keyframes: {
+        appear: { from: { opacity: "0" }, to: { opacity: "1" } },
+      },
+      animation: {
+        appear: "appear 200ms ease-out 150ms both",
+      },
       backgroundImage: {
         "hero-pattern":
           "linear-gradient(135deg, rgba(17,15,15,0.82), rgba(216,93,11,0.45))",

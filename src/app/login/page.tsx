@@ -1,11 +1,11 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "./LoginForm";
 
 export const metadata = { title: "Sign in", robots: { index: false, follow: false } };
 
-export default function LoginPage() {
+export default async function LoginPage(props: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const { next } = await props.searchParams;
   return (
     <AuthLayout
       topRight={
@@ -15,9 +15,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <Suspense fallback={null}>
-        <LoginForm />
-      </Suspense>
+      <LoginForm nextParam={typeof next === "string" ? next : undefined} />
     </AuthLayout>
   );
 }

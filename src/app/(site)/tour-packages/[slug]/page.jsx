@@ -4,6 +4,12 @@ import { site } from "@/data/site";
 import { getTourBySlug } from "@/lib/tourListing";
 
 export const revalidate = 300;
+// Empty list = nothing prebuilt at deploy, but each slug is rendered once on
+// first visit and then served from cache (ISR) until revalidate/admin edits.
+// Without this the route renders on every request.
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata(props) {
   const params = await props.params;

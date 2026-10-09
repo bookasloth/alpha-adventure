@@ -1,11 +1,11 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import LoginForm from "../login/LoginForm";
 
 export const metadata = { title: "Create account", robots: { index: false, follow: false } };
 
-export default function SignupPage() {
+export default async function SignupPage(props: { searchParams: Promise<{ next?: string | string[] }> }) {
+  const { next } = await props.searchParams;
   return (
     <AuthLayout
       topRight={
@@ -15,9 +15,7 @@ export default function SignupPage() {
         </>
       }
     >
-      <Suspense fallback={null}>
-        <LoginForm mode="register" sub="Create your account with an email and password." />
-      </Suspense>
+      <LoginForm nextParam={typeof next === "string" ? next : undefined} mode="register" sub="Create your account with an email and password." />
     </AuthLayout>
   );
 }

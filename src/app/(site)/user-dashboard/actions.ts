@@ -45,18 +45,18 @@ export async function getBookingTravellers(bookingId: string): Promise<Result<{ 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
   // Audit L5: explicit app-level ownership check, not just the trav_owner RLS
-  // policy. The RLS client only returns the booking if it belongs to the caller
-  // (bookings_select), so a non-owner id yields no row and we stop here.
-  const { data: own } = await supabase
-    .from("bookings").select("id").eq("id", bookingId).eq("user_id", user.id).maybeSingle();
-  if (!own) return { ok: false, error: "Booking not found." };
-  const { data, error } = await supabase
-    .from("booking_travellers")
-    .select("full_name,gender,is_lead,phone,emergency_contact_phone,position")
-    .eq("booking_id", bookingId)
-    .order("position");
+  // policy - the booking row must match the caller's user_id or nothing comes
+  // back. Travellers are embedded so it's one round trip, not two.
+  const { data: own, error } = await supabase
+    .from("bookings")
+    .select("id, booking_travellers(full_name,gender,is_lead,phone,emergency_contact_phone,position)")
+    .eq("id", bookingId)
+    .eq("user_id", user.id)
+    .order("position", { referencedTable: "booking_travellers" })
+    .maybeSingle();
   if (error) return { ok: false, error: "Could not load travellers." };
-  return { ok: true, travellers: data ?? [] };
+  if (!own) return { ok: false, error: "Booking not found." };
+  return { ok: true, travellers: own.booking_travellers ?? [] };
 }
 
 // Cancel a booking the user owns (respects the DB state-machine trigger).
@@ -65,16 +65,17 @@ export async function cancelBooking(bookingId: string): Promise<Result> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Please sign in again." };
 
-  const admin = createAdminClient();
-  const { data: b } = await admin.from("bookings").select("id,user_id,status").eq("id", bookingId).maybeSingle();
-  if (!b || b.user_id !== user.id) return { ok: false, error: "Booking not found." };
-  if (!CANCELLABLE.has(b.status)) return { ok: false, error: "This booking can no longer be cancelled." };
-
-  const { error } = await admin
+  // One conditional update: ownership + cancellable status are part of the
+  // WHERE, so there's no read-then-write gap and one fewer round trip.
+  const { data: rows, error } = await createAdminClient()
     .from("bookings")
     .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-    .eq("id", bookingId);
+    .eq("id", bookingId)
+    .eq("user_id", user.id)
+    .in("status", [...CANCELLABLE])
+    .select("id");
   if (error) return { ok: false, error: "Could not cancel the booking." };
+  if (!rows?.length) return { ok: false, error: "This booking can no longer be cancelled." };
   revalidatePath("/user-dashboard");
   return { ok: true };
 }

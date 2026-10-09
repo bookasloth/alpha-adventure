@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Poppins } from "next/font/google";
 import { site } from "@/data/site";
 import { SITE_URL } from "@/lib/seo";
 
@@ -9,6 +10,17 @@ import { SITE_URL } from "@/lib/seo";
 // — login, signup, forgot/reset-password, verify-email, admin — don't pay the
 // render-blocking cost of CSS they never use (audit §3.5). URLs are unchanged:
 // route groups are URL-transparent.
+// Self-hosted Poppins (next/font): every stylesheet asks for "Poppins" via
+// --font-poppins but nothing ever loaded it. Exposed as that same variable so
+// legacy style.css and Tailwind's font-sans both pick it up. display:swap =
+// text paints immediately in the metric-matched fallback.
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-poppins",
+});
+
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -33,7 +45,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={poppins.variable}>
       <head>
         <base href="/" />
       </head>

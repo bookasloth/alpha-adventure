@@ -10,6 +10,8 @@ export default function ContactFormScripts() {
     if (!form) return;
 
     const status = document.getElementById("contactFormStatus");
+    status?.setAttribute("aria-live", "polite");
+    let sending = false;
     const setStatus = (msg, ok) => {
       if (!status) return;
       status.textContent = msg;
@@ -18,6 +20,10 @@ export default function ContactFormScripts() {
 
     const onSubmit = async (e) => {
       e.preventDefault();
+      if (sending) return; // Enter-key resubmits while a request is in flight
+      // The markup has `novalidate`; run the browser's own required/email
+      // checks so obvious mistakes are caught instantly, not after a round trip.
+      if (!form.reportValidity()) return;
       const btn = form.querySelector('button[type="submit"]');
       const fd = new FormData(form);
       const payload = {
@@ -30,12 +36,14 @@ export default function ContactFormScripts() {
       };
 
       setStatus("Sending…", true);
-      if (btn) btn.disabled = true;
+      sending = true;
+      if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); }
       try {
         const res = await fetch("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(15000), // never leave the button stuck on "Sending…"
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.ok) {
@@ -47,7 +55,8 @@ export default function ContactFormScripts() {
       } catch {
         setStatus("Network error. Please try again or WhatsApp us.", false);
       } finally {
-        if (btn) btn.disabled = false;
+        sending = false;
+        if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); }
       }
     };
 

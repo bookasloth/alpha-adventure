@@ -12,6 +12,12 @@ import { GROUP_ALIASES } from "@/lib/sections";
 import { abs } from "@/lib/seo";
 
 export const revalidate = 300;
+// Empty list = nothing prebuilt at deploy, but each slug is rendered once on
+// first visit and then served from cache (ISR) until revalidate/admin edits.
+// Without this the route renders on every request.
+export async function generateStaticParams() {
+  return [];
+}
 
 const SECTION = "treks";
 const WEEKEND_TAGS = ["beginner", "weekend", "half-day"];
