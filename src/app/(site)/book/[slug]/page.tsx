@@ -22,21 +22,22 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
 
-  const today = istToday();
-  const { data: departures } = await supabase
-    .from("trek_departures")
-    .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
-    .eq("trek_id", trek.id)
-    .neq("status", "cancelled")
-    .gte("start_date", today)
-    .order("start_date", { ascending: true });
-
-  const { data: addons } = await supabase
-    .from("trek_addons")
-    .select("id,name,price")
-    .eq("trek_id", trek.id)
-    .eq("active", true)
-    .order("position", { ascending: true });
+  // Both only need trek.id - fetch in parallel, not one after the other.
+  const [{ data: departures }, { data: addons }] = await Promise.all([
+    supabase
+      .from("trek_departures")
+      .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
+      .eq("trek_id", trek.id)
+      .neq("status", "cancelled")
+      .gte("start_date", istToday())
+      .order("start_date", { ascending: true }),
+    supabase
+      .from("trek_addons")
+      .select("id,name,price")
+      .eq("trek_id", trek.id)
+      .eq("active", true)
+      .order("position", { ascending: true }),
+  ]);
 
   return (
     <BookingFlow

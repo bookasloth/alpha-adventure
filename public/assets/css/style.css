@@ -108,7 +108,8 @@ Version: 1.0
 /*===========================
   01.COMMON CSS 
 ===========================*/
-@import url("../../../../../css2-2");
+/* Fonts: Poppins is self-hosted by next/font (app/layout.jsx). The old
+   @import here pointed at a saved HTML page and loaded no font. */
 
 * {
   margin: 0;
@@ -592,9 +593,9 @@ Version: 1.0
 }
 
 :root {
-  --font-poppins: "Poppins", sans-serif;
-  --font-roboto: "Poppins", sans-serif;
-  --font-courgette: "Poppins", sans-serif;
+  /* --font-poppins is set on <html> by next/font */
+  --font-roboto: var(--font-poppins);
+  --font-courgette: var(--font-poppins);
   --white-color: #fff;
   --white-color-opc: 255, 255, 255;
   --black-color: #110F0F;

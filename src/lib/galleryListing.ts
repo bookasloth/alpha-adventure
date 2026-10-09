@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { publicClient } from "@/lib/seo";
 
 export type GalleryAlbum = {
@@ -22,7 +23,9 @@ export async function getGalleryAlbums(): Promise<GalleryAlbum[]> {
   return (data ?? []) as GalleryAlbum[];
 }
 
-export async function getGalleryAlbum(slug: string): Promise<GalleryAlbum | null> {
+// React.cache: called from generateMetadata and the page body - dedupe.
+export const getGalleryAlbum = cache(loadGalleryAlbum);
+async function loadGalleryAlbum(slug: string): Promise<GalleryAlbum | null> {
   const supabase = publicClient();
   const { data } = await supabase
     .from("gallery_albums")

@@ -70,6 +70,8 @@
 .bk-stepc{display:flex;align-items:center;gap:6px;background:var(--bk-surface2);border:1px solid var(--bk-line);border-radius:12px;padding:5px}
 .bk-stepc button{width:38px;height:38px;border-radius:9px;border:0;background:var(--bk-surface);color:var(--bk-ink);font-size:20px;cursor:pointer;box-shadow:var(--bk-shadow)}
 .bk-stepc button:hover{color:var(--bk-primary)}
+.bk-stepc button:active:not(:disabled){transform:scale(.94)}
+.bk-stepc button:disabled{opacity:.4;cursor:not-allowed;color:var(--bk-faint)}
 .bk-stepc .bk-n{min-width:30px;text-align:center;font-weight:800;font-size:17px}
 .bk-note{display:flex;align-items:center;gap:10px;background:#f1f6ff;border:1px solid #dbe8ff;color:#33507a;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-top:4px}
 .bk-note svg{width:18px;height:18px;flex:0 0 18px}

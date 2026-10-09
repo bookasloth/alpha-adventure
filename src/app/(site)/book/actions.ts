@@ -128,7 +128,8 @@ export async function authenticateBooking(
     }
     userId = created.data.user.id;
     background(sendVerifyEmail(userId, email.data));
-    await supabase.auth.signInWithPassword({ email: email.data, password: pw.data }); // best-effort session
+    // No server-side sign-in: its cookie can't reach the browser from here
+    // (see header) and BookingFlow signs the client in right after.
   } else {
     let res;
     try {
@@ -173,11 +174,11 @@ export async function startPayment(bookingId: string, payToken?: string): Promis
   if (!userId) return { ok: false, error: "Please verify your email first." };
 
   const admin = createAdminClient();
-  const { data: b } = await admin.from("bookings").select("id,user_id").eq("id", bookingId).maybeSingle();
+  const { data: b } = await admin.from("bookings").select("id,user_id,contact_email").eq("id", bookingId).maybeSingle();
   if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
 
   if (!isPhonePeEnabled()) {
-    const r = await payMockBooking(bookingId, payToken);
+    const r = await confirmMockAndNotify(admin, bookingId, b.contact_email);
     return r.ok ? { ok: true, reference: r.reference } : r;
   }
   try {
@@ -209,13 +210,22 @@ export async function payMockBooking(bookingId: string, payToken?: string): Prom
     .eq("id", bookingId)
     .maybeSingle();
   if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
+  return confirmMockAndNotify(admin, bookingId, b.contact_email);
+}
 
+// Shared tail of the mock pay path. Callers must have already verified the
+// user owns bookingId (startPayment / payMockBooking both do).
+async function confirmMockAndNotify(
+  admin: ReturnType<typeof createAdminClient>,
+  bookingId: string,
+  contactEmail: string | null,
+): Promise<Result<{ reference: string }>> {
   try {
     const confirmed = await confirmMockPayment(admin, bookingId);
-    if (b.contact_email) {
+    if (contactEmail) {
       background(
         sendBookingConfirmedEmail({
-          to: b.contact_email,
+          to: contactEmail,
           reference: confirmed.reference,
           trekTitle: confirmed.trek_title ?? "your trek",
           departureDate: confirmed.departure_date,

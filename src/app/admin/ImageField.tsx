@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import { uploadImage } from "./upload/actions";
 
 // URL input + "Upload" button. Keeps the paste-a-URL option and adds direct
@@ -33,10 +33,15 @@ export default function ImageField({
     const fd = new FormData();
     fd.set("file", file);
     fd.set("folder", folder);
-    const r = await uploadImage(fd);
-    setBusy(false);
-    if (r.ok) onChange(r.url);
-    else setErr(r.error);
+    try {
+      const r = await uploadImage(fd);
+      if (r.ok) onChange(r.url);
+      else setErr(r.error);
+    } catch {
+      setErr("Upload failed. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -49,7 +54,7 @@ export default function ImageField({
           disabled={busy}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-slate-100 disabled:opacity-50"
         >
-          <Upload size={15} /> {busy ? "Uploading…" : "Upload"}
+          {busy ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} {busy ? "Uploading…" : "Upload"}
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
       </div>

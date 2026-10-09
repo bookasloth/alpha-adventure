@@ -119,6 +119,10 @@ See [docs/SECURITY.md](docs/SECURITY.md).
 Legacy CSS/JS bundle is large. Transactional email sends are **non-blocking**
 (`background()` + Vercel `waitUntil`) so OTP/booking responses don't wait on
 the mail provider. See [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Loading UI: `src/components/ui/skeleton.tsx` (`Skeleton` + `SkeletonGroup`,
+which fades in after 150ms so fast loads never flash). Route `loading.tsx`
+files mirror the real layout's dimensions. Server Actions that call
+`revalidatePath` already return fresh props — don't add `router.refresh()`.
 
 ## 19. UI / design rules
 Tailwind tokens in `tailwind.config.js` (`primary #fe5100`, `accent #FFB52A`,

@@ -27,18 +27,15 @@ export default function TemplateScripts() {
     if (window.__templateScriptsStarted) return;
     window.__templateScriptsStarted = true;
 
-    let i = 0;
-    const load = () => {
-      if (i >= TEMPLATE_JS.length) return;
-      const src = `/assets/js/${TEMPLATE_JS[i++]}`;
+    // Insert all at once with async=false: the browser downloads them in
+    // parallel but still executes them in list order (jQuery first). The old
+    // onload chain paid one network round trip per file, 17 in a row.
+    for (const f of TEMPLATE_JS) {
       const s = document.createElement("script");
-      s.src = src;
+      s.src = `/assets/js/${f}`;
       s.async = false;
-      s.onload = load;
-      s.onerror = load;
       document.body.appendChild(s);
-    };
-    load();
+    }
   }, []);
   return null;
 }

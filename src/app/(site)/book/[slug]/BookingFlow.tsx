@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import "./booking.css";
 import { createDraft, authenticateBooking, startPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
@@ -48,9 +49,13 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authTried, setAuthTried] = useState(false);
+  const router = useRouter();
 
   const departure = useMemo(() => departures.find((d) => d.id === departureId), [departures, departureId]);
   const pax = adults + children;
+  // Cap the steppers at the seats actually left on the chosen date, so nobody
+  // fills six traveller forms only to hit "not enough seats" at the pay step.
+  const seatsLeft = departure ? Math.max(0, departure.capacity - departure.booked_seats) : Infinity;
   const adultUnit = departure?.price_override ?? trek.base_price;
   const childUnit = trek.child_price ?? adultUnit;
   const addonsTotal = addons.reduce((s, a) => s + (addonOn[a.id] ? a.price * pax : 0), 0);
@@ -62,6 +67,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   function resetDraft() { if (bookingId) { setBookingId(""); setToken(""); setServerTotal(null); } }
   function setPaxCount(k: "adults" | "children", v: number) {
     const val = Math.max(k === "adults" ? 1 : 0, v);
+    if (val + (k === "adults" ? children : adults) > seatsLeft) return;
     if (k === "adults") { setAdults(val); syncTravellers(val + children); } else { setChildren(val); syncTravellers(adults + val); }
     resetDraft();
   }
@@ -75,7 +81,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
       travellers: travellers.map((t, i) => ({ full_name: t.full_name, age: t.age ? Number(t.age) : null, gender: t.gender || null, emergency_contact_phone: i === 0 ? t.emergency_contact_phone || "" : "", is_lead: i === 0 })),
       addons: addons.filter((a) => addonOn[a.id]).map((a) => ({ addon_id: a.id, quantity: pax })),
     });
-    if (!r.ok) { setError(r.error); return null; }
+    if (!r.ok) { setError(r.error); router.refresh(); return null; } // refresh seat counts
     setBookingId(r.bookingId); setToken(r.token); setServerTotal(r.total);
     return { id: r.bookingId, token: r.token };
   }
@@ -84,25 +90,35 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     if (authMode === "register" && name.trim().length < 2) return setError("Enter your name.");
     if (!/.+@.+\..+/.test(email)) return setError("Enter a valid email.");
     if (!password) return setError("Enter your password.");
-    if (authMode === "register" && name.trim().length < 2) return setError("Enter your name.");
     setBusy(true);
-    const d = await ensureDraft();
-    if (!d) return setBusy(false);
-    const r = await authenticateBooking(d.id, { name, email, password, mode: authMode }, d.token);
-    if (!r.ok) { setBusy(false); return setError(r.error); }
-    // Best-effort: establish the browser session so the user is signed in after
-    // booking (the pay step itself authorises off the payToken, not the session).
-    try { await createClient().auth.signInWithPassword({ email, password }); } catch { /* non-fatal */ }
-    setBusy(false);
-    setReference(r.reference); setPayToken(r.payToken); setPay("pay");
+    try {
+      const d = await ensureDraft();
+      if (!d) return;
+      const r = await authenticateBooking(d.id, { name, email, password, mode: authMode }, d.token);
+      if (!r.ok) { setError(r.error); if (/seat/i.test(r.error)) router.refresh(); return; }
+      // Best-effort: establish the browser session so the user is signed in after
+      // booking (the pay step itself authorises off the payToken, not the session).
+      try { await createClient().auth.signInWithPassword({ email, password }); } catch { /* non-fatal */ }
+      setReference(r.reference); setPayToken(r.payToken); setPay("pay");
+    } catch {
+      setError("Network problem — your details are kept. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
   async function doPay() {
     setError(null); setBusy(true);
-    const r = await startPayment(bookingId, payToken);
-    if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe
-    setBusy(false);
-    if (!r.ok) return setError(r.error);
-    setReference(r.reference!); setStep(5); // mock path: confirmed inline
+    try {
+      const r = await startPayment(bookingId, payToken);
+      if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe; stay busy
+      setBusy(false);
+      if (!r.ok) return setError(r.error);
+      setReference(r.reference!); setStep(5); // mock path: confirmed by the server
+    } catch {
+      // Outcome unknown (request may have reached the server) - never claim success.
+      setBusy(false);
+      setError("We couldn't confirm your payment. Check My bookings before trying again.");
+    }
   }
 
   if (step >= 5)
@@ -117,7 +133,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
             <div className="bk-pl"><span>{trek.title}</span><b>{departure ? label(departure) : ""}</b></div>
             <div className="bk-pl"><span>{pax} traveller(s)</span><b>{rupees(total)} paid</b></div>
           </div>
-          <div style={{ marginTop: 24 }}><Link className="bk-btn bk-btn-primary" href="/account">View my bookings <Arrow /></Link></div>
+          <div style={{ marginTop: 24 }}><Link className="bk-btn bk-btn-primary" href="/user-dashboard">View my bookings <Arrow /></Link></div>
         </div>
       </div></div>
     );
@@ -166,10 +182,10 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
               <Panel eyebrow="Step 2 of 5" title="How many travellers?" desc="Add the number of people joining this trek.">
                 <div className="bk-crow"><span className="bk-av a"><PersonIcon /></span>
                   <div className="bk-m"><div className="bk-lead">Adults</div><div className="bk-tiny">Age 13+ · {rupees(adultUnit)} each</div></div>
-                  <div className="bk-stepc"><button onClick={() => setPaxCount("adults", adults - 1)}>−</button><span className="bk-n">{adults}</span><button onClick={() => setPaxCount("adults", adults + 1)}>+</button></div></div>
+                  <div className="bk-stepc"><button onClick={() => setPaxCount("adults", adults - 1)} aria-label="Remove adult">−</button><span className="bk-n">{adults}</span><button onClick={() => setPaxCount("adults", adults + 1)} disabled={pax >= seatsLeft} aria-label="Add adult">+</button></div></div>
                 <div className="bk-crow"><span className="bk-av c"><KidsIcon /></span>
                   <div className="bk-m"><div className="bk-lead">Children</div><div className="bk-tiny">Age 5–12 · {rupees(childUnit)} each</div></div>
-                  <div className="bk-stepc"><button onClick={() => setPaxCount("children", children - 1)}>−</button><span className="bk-n">{children}</span><button onClick={() => setPaxCount("children", children + 1)}>+</button></div></div>
+                  <div className="bk-stepc"><button onClick={() => setPaxCount("children", children - 1)} aria-label="Remove child">−</button><span className="bk-n">{children}</span><button onClick={() => setPaxCount("children", children + 1)} disabled={pax >= seatsLeft} aria-label="Add child">+</button></div></div>
                 <div className="bk-note"><InfoIcon /> Infants below 5 years can join for free.</div>
                 <Foot back={{ onClick: () => go(0) }} next={{ label: "Continue", onClick: () => { setTIndex(0); go(2); } }} />
               </Panel>

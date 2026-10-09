@@ -7,6 +7,12 @@ import { galleryDetailHtml } from "@/lib/galleryDetailHtml";
 import { getGalleryAlbum } from "@/lib/galleryListing";
 
 export const revalidate = 300;
+// Empty list = nothing prebuilt at deploy, but each slug is rendered once on
+// first visit and then served from cache (ISR) until revalidate/admin edits.
+// Without this the route renders on every request.
+export async function generateStaticParams() {
+  return [];
+}
 
 const galleryDetailInit = fs.readFileSync(
   path.join(process.cwd(), "src/data/gallery-detail-init.js"),

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { publicClient } from "@/lib/seo";
 
 export type Tour = {
@@ -40,7 +41,10 @@ export async function getTours(): Promise<Tour[]> {
 }
 
 // One published tour by slug, or null (page 404s).
-export async function getTourBySlug(slug: string): Promise<Tour | null> {
+// React.cache: the detail page calls this in generateMetadata and the body;
+// one fetch per request instead of two.
+export const getTourBySlug = cache(loadTourBySlug);
+async function loadTourBySlug(slug: string): Promise<Tour | null> {
   const supabase = publicClient();
   const { data } = await supabase
     .from("tours")

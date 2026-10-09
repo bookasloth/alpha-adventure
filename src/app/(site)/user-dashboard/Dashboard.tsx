@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton, SkeletonGroup } from "@/components/ui/skeleton";
 
 const rupees = (p?: number | null) => `₹${((p ?? 0) / 100).toLocaleString("en-IN")}`;
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—");
@@ -62,10 +63,12 @@ export default function Dashboard({ email, profile, bookings, payments, stats, e
   const router = useRouter();
   const [tab, setTab] = useState("overview");
   const [detail, setDetail] = useState<Booking | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   // Client-side sign-out: server-action cookie clears don't reach the browser
   // in this app, so clear the session with the browser client, then navigate.
   async function handleSignOut() {
+    setSigningOut(true);
     try { await createClient().auth.signOut(); } catch { /* clear locally anyway */ }
     router.push("/");
     router.refresh();
@@ -114,8 +117,8 @@ export default function Dashboard({ email, profile, bookings, payments, stats, e
                 </div>
               ))}
               <div className="border-t border-line/70 pt-3">
-                <button type="button" onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600">
-                  <LogOut size={18} /> Sign out
+                <button type="button" onClick={handleSignOut} disabled={signingOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-60">
+                  <LogOut size={18} /> {signingOut ? "Signing out…" : "Sign out"}
                 </button>
               </div>
             </nav>
@@ -318,21 +321,33 @@ function ProfileForm({ email, profile }: { email?: string; profile: Record<strin
 }
 
 function BookingDetail({ booking, onClose }: { booking: Booking; onClose: () => void }) {
-  const router = useRouter();
   const [travellers, setTravellers] = useState<any[] | null>(null);
+  const [travErr, setTravErr] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    getBookingTravellers(booking.id).then((r) => setTravellers(r.ok ? r.travellers : []));
+    let live = true; // ignore a late response after close / switching booking
+    setTravellers(null); setTravErr(false);
+    getBookingTravellers(booking.id)
+      .then((r) => { if (!live) return; if (r.ok) setTravellers(r.travellers); else { setTravErr(true); setTravellers([]); } })
+      .catch(() => { if (live) { setTravErr(true); setTravellers([]); } });
+    return () => { live = false; };
   }, [booking.id]);
 
   async function onCancel() {
     if (!confirm("Cancel this booking? This can't be undone.")) return;
     setBusy(true); setErr(null);
-    const r = await cancelBooking(booking.id);
-    setBusy(false);
-    if (r.ok) { onClose(); router.refresh(); } else setErr(r.error);
+    try {
+      // cancelBooking revalidates /user-dashboard, so fresh bookings arrive
+      // with the action response - no extra router.refresh() round trip.
+      const r = await cancelBooking(booking.id);
+      if (r.ok) onClose(); else setErr(r.error);
+    } catch {
+      setErr("Network problem. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -357,7 +372,11 @@ function BookingDetail({ booking, onClose }: { booking: Booking; onClose: () => 
 
         <div className="mt-4">
           <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">Travellers</div>
-          {travellers === null ? <div className="text-sm text-gray-400">Loading…</div>
+          {travellers === null ? (
+              <SkeletonGroup label="Loading travellers" className="space-y-1.5">
+                {Array.from({ length: Math.min(3, Math.max(1, (booking.adults ?? 0) + (booking.children ?? 0))) }, (_, i) => <Skeleton key={i} className="h-[38px] w-full rounded-lg" />)}
+              </SkeletonGroup>
+            ) : travErr ? <div className="text-sm text-red-600">Couldn&apos;t load travellers. Close and reopen to retry.</div>
             : travellers.length === 0 ? <div className="text-sm text-gray-400">No traveller details on file.</div>
             : <ul className="space-y-1.5">
                 {travellers.map((t, i) => (

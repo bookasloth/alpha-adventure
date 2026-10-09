@@ -1,4 +1,5 @@
 import { publicClient } from "@/lib/seo";
+import { canonicalPath } from "@/lib/sections";
 
 // Card shape the listing components (TrekCard / TrekGrid / TrekGroupSections)
 // expect, mapped from the treks table. `group`/`tags` are kept so pages can
@@ -36,7 +37,7 @@ export async function getListingTreks(): Promise<ListingTrek[]> {
     price: Math.round((t.base_price ?? 0) / 100),
     badge: t.badge,
     image: t.hero_image,
-    href: `/treks/${t.slug}`,
+    href: canonicalPath(t), // straight to the right section, no redirect hop
     group: t.group,
     tags: t.tags ?? [],
     featured: !!t.featured,

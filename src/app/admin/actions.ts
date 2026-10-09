@@ -50,14 +50,11 @@ export async function createDeparture(raw: unknown): Promise<Result> {
 const updateDepartureSchema = departureSchema.omit({ trek_id: true });
 
 type Admin = Awaited<ReturnType<typeof requireAdmin>>["admin"];
-async function revalidateBookFor(admin: Admin, departureId: string) {
+async function trekSlugFor(admin: Admin, departureId: string) {
   const { data: dep } = await admin.from("trek_departures").select("trek_id").eq("id", departureId).maybeSingle();
-  let slug: string | undefined;
-  if (dep?.trek_id) {
-    const { data: trek } = await admin.from("treks").select("slug").eq("id", dep.trek_id).maybeSingle();
-    slug = trek?.slug ?? undefined;
-  }
-  revalidatePublicTrek(slug);
+  if (!dep?.trek_id) return undefined;
+  const { data: trek } = await admin.from("treks").select("slug").eq("id", dep.trek_id).maybeSingle();
+  return trek?.slug ?? undefined;
 }
 
 export async function updateDeparture(id: string, raw: unknown): Promise<Result> {
@@ -74,7 +71,7 @@ export async function updateDeparture(id: string, raw: unknown): Promise<Result>
     status: d.status,
   }).eq("id", id);
   if (error) { console.error("[updateDeparture]", error.message); return { ok: false, error: "Could not save the date." }; }
-  await revalidateBookFor(admin, id);
+  revalidatePublicTrek(await trekSlugFor(admin, id));
   return { ok: true };
 }
 
@@ -82,11 +79,12 @@ export async function updateDeparture(id: string, raw: unknown): Promise<Result>
 // cancel it (set status) instead.
 export async function deleteDeparture(id: string): Promise<Result> {
   const { admin } = await requireAdmin();
-  await revalidateBookFor(admin, id); // capture slug before the row is gone
+  const slug = await trekSlugFor(admin, id); // capture slug before the row is gone
   const { error } = await admin.from("trek_departures").delete().eq("id", id);
   if (error) {
     console.error("[deleteDeparture]", error.message);
     return { ok: false, error: "Can't delete a date with bookings — set its status to Cancelled instead." };
   }
+  revalidatePublicTrek(slug);
   return { ok: true };
 }

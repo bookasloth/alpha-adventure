@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signIn, register, requestPasswordReset } from "./actions";
 import { createClient } from "@/utils/supabase/client";
 import { safeNext } from "@/lib/safeNext";
@@ -38,15 +38,19 @@ export default function LoginForm({
   heading,
   sub,
   defaultNext = "/user-dashboard",
+  nextParam,
 }: {
   mode?: "signin" | "register";
   heading?: string;
   sub?: string;
   defaultNext?: string;
+  /** Raw ?next= from the page's searchParams (validated by safeNext). Passed
+   *  in rather than read via useSearchParams so the form is server-rendered
+   *  instead of blank until JS loads behind a Suspense bailout. */
+  nextParam?: string;
 }) {
   const router = useRouter();
-  const params = useSearchParams();
-  const next = safeNext(params.get("next"), defaultNext);
+  const next = safeNext(nextParam, defaultNext);
   const isRegister = mode === "register";
 
   const [name, setName] = useState("");
@@ -126,7 +130,7 @@ export default function LoginForm({
         </div>
         {!isRegister && (
           <div className="flex justify-end text-sm">
-            <button type="button" onClick={onForgot} className="font-medium text-gray-500 hover:text-primary">Forgot password?</button>
+            <button type="button" onClick={onForgot} disabled={busy} className="font-medium text-gray-500 hover:text-primary disabled:opacity-50">Forgot password?</button>
           </div>
         )}
         <Button type="submit" disabled={busy} className="w-full">

@@ -1,5 +1,5 @@
-import AdminShell from "./AdminShell";
-import { getAdminData } from "./data";
+import AdminShell from "../AdminShell";
+import { getAdminData } from "../data";
 
 // Admin dashboard. Server-fetched, admin/staff-gated (see data.ts). Full-screen, noindex.
 export const metadata = { title: "Admin", robots: { index: false, follow: false } };

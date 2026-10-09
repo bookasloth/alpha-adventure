@@ -40,6 +40,9 @@ const nextConfig = {
   // it from node_modules at runtime avoids that entirely.
   // Next 15: both moved out of `experimental` to stable top-level keys.
   serverExternalPackages: ["@supabase/ssr", "@supabase/supabase-js"],
+  // Admin image upload (upload/actions.ts) accepts up to 5 MB; Next's default
+  // Server Action body cap is 1 MB, which made 1-5 MB uploads throw.
+  experimental: { serverActions: { bodySizeLimit: "6mb" } },
   // Pattern B pages read src/data/orig-*.html and *-init.js at runtime via
   // fs.readFileSync(path.join(process.cwd(), ...)). process.cwd() is not
   // statically analyzable, so Next's file tracer never bundles those files
@@ -48,9 +51,13 @@ const nextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./src/data/**"],
   },
-  // All images are self-hosted under public/assets (served locally via
-  // next/image), so no `images.remotePatterns` entry is needed — the old
-  // alpha.thegreyhawks.com pattern was dead config (audit §3.5).
+  // Template images are self-hosted under public/assets. Admin uploads
+  // (ImageField -> Supabase Storage `media` bucket) are stored as absolute
+  // Supabase URLs and rendered by next/image in TrekCard/TourCard/TrekDetail,
+  // which throws for an unlisted host - so allow exactly that bucket path.
+  images: supabaseOrigin
+    ? { remotePatterns: [{ protocol: "https", hostname: new URL(supabaseOrigin).hostname, pathname: "/storage/v1/object/public/**" }] }
+    : {},
   // `@/` alias defined here (not only in tsconfig) so it survives Next's
   // tsconfig auto-rewrites and works for both JS and TS files.
   webpack: (config) => {

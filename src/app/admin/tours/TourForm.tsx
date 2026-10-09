@@ -1,5 +1,6 @@
 "use client";
 
+import { revealOnMount } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -75,7 +76,7 @@ export default function TourForm({ mode, initial }: { mode: "new" | "edit"; init
         </div>
       </div>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
+      {error && <div ref={revealOnMount} role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}
 
       <Card>
         <CardHeader><CardTitle>Tour details</CardTitle></CardHeader>

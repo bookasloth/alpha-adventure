@@ -12,7 +12,8 @@ const inputCls =
 export default function ResetForm() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
-  const [ready, setReady] = useState(false);
+  // null = still exchanging the link's token; don't flash "open from email".
+  const [ready, setReady] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +48,18 @@ export default function ResetForm() {
     const pw = passwordSchema.safeParse(password);
     if (!pw.success) { setError(pw.error.issues[0]!.message); return; }
     setBusy(true); setError(null);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) { setError("This reset link is invalid or expired. Request a new one."); return; }
-    router.replace("/user-dashboard");
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) { setError("This reset link is invalid or expired. Request a new one."); setBusy(false); return; }
+      router.replace("/user-dashboard"); // stay busy through the navigation
+    } catch {
+      setError("Network problem. Please try again.");
+      setBusy(false);
+    }
   }
 
+  if (ready === null)
+    return <p role="status" className="text-sm text-gray-500">Checking your reset link…</p>;
   if (!ready)
     return (
       <p className="text-sm text-gray-500">
