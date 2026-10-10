@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/app/admin/data";
+import { background } from "@/lib/after";
+import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingCancelledEmail } from "@/lib/email";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -82,11 +84,15 @@ export async function getBookingDetail(
 // separate reconciliation step; this just flags the booking cancelled.
 export async function cancelBooking(id: string): Promise<Result> {
   const { admin } = await requireAdmin();
-  const { error } = await admin
+  const { data: rows, error } = await admin
     .from("bookings")
     .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .neq("status", "cancelled") // never re-notify an already-cancelled booking
+    .select(BOOKING_EMAIL_COLS);
   if (error) { console.error("[cancelBooking]", error.message); return { ok: false, error: "Could not cancel the booking." }; }
+  const mail = rows?.[0] && bookingEmailOf(rows[0]);
+  if (mail) background(sendBookingCancelledEmail(mail, "operator"));
   revalidatePath("/admin");
   revalidatePath("/user-dashboard");
   return { ok: true };

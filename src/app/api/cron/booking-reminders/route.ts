@@ -1,13 +1,25 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { sendBookingReminderEmail } from "@/lib/email";
+import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingReminderEmail, sendReviewRequestEmail, type BookingEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
-// Cron: pre-departure reminders. Sends once per booking (stamped via
-// reminder_sent_at, migration 0021) for confirmed bookings departing within the
-// next REMIND_DAYS days. Auth mirrors expire-bookings: fail-closed in prod.
+// Daily lifecycle-email cron (vercel.json). Each email is sent once per booking
+// and stamped only after a successful send, so a failure retries next run:
+//   - pre-departure reminder  (reminder_sent_at, 0021) — departing within REMIND_DAYS
+//   - "how was the trek?"     (review_request_sent_at, 0024) — trek ended in the last REVIEW_WINDOW days
+// Auth mirrors expire-bookings: fail-closed in prod.
 const REMIND_DAYS = 2;
+const REVIEW_WINDOW = 7;
+
+type Dep = { start_time: string | null; meeting_point: string | null; end_date: string | null } | null;
+type Row = {
+  id: string; reference: string; trek_title: string | null; departure_date: string | null;
+  adults: number | null; children: number | null; grand_total: number | null; contact_email: string | null;
+  trek_departures: Dep | Dep[];
+};
+const depOf = (r: Row): Dep => (Array.isArray(r.trek_departures) ? r.trek_departures[0] ?? null : r.trek_departures);
+const SELECT = `${BOOKING_EMAIL_COLS},trek_departures(start_time,meeting_point,end_date)`;
 
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -22,44 +34,56 @@ async function run(request: Request) {
   }
 
   const admin = createAdminClient();
-  // IST window: [today, today + REMIND_DAYS]. departure_date is a plain date.
-  const istNow = new Date(Date.now() + 5.5 * 3600 * 1000);
-  const today = istNow.toISOString().slice(0, 10);
-  const until = new Date(istNow.getTime() + REMIND_DAYS * 86400000).toISOString().slice(0, 10);
+  // IST calendar days. departure_date / end_date are plain dates.
+  const istNow = Date.now() + 5.5 * 3600 * 1000;
+  const day = (offset: number) => new Date(istNow + offset * 86400000).toISOString().slice(0, 10);
+  const today = day(0);
 
-  const { data: due, error } = await admin
-    .from("bookings")
-    .select("id,reference,trek_title,departure_date,adults,children,contact_email")
-    .eq("status", "confirmed")
-    .is("reminder_sent_at", null)
-    .not("contact_email", "is", null)
-    .gte("departure_date", today)
-    .lte("departure_date", until);
-  if (error) {
-    console.error("[cron] booking-reminders query failed:", error.message);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
-
-  let sent = 0, failed = 0;
-  for (const b of due ?? []) {
-    try {
-      await sendBookingReminderEmail({
-        to: b.contact_email as string,
-        reference: b.reference,
-        trekTitle: b.trek_title ?? "your trek",
-        departureDate: b.departure_date,
-        seats: (b.adults ?? 0) + (b.children ?? 0),
-        total: 0,
-      });
-      // Stamp only after a successful send so a failure retries next run.
-      await admin.from("bookings").update({ reminder_sent_at: new Date().toISOString() }).eq("id", b.id);
-      sent++;
-    } catch (e) {
-      failed++;
-      console.error("[cron] reminder failed for", b.reference, (e as Error).message);
+  // Send each, stamp on success. Returns {sent, failed}.
+  async function sendAndStamp(rows: Row[], column: string, build: (r: Row) => BookingEmail | null, sendFn: (b: BookingEmail) => Promise<void>) {
+    let sent = 0, failed = 0;
+    for (const r of rows) {
+      const mail = build(r);
+      if (!mail) continue;
+      try {
+        await sendFn(mail);
+        await admin.from("bookings").update({ [column]: new Date().toISOString() }).eq("id", r.id);
+        sent++;
+      } catch (e) {
+        failed++;
+        console.error(`[cron] ${column} send failed for`, r.reference, (e as Error).message);
+      }
     }
+    return { sent, failed };
   }
-  return NextResponse.json({ ok: true, sent, failed });
+
+  const [reminders, reviews] = await Promise.all([
+    admin.from("bookings").select(SELECT)
+      .eq("status", "confirmed").is("reminder_sent_at", null).not("contact_email", "is", null)
+      .gte("departure_date", today).lte("departure_date", day(REMIND_DAYS)),
+    // Start-date window is wide enough for multi-day treks; the end-date filter below is exact.
+    admin.from("bookings").select(SELECT)
+      .in("status", ["confirmed", "completed"]).is("review_request_sent_at", null).not("contact_email", "is", null)
+      .gte("departure_date", day(-30)).lt("departure_date", today),
+  ]);
+  if (reminders.error || reviews.error) {
+    const msg = (reminders.error ?? reviews.error)!.message;
+    console.error("[cron] booking-reminders query failed:", msg);
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
+
+  const reminder = await sendAndStamp(
+    (reminders.data ?? []) as Row[], "reminder_sent_at",
+    (r) => bookingEmailOf(r, { startTime: depOf(r)?.start_time, meetingPoint: depOf(r)?.meeting_point }),
+    sendBookingReminderEmail,
+  );
+  const ended = ((reviews.data ?? []) as Row[]).filter((r) => {
+    const end = depOf(r)?.end_date ?? r.departure_date;
+    return !!end && end < today && end >= day(-REVIEW_WINDOW);
+  });
+  const review = await sendAndStamp(ended, "review_request_sent_at", (r) => bookingEmailOf(r), sendReviewRequestEmail);
+
+  return NextResponse.json({ ok: true, reminder, review });
 }
 
 export const GET = run;

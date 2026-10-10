@@ -96,7 +96,7 @@ const NAV = [
     { key: "payments", label: "Payments" }, { key: "refunds", label: "Refunds" }, { key: "payouts", label: "Payouts" },
   ] },
   { key: "settings", label: "Settings", icon: Cog, items: [
-    { key: "s-general", label: "General" }, { key: "s-email", label: "Email / SMTP" }, { key: "s-payments", label: "Payments" }, { key: "s-team", label: "Team" },
+    { key: "s-general", label: "General" }, { key: "s-email", label: "Email" }, { key: "s-payments", label: "Payments" }, { key: "s-team", label: "Team" },
   ] },
 ] as const;
 
@@ -345,6 +345,7 @@ function Page({ item, actions }: { item: string; actions: AdminActions }) {
     case "reviews": return <TestimonialsPage actions={actions} />;
     case "payments": return <PaymentsPage actions={actions} />;
     case "s-general": return <SettingsGeneral notify={actions.notify} />;
+    case "s-email": return <SettingsEmail />;
     default: return <Stub title={label(item.replace(/^s-/, ""))} notify={actions.notify} />;
   }
 }
@@ -1442,6 +1443,21 @@ function SettingsGeneral({ notify }: { notify: (m: string) => void }) {
         <Row label="Phone / WhatsApp"><input className={inp} defaultValue="+91 8180001597" /></Row>
         <Row label="Base city"><input className={inp} defaultValue="Nagpur, Maharashtra" /></Row>
         <Row label="Currency"><select className={inp} defaultValue="INR"><option>INR</option><option>USD</option></select></Row>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function SettingsEmail() {
+  return (
+    <div>
+      <PageHead title="Email" sub="Every email the website sends to customers and to you." />
+      <Card><CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-primary"><Mail size={20} /></span>
+          <div><div className="font-semibold">Email templates</div><div className="text-sm text-gray-500">Preview all 16 emails with sample data. Nothing is sent.</div></div>
+        </div>
+        <Button size="sm" asChild><Link href="/admin/emails">Preview templates</Link></Button>
       </CardContent></Card>
     </div>
   );

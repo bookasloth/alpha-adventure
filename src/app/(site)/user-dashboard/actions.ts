@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { background } from "@/lib/after";
+import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingCancelledEmail } from "@/lib/email";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -73,9 +75,11 @@ export async function cancelBooking(bookingId: string): Promise<Result> {
     .eq("id", bookingId)
     .eq("user_id", user.id)
     .in("status", [...CANCELLABLE])
-    .select("id");
+    .select(BOOKING_EMAIL_COLS);
   if (error) return { ok: false, error: "Could not cancel the booking." };
   if (!rows?.length) return { ok: false, error: "This booking can no longer be cancelled." };
+  const mail = bookingEmailOf(rows[0]);
+  if (mail) background(sendBookingCancelledEmail(mail, "customer"));
   revalidatePath("/user-dashboard");
   return { ok: true };
 }

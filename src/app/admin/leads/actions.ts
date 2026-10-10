@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
-import { sendMail } from "@/lib/mailer";
+import { sendLeadReplyEmail } from "@/lib/email";
 import { background } from "@/lib/after";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -35,9 +35,8 @@ export async function replyToLead(id: string, raw: unknown): Promise<Result> {
   const { data: lead } = await admin.from("leads").select("email,name").eq("id", id).maybeSingle();
   if (!lead?.email) return { ok: false, error: "Lead has no email address." };
 
-  const html = `<p>Hi ${lead.name || "there"},</p>${parsed.data.body
-    .split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`).join("")}<p>— Alpha Adventures</p>`;
-  background(sendMail(lead.email, parsed.data.subject, html));
+  // Branded template; name + body are escaped (both are plain text).
+  background(sendLeadReplyEmail(lead.email, lead.name ?? "", parsed.data.subject, parsed.data.body));
 
   const { error } = await admin.from("leads").update({ status: "replied" }).eq("id", id);
   if (error) { console.error("[replyToLead]", error.message); return { ok: false, error: "Reply sent, but status update failed." }; }

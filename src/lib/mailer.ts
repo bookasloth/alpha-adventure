@@ -20,7 +20,18 @@ function parseFrom(raw: string): { name?: string; email: string } {
   return { email: raw.trim() };
 }
 
-async function sendViaBrevo(to: string, subject: string, html: string) {
+type SendOpts = {
+  throwOnError?: boolean;
+  /** Plain-text alternative (multipart). Improves deliverability. */
+  text?: string;
+  /** Where replies go. Defaults to the public support inbox. */
+  replyTo?: string;
+};
+
+// Replies land in a real inbox even when the sender is a no-reply/bulk address.
+const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || "info@alphaadventures.in";
+
+async function sendViaBrevo(to: string, subject: string, html: string, text: string | undefined, replyTo: string) {
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
@@ -33,6 +44,8 @@ async function sendViaBrevo(to: string, subject: string, html: string) {
       to: [{ email: to }],
       subject,
       htmlContent: html,
+      ...(text ? { textContent: text } : {}),
+      replyTo: { email: replyTo },
     }),
   });
   if (!res.ok) {
@@ -63,11 +76,12 @@ export async function sendMail(
   to: string,
   subject: string,
   html: string,
-  opts?: { throwOnError?: boolean },
+  opts?: SendOpts,
 ) {
+  const replyTo = opts?.replyTo || DEFAULT_REPLY_TO;
   try {
     if (brevoKey) {
-      await sendViaBrevo(to, subject, html);
+      await sendViaBrevo(to, subject, html, opts?.text, replyTo);
       return;
     }
     const t = transport();
@@ -77,7 +91,7 @@ export async function sendMail(
       console.warn("[mailer]", msg, "— skipping email to", to);
       return;
     }
-    await t.sendMail({ from: EMAIL_FROM, to, subject, html });
+    await t.sendMail({ from: EMAIL_FROM, to, subject, html, text: opts?.text, replyTo });
   } catch (e) {
     if (opts?.throwOnError) throw e;
     console.error("[mailer] send failed:", (e as Error).message);
