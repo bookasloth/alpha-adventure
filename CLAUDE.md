@@ -44,7 +44,9 @@ images is resolved. `next.config.mjs` still lists `alpha.thegreyhawks.com` as a
 - `src/app/api/leads/route.ts` — contact/enquiry lead capture (only API route).
 - `src/domain/booking/**` — booking pricing/state/service + tests.
 - `src/lib/` — `assets.js` (image base), `mailer.ts` (Brevo API + SMTP
-  fallback), `email.ts`, `otp.ts` (self-mint OTP), `after.ts` (`background()`
+  fallback, text part + Reply-To), `emailTemplates.ts` (all 16 emails, shared
+  branded layout; preview at `/admin/emails`), `email.ts` (senders),
+  `otp.ts` (self-mint OTP), `after.ts` (`background()`
   non-blocking sends via Vercel `waitUntil`), `galleryDetailHtml.js`.
 - `src/utils/supabase/` — `server.ts` (SSR client), `admin.ts` (service-role,
   server-only), `middleware.ts`.

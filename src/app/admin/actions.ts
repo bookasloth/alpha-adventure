@@ -3,6 +3,8 @@
 import { z } from "zod";
 import { requireAdmin } from "./data";
 import { revalidatePublicTrek } from "@/lib/revalidateTrek";
+import { background } from "@/lib/after";
+import { BOOKING_EMAIL_COLS, bookingEmailOf, sendDepartureChangedEmail, type DepartureChange } from "@/lib/email";
 
 const optRupees = z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().min(0).optional());
 
@@ -62,6 +64,7 @@ export async function updateDeparture(id: string, raw: unknown): Promise<Result>
   const parsed = updateDepartureSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   const d = parsed.data;
+  const { data: before } = await admin.from("trek_departures").select("start_date,status").eq("id", id).maybeSingle();
   const { error } = await admin.from("trek_departures").update({
     start_date: d.start_date,
     end_date: blank(d.end_date),
@@ -71,8 +74,43 @@ export async function updateDeparture(id: string, raw: unknown): Promise<Result>
     status: d.status,
   }).eq("id", id);
   if (error) { console.error("[updateDeparture]", error.message); return { ok: false, error: "Could not save the date." }; }
+  if (before) await notifyDepartureChange(admin, id, before, d);
   revalidatePublicTrek(await trekSlugFor(admin, id));
   return { ok: true };
+}
+
+// Bookings that still expect to travel on a departure.
+const ACTIVE_BOOKING = ["pending_payment", "payment_processing", "deposit_paid", "confirmed"];
+
+// Tell booked customers when a departure is cancelled or moves to a new date.
+// On a move, bookings carry the new date (it drives reminders + receipts) and
+// get their reminder re-armed for the new date.
+async function notifyDepartureChange(
+  admin: Admin,
+  id: string,
+  before: { start_date: string | null; status: string | null },
+  after: { start_date: string; status: string },
+) {
+  let change: DepartureChange | null = null;
+  if (after.status === "cancelled" && before.status !== "cancelled") change = { kind: "cancelled" };
+  else if (after.start_date !== before.start_date && after.status !== "cancelled")
+    change = { kind: "moved", oldDate: before.start_date, newDate: after.start_date };
+  if (!change) return;
+
+  const { data: rows, error } = await admin
+    .from("bookings").select(BOOKING_EMAIL_COLS).eq("departure_id", id).in("status", ACTIVE_BOOKING);
+  if (error) { console.error("[updateDeparture] booking lookup failed:", error.message); return; }
+  if (change.kind === "moved" && rows?.length) {
+    const { error: e2 } = await admin.from("bookings")
+      .update({ departure_date: after.start_date, reminder_sent_at: null })
+      .eq("departure_id", id).in("status", ACTIVE_BOOKING);
+    if (e2) console.error("[updateDeparture] booking date sync failed:", e2.message);
+  }
+  for (const row of rows ?? []) {
+    // The email shows the original date for a cancellation, the old->new pair for a move.
+    const mail = bookingEmailOf(row, { departureDate: change.kind === "moved" ? after.start_date : row.departure_date });
+    if (mail) background(sendDepartureChangedEmail(mail, change));
+  }
 }
 
 // Hard delete; if the date has bookings the FK blocks it — tell the admin to
