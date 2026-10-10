@@ -185,34 +185,26 @@ export async function createPhonePePayment(admin: Admin, bookingId: string): Pro
   return { merchantTransactionId: mtx, amountPaise: b.grand_total };
 }
 
-// PhonePe: after a server-verified success, mark the payment + confirm the
-// booking. Idempotent — a duplicate callback is a no-op.
+// PhonePe: after a server-verified success, settle through the same locked,
+// idempotent DB function as Razorpay (settle_gateway_payment, 0026), so a
+// redirect and a server callback arriving together can't both confirm.
 export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<BookingRow | null> {
-  const { data: pay } = await admin.from("payments").select("id,booking_id,status,amount").eq("merchant_order_id", merchantTransactionId).maybeSingle();
+  const { data: pay } = await admin.from("payments").select("amount").eq("merchant_order_id", merchantTransactionId).maybeSingle();
   if (!pay) return null;
-  // Audit L1: never confirm if the gateway-reported amount doesn't match the
-  // amount we recorded for this payment (defense-in-depth against a mis-reported
-  // or tampered success).
-  if (paidAmount != null && Number(paidAmount) !== Number((pay as { amount: number }).amount)) {
-    console.error(`[phonepe] amount mismatch for ${merchantTransactionId}: paid ${paidAmount} vs expected ${(pay as { amount: number }).amount}`);
+  const { data, error } = await admin.rpc("settle_gateway_payment", {
+    _order_id: merchantTransactionId,
+    _txn_id: providerTxnId ?? merchantTransactionId,
+    _amount: paidAmount ?? (pay as { amount: number }).amount,
+    _method: "phonepe",
+    _raw: { provider: "phonepe", providerTxnId, paidAmount: paidAmount ?? null },
+  });
+  if (error) { console.error("[phonepe] settle failed:", error.message); return null; }
+  const res = data as { outcome: string; booking_id?: string };
+  if (res.outcome !== "confirmed" && res.outcome !== "already_settled") {
+    // amount_mismatch / refund_required: money needs a manual PhonePe refund.
+    console.error(`[phonepe] ${merchantTransactionId} not confirmed: ${res.outcome} — refund manually.`);
     return null;
   }
-
-  const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", pay.booking_id).single();
-  if (b?.status === "confirmed") return b as BookingRow; // already done
-
-  await admin.from("payments").update({
-    status: "success", provider_txn_id: providerTxnId, method: "phonepe", verified_at: new Date().toISOString(),
-  }).eq("id", pay.id);
-
-  if (b?.status === "pending_payment") {
-    await admin.from("bookings").update({ status: "payment_processing" }).eq("id", pay.booking_id);
-  }
-  const { data: confirmed } = await admin
-    .from("bookings")
-    .update({ status: "confirmed", amount_paid: (b as { grand_total: number }).grand_total, confirmed_at: new Date().toISOString() })
-    .eq("id", pay.booking_id)
-    .select(BOOKING_COLS)
-    .single();
-  return (confirmed as BookingRow) ?? null;
+  const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", res.booking_id!).single();
+  return (b as BookingRow) ?? null;
 }

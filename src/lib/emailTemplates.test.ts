@@ -6,7 +6,7 @@ const BASE = "https://alphaadventures.in";
 describe("email templates", () => {
   it("renders every template with subject, html and a tag-free text part", () => {
     const all = emailPreviews(BASE);
-    expect(all.length).toBe(16);
+    expect(all.length).toBe(18);
     for (const { key, r } of all) {
       expect(r.subject, key).toBeTruthy();
       expect(r.html, key).toContain("<!doctype html>");

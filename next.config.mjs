@@ -24,12 +24,13 @@ const csp = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  // Razorpay Checkout: script + its iframe/API (payments only, nothing else).
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.razorpay.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  `img-src 'self' data: blob: https://alpha.thegreyhawks.com https://www.google.com https://images.unsplash.com ${supabaseOrigin}`.trim(),
-  `connect-src 'self' ${supabaseOrigin} ${supabaseWs}`.trim(),
-  "frame-src 'self'",
+  `img-src 'self' data: blob: https://alpha.thegreyhawks.com https://www.google.com https://images.unsplash.com https://cdn.razorpay.com ${supabaseOrigin}`.trim(),
+  `connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com ${supabaseOrigin} ${supabaseWs}`.trim(),
+  "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
 ].join("; ");
 
 /** @type {import('next').NextConfig} */

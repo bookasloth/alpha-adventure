@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import "./booking.css";
-import { createDraft, authenticateBooking, startPayment } from "../actions";
+import { createDraft, authenticateBooking, startPayment, verifyRazorpayPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
+import type { CheckoutOrder } from "@/domain/booking/razorpayPayment";
 
 type Trek = { id: string; slug: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
@@ -28,7 +29,26 @@ const STEPS = [
 const Arrow = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6}><path d="M9 6l6 6-6 6" /></svg>);
 const Chevron = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}><path d="M15 18l-6-6 6-6" /></svg>);
 
-export default function BookingFlow({ trek, departures, addons }: { trek: Trek; departures: Departure[]; addons: Addon[] }) {
+// Razorpay Checkout global (loaded on demand from checkout.razorpay.com).
+type RzpResponse = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
+type RzpInstance = { open: () => void; on: (ev: "payment.failed", cb: (r: { error?: { description?: string } }) => void) => void };
+declare global { interface Window { Razorpay?: new (opts: Record<string, unknown>) => RzpInstance } }
+
+function loadRazorpay(): Promise<void> {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("checkout script failed"));
+    document.body.appendChild(s);
+  });
+}
+
+export type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
+
+export default function BookingFlow({ trek, departures, addons, payMode }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode }) {
   const [step, setStep] = useState(0);
   const [departureId, setDepartureId] = useState("");
   const [adults, setAdults] = useState(1);
@@ -47,6 +67,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
   const [reference, setReference] = useState("");
   const [payToken, setPayToken] = useState("");
   const [busy, setBusy] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authTried, setAuthTried] = useState(false);
   const router = useRouter();
@@ -111,6 +132,7 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
     try {
       const r = await startPayment(bookingId, payToken);
       if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe; stay busy
+      if (r.ok && r.razorpay) return openRazorpay(r.razorpay); // modal owns busy from here
       setBusy(false);
       if (!r.ok) return setError(r.error);
       setReference(r.reference!); setStep(5); // mock path: confirmed by the server
@@ -119,6 +141,57 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
       setBusy(false);
       setError("We couldn't confirm your payment. Check My bookings before trying again.");
     }
+  }
+
+  // Razorpay Checkout modal. The success callback only hands us IDs + a
+  // signature; the server re-verifies with Razorpay before anything is confirmed.
+  async function openRazorpay(o: CheckoutOrder) {
+    try {
+      await loadRazorpay();
+    } catch {
+      setBusy(false);
+      return setError("Couldn't open the payment window. Check your connection and try again.");
+    }
+    let handled = false;
+    const rzp = new window.Razorpay!({
+      key: o.keyId,
+      order_id: o.orderId,
+      amount: o.amount,
+      currency: "INR",
+      name: "Alpha Adventures",
+      description: `${o.trekTitle} · ${o.reference}`,
+      prefill: { name: o.name || name, email: o.email || email },
+      notes: { reference: o.reference },
+      theme: { color: "#fe5100" },
+      timeout: Math.max(60, o.secondsLeft - 30), // close before the seat hold ends
+      modal: {
+        confirm_close: true,
+        ondismiss: () => {
+          if (handled) return;
+          setBusy(false);
+          setError("Payment window closed. Your seats are still held for a few minutes. Tap Pay to try again.");
+        },
+      },
+      handler: async (resp: RzpResponse) => {
+        handled = true;
+        setVerifying(true);
+        try {
+          const v = await verifyRazorpayPayment(bookingId, payToken, resp);
+          if (!v.ok) return setError(v.error);
+          if (v.reference) setReference(v.reference);
+          setStep(5);
+        } catch {
+          setError("We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly.");
+        } finally {
+          setVerifying(false);
+          setBusy(false);
+        }
+      },
+    });
+    rzp.on("payment.failed", (r) => {
+      setError(`Payment failed${r.error?.description ? `: ${r.error.description}` : ""}. You can try again.`);
+    });
+    rzp.open();
   }
 
   if (step >= 5)
@@ -241,8 +314,11 @@ export default function BookingFlow({ trek, departures, addons }: { trek: Trek; 
             )}
             {step === 4 && pay === "pay" && (
               <Panel eyebrow="Step 5 of 5" title="Confirm & pay" desc="Your seats are held for 30 minutes.">
-                <div className="bk-opt" aria-checked="true"><span className="bk-radio" /><span className="bk-m"><div className="bk-lead">PhonePe · UPI · Card</div><div className="bk-tiny">Test mode — no real charge</div></span></div>
-                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} onClick={doPay}>{busy ? "Processing…" : `Pay ${rupees(total)}`}</button></div>
+                <div className="bk-opt" aria-checked="true"><span className="bk-radio" /><span className="bk-m">
+                  <div className="bk-lead">{payMode.provider === "phonepe" ? "PhonePe · UPI · Card" : "UPI · Cards · Netbanking · Wallets"}</div>
+                  <div className="bk-tiny">{payMode.testMode ? "Test mode — no real money is charged" : payMode.provider === "razorpay" ? "Secure payment by Razorpay" : "Secure payment"}</div>
+                </span></div>
+                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} aria-busy={busy} onClick={doPay}>{verifying ? "Confirming payment…" : busy ? "Processing…" : `Pay ${rupees(total)}`}</button></div>
               </Panel>
             )}
 
