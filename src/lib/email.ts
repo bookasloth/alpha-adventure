@@ -93,6 +93,12 @@ export async function sendHoldExpiredEmail(b: BookingEmail) {
 export async function sendDepartureChangedEmail(b: BookingEmail, change: DepartureChange) {
   await send(b.to, T.departureChanged(siteUrl(), b, change));
 }
+export async function sendPaymentRefundedEmail(b: BookingEmail) {
+  await send(b.to, T.paymentRefunded(siteUrl(), b));
+}
+export async function sendRefundFailedAlert(paymentId: string, amount: number, reason: string) {
+  await alertOperator(T.adminRefundFailed(siteUrl(), paymentId, amount, reason));
+}
 export async function sendReviewRequestEmail(b: BookingEmail) {
   await send(b.to, T.reviewRequest(siteUrl(), b), { throwOnError: true });
 }

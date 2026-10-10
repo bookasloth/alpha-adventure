@@ -316,6 +316,31 @@ export function departureChanged(base: string, b: BookingEmail, change: Departur
   });
 }
 
+// Captured money we couldn't use (hold ran out, booking cancelled, paid twice).
+export function paymentRefunded(base: string, b: BookingEmail): Rendered {
+  return layout({
+    base, subject: `We've refunded your payment of ${rupees(b.total)}`,
+    preheader: "Your payment arrived after your seats were released, so we've sent it straight back.",
+    heading: "Your payment is on its way back",
+    body: p(`We received your payment of <strong>${rupees(b.total)}</strong> for <strong>${esc(b.trekTitle)}</strong>, but the booking could no longer be confirmed (usually because the seat hold ran out before payment finished). We've refunded the full amount.`)
+      + details([...bookingRows(b), ["Refund", rupees(b.total)]])
+      + p("Refunds usually reach your account in 5 to 7 working days, depending on your bank.")
+      + note(`Still want to go? Seats may still be available. Book again or call <strong>${esc(site.phone)}</strong> and we'll help.`)
+      + button("Book again", b.trekSlug ? `${base}/book/${encodeURIComponent(b.trekSlug)}` : `${base}/treks`),
+  });
+}
+
+export function adminRefundFailed(base: string, paymentId: string, amount: number, reason: string): Rendered {
+  return layout({
+    base, audience: "operator", subject: `[ACTION NEEDED] Refund failed: ${rupees(amount)} (${paymentId})`,
+    preheader: "A customer paid but the automatic refund failed. Refund it from the Razorpay dashboard.",
+    heading: "Automatic refund failed",
+    body: p("A customer's payment was captured but couldn't be used, and the automatic refund didn't go through. Please refund it manually from the Razorpay dashboard.")
+      + details([["Razorpay payment", esc(paymentId)], ["Amount", rupees(amount)], ["Reason", esc(reason)]])
+      + button("Open Razorpay dashboard", "https://dashboard.razorpay.com/app/payments"),
+  });
+}
+
 export function reviewRequest(base: string, b: BookingEmail): Rendered {
   return layout({
     base, subject: `How was ${b.trekTitle}?`,
@@ -403,6 +428,7 @@ export function emailPreviews(base: string): { key: string; label: string; audie
     { key: "expired", label: "Hold ended", audience: "Customer", when: "Payment not completed in time", r: holdExpired(base, b) },
     { key: "moved", label: "Date changed", audience: "Customer", when: "Team moves a departure date", r: departureChanged(base, b, { kind: "moved", oldDate: "2026-11-14", newDate: "2026-11-21" }) },
     { key: "dep-cancelled", label: "Departure cancelled", audience: "Customer", when: "Team cancels a departure", r: departureChanged(base, b, { kind: "cancelled" }) },
+    { key: "refunded", label: "Payment refunded", audience: "Customer", when: "Payment arrived after the hold ended", r: paymentRefunded(base, b) },
     { key: "review", label: "How was the trek?", audience: "Customer", when: "Day after the trek ends", r: reviewRequest(base, b) },
     { key: "enquiry", label: "We've got your message", audience: "Customer", when: "Contact form sent", r: enquiryReceived(base, lead) },
     { key: "reply", label: "Reply to enquiry", audience: "Customer", when: "Team replies from admin", r: leadReply(base, lead.name, "Re: Group booking for 12", "Thanks for reaching out!\n\nYes, we run Kalsubai every weekend in December. For a group of 12 we can offer a group price. Shall I hold seats for 6 December?") },
@@ -410,5 +436,6 @@ export function emailPreviews(base: string): { key: string; label: string; audie
     { key: "a-confirmed", label: "Booking confirmed", audience: "Operator", when: "Payment completed", r: adminBookingAlert(base, "confirmed", b) },
     { key: "a-cancelled", label: "Booking cancelled", audience: "Operator", when: "Customer cancels", r: adminBookingAlert(base, "cancelled", b, "customer") },
     { key: "a-enquiry", label: "New enquiry", audience: "Operator", when: "Contact form sent", r: adminEnquiryAlert(base, lead) },
+    { key: "a-refund-failed", label: "Refund failed", audience: "Operator", when: "Automatic refund didn't go through", r: adminRefundFailed(base, "pay_SAMPLE123", 539700, "booking_expired") },
   ];
 }
