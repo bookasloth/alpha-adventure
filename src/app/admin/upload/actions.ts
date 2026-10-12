@@ -10,35 +10,31 @@ const EXT: Record<string, string> = {
   "image/gif": "gif", "image/avif": "avif", "image/svg+xml": "svg",
 };
 
-// Upload an image to the public `media` bucket (service role, behind the admin
-// gate) and return its public URL. Used by the ImageField upload button on the
-// admin trek/tour/gallery/testimonial forms.
-export async function uploadImage(
-  formData: FormData,
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+// Hand the admin browser a one-shot signed upload URL for the public `media`
+// bucket. The file itself goes browser -> Supabase directly (XHR, so the UI
+// gets real progress) instead of through a server action, which had no
+// progress, no timeout, and hit Vercel's ~4.5 MB function body cap.
+export async function createImageUpload(
+  meta: { type: string; size: number; folder?: string },
+): Promise<{ ok: true; uploadUrl: string; publicUrl: string } | { ok: false; error: string }> {
   await requireAdmin();
 
-  const file = formData.get("file");
-  const folder = String(formData.get("folder") || "misc").replace(/[^a-z0-9/_-]/gi, "") || "misc";
-  if (!(file instanceof File)) return { ok: false, error: "No file received." };
-  if (!ALLOWED.has(file.type)) return { ok: false, error: "Use a JPG, PNG, WebP, GIF, AVIF or SVG image." };
-  if (file.size > MAX_BYTES) return { ok: false, error: "Image is too large (max 5 MB)." };
+  if (!ALLOWED.has(meta.type)) return { ok: false, error: "Use a JPG, PNG, WebP, GIF, AVIF or SVG image." };
+  if (meta.size > MAX_BYTES) return { ok: false, error: "Image is too large (max 5 MB)." };
+  const folder = String(meta.folder || "misc").replace(/[^a-z0-9/_-]/gi, "") || "misc";
+  const path = `${folder}/${crypto.randomUUID()}.${EXT[meta.type]}`;
 
   const admin = createAdminClient();
-  const ext = EXT[file.type] ?? "bin";
-  const name = `${crypto.randomUUID()}.${ext}`;
-  const path = `${folder}/${name}`;
-
-  const { error } = await admin.storage.from("media").upload(path, file, {
-    contentType: file.type,
-    cacheControl: "31536000",
-    upsert: false,
-  });
-  if (error) {
-    console.error("[uploadImage]", error.message);
-    return { ok: false, error: "Upload failed. Is the 'media' storage bucket set up?" };
+  let { data, error } = await admin.storage.from("media").createSignedUploadUrl(path);
+  if (error && /not found/i.test(error.message)) {
+    // No migration creates the bucket; make it on first use.
+    await admin.storage.createBucket("media", { public: true, fileSizeLimit: MAX_BYTES });
+    ({ data, error } = await admin.storage.from("media").createSignedUploadUrl(path));
+  }
+  if (error || !data) {
+    console.error("[createImageUpload]", error?.message);
+    return { ok: false, error: "Could not start upload (storage not reachable)." };
   }
 
-  const { data } = admin.storage.from("media").getPublicUrl(path);
-  return { ok: true, url: data.publicUrl };
+  return { ok: true, uploadUrl: data.signedUrl, publicUrl: admin.storage.from("media").getPublicUrl(path).data.publicUrl };
 }

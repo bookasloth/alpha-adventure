@@ -3,9 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-// ponytail: one root boundary covers every route (Next bubbles render throws to
-// the nearest error.tsx; this one is still wrapped by the root layout, so header
-// /footer stay). Add a per-segment error.tsx only if a route needs different UX.
+// Root boundary (admin, auth, anything outside (site)). Site pages use
+// (site)/error.jsx, which re-exports this so it renders inside header/footer.
 export default function Error({
   error,
   reset,

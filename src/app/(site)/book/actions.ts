@@ -6,12 +6,15 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment } from "@/domain/booking/service";
-import { isPhonePeEnabled, phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
+import { phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
+import { paymentProvider } from "@/lib/payment/provider";
+import { startRazorpayCheckout, verifyAndSettleCheckout, type CheckoutOrder } from "@/domain/booking/razorpayPayment";
 import { sendBookingPendingEmail, sendBookingConfirmedEmail } from "@/lib/email";
 import { sendVerifyEmail } from "@/lib/verifyEmail";
 import { withTimeout } from "@/lib/withTimeout";
 import { background } from "@/lib/after";
 import { limitByIp } from "@/lib/rateLimit";
+import { verifyPaymentSignature } from "@/lib/payment/razorpay";
 import { tokenSigningSecret } from "@/lib/signing";
 
 const DRAFT_COOKIE = "aa_draft";
@@ -166,9 +169,14 @@ export async function authenticateBooking(
   }
 }
 
-// ── 4b. Start payment. PhonePe (sandbox) when configured, else the mock path.
-// Returns a redirectUrl (PhonePe hosted page) or a reference (mock = done).
-export async function startPayment(bookingId: string, payToken?: string): Promise<Result<{ redirectUrl?: string; reference?: string }>> {
+// ── 4b. Start payment on the configured gateway (PAYMENT_PROVIDER).
+// Returns a Razorpay checkout order, a redirectUrl (PhonePe hosted page), or a
+// reference (mock = done).
+export async function startPayment(
+  bookingId: string,
+  payToken?: string,
+): Promise<Result<{ redirectUrl?: string; reference?: string; razorpay?: CheckoutOrder }>> {
+  if (!(await limitByIp("pay-start", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const supabase = createClient(await cookies());
   const userId = await payUserId(supabase, payToken);
   if (!userId) return { ok: false, error: "Please verify your email first." };
@@ -177,7 +185,17 @@ export async function startPayment(bookingId: string, payToken?: string): Promis
   const { data: b } = await admin.from("bookings").select("id,user_id,contact_email").eq("id", bookingId).maybeSingle();
   if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
 
-  if (!isPhonePeEnabled()) {
+  const provider = paymentProvider();
+  if (provider === "razorpay") {
+    try {
+      return { ok: true, razorpay: await startRazorpayCheckout(admin, bookingId) };
+    } catch (e) {
+      console.error("[pay] razorpay start failed:", (e as Error).message);
+      const msg = (e as Error).message;
+      return { ok: false, error: msg.startsWith("Razorpay") ? "Couldn't start the payment. Please try again." : msg };
+    }
+  }
+  if (provider === "mock") {
     const r = await confirmMockAndNotify(admin, bookingId, b.contact_email);
     return r.ok ? { ok: true, reference: r.reference } : r;
   }
@@ -198,7 +216,7 @@ export async function payMockBooking(bookingId: string, payToken?: string): Prom
   // Audit H1: the mock path must never confirm a booking once a real gateway is
   // live. startPayment only routes here when PhonePe is disabled, but this is an
   // exported Server Action (directly callable), so it guards itself too.
-  if (isPhonePeEnabled()) return { ok: false, error: "Payment required." };
+  if (paymentProvider() !== "mock") return { ok: false, error: "Payment required." };
   const supabase = createClient(await cookies());
   const userId = await payUserId(supabase, payToken);
   if (!userId) return { ok: false, error: "Please verify your email first." };
@@ -242,5 +260,41 @@ async function confirmMockAndNotify(
     return { ok: true, reference: confirmed.reference };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
+  }
+}
+
+// ── 4c. Razorpay Checkout success handler. The browser's word is never enough:
+// check the signature, then ask Razorpay for the payment and settle only what
+// it says was captured, for this booking's order, for the exact amount.
+export async function verifyRazorpayPayment(
+  bookingId: string,
+  payToken: string | undefined,
+  resp: { razorpay_order_id?: unknown; razorpay_payment_id?: unknown; razorpay_signature?: unknown },
+): Promise<Result<{ reference: string }>> {
+  if (!(await limitByIp("pay-verify", 20, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const orderId = typeof resp?.razorpay_order_id === "string" ? resp.razorpay_order_id : "";
+  const paymentId = typeof resp?.razorpay_payment_id === "string" ? resp.razorpay_payment_id : "";
+  const signature = typeof resp?.razorpay_signature === "string" ? resp.razorpay_signature : "";
+  if (!verifyPaymentSignature(orderId, paymentId, signature)) return { ok: false, error: "Payment could not be verified." };
+
+  const supabase = createClient(await cookies());
+  const userId = await payUserId(supabase, payToken);
+  if (!userId) return { ok: false, error: "Please sign in again." };
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,user_id").eq("id", bookingId).maybeSingle();
+  if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
+
+  try {
+    const r = await verifyAndSettleCheckout(admin, bookingId, orderId, paymentId);
+    if (r.outcome === "confirmed" || r.outcome === "already_settled") return { ok: true, reference: r.reference ?? "" };
+    if (r.outcome === "refunded")
+      return { ok: false, error: "Your seat hold ended before the payment completed, so we've refunded you in full. Please book again." };
+    if (r.outcome === "not_captured")
+      return { ok: false, error: "Your payment is still processing. We'll email you as soon as it's confirmed." };
+    return { ok: false, error: "Payment could not be verified." };
+  } catch (e) {
+    console.error("[pay] razorpay verify failed:", (e as Error).message);
+    // The webhook will still settle it if the money was captured.
+    return { ok: false, error: "We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly." };
   }
 }

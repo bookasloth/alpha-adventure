@@ -1,43 +1,42 @@
 import Link from "next/link";
 import Image from "next/image";
 
-// Reusable trek / experience card. Driven entirely by data.
+// Trek card in the same `package-card` markup as the homepage "Popular Treks"
+// slider (styled by legacy style.css), so every listing matches the home page.
 export default function TrekCard({ trek, href }) {
   const link = href || trek.href || `/treks/${trek.slug}`;
   return (
-    <Link href={link} className="card group flex h-full flex-col overflow-hidden hover:-translate-y-1 transition-transform duration-300">
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <Image
-          src={trek.image || "/assets/img/home2/destination-img1.jpg"}
-          alt={trek.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        {trek.badge && (
-          <span className="absolute top-3 left-3 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
-            {trek.badge}
-          </span>
-        )}
-        {trek.duration && (
-          <span className="absolute bottom-3 right-3 bg-ink/80 text-white text-xs font-medium px-3 py-1 rounded-full">
-            {trek.duration}
-          </span>
-        )}
+    <div className="package-card h-full">
+      <div className="package-img-wrap">
+        <Link href={link} className="package-img relative block aspect-[4/3]">
+          <Image
+            src={trek.image || "/assets/img/home2/destination-img1.jpg"}
+            alt={trek.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+          />
+        </Link>
+        {trek.badge && <div className="batch"><span>{trek.badge}</span></div>}
       </div>
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-lg font-bold text-ink group-hover:text-primary transition-colors line-clamp-2">
-          {trek.title}
-        </h3>
-        {trek.location && <p className="text-sm text-gray-500 mt-1 line-clamp-1">{trek.location}</p>}
-        <div className="mt-auto pt-4 flex items-end justify-between">
-          <div>
-            <span className="block text-xs text-gray-400">Per Person</span>
-            <span className="text-lg font-bold text-primary">₹{trek.price.toLocaleString("en-IN")}</span>
+      <div className="package-content">
+        <h5><Link href={link}>{trek.title}</Link></h5>
+        <div className="location-and-time">
+          {trek.location && (
+            <div className="location">
+              <i className="bi bi-geo-alt" /> <Link href={link}>{trek.location}</Link>
+            </div>
+          )}
+          {trek.duration && <span>{trek.duration}</span>}
+        </div>
+        <div className="btn-and-price-area">
+          <Link href={link} className="primary-btn1"><span>Book Now</span><span>Book Now</span></Link>
+          <div className="price-area">
+            <h6>Per Person</h6>
+            <span>₹{Number(trek.price || 0).toLocaleString("en-IN")}</span>
           </div>
-          <span className="text-sm font-semibold text-ink group-hover:text-primary">Book Now →</span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -1455,7 +1455,7 @@ function SettingsEmail() {
       <Card><CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-primary"><Mail size={20} /></span>
-          <div><div className="font-semibold">Email templates</div><div className="text-sm text-gray-500">Preview all 16 emails with sample data. Nothing is sent.</div></div>
+          <div><div className="font-semibold">Email templates</div><div className="text-sm text-gray-500">Preview every email with sample data. Nothing is sent.</div></div>
         </div>
         <Button size="sm" asChild><Link href="/admin/emails">Preview templates</Link></Button>
       </CardContent></Card>

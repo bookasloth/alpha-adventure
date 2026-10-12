@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { istToday } from "@/lib/date";
 import BookingFlow from "./BookingFlow";
+import { paymentProvider } from "@/lib/payment/provider";
+import { razorpayKeyId } from "@/lib/payment/razorpay";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,13 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       }}
       departures={departures ?? []}
       addons={addons ?? []}
+      payMode={payModeNow()}
     />
   );
+}
+
+// What the pay step tells the customer. Test mode = mock, or Razorpay test keys.
+function payModeNow() {
+  const provider = paymentProvider();
+  return { provider, testMode: provider === "mock" || (provider === "razorpay" && razorpayKeyId().startsWith("rzp_test_")) };
 }

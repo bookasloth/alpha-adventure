@@ -1,0 +1,53 @@
+/* Shared styles for the legal pages (terms, cancellation policy). The original
+   PHP site's terms.css / cancellation.css were never migrated. */
+.policy-page { color: #4a5568; font-size: 16px; line-height: 1.75; }
+.tc-wrapper, .wanderon-policy-wrapper {
+  background: #fff; border: 1px solid #eee; border-radius: 16px;
+  padding: 48px 56px; box-shadow: 0 10px 40px rgba(17, 15, 15, .06);
+}
+.tc-header, .policy-header-title {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 20px; margin-bottom: 28px; border-bottom: 1px solid #eee;
+}
+.tc-header i, .policy-header-title i {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 12px; font-size: 22px;
+  color: var(--primary-color1, #fe5100); background: #fff1e8;
+}
+.tc-header h2, .policy-header-title h2 { margin: 0; font-size: 30px; color: var(--title-color, #110f0f); }
+.tc-intro { font-size: 17px; color: #334155; margin-bottom: 32px; }
+.tc-section { display: flex; gap: 18px; padding: 22px 0; border-top: 1px dashed #e5e7eb; }
+.tc-num {
+  flex: 0 0 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; color: #fff; background: var(--primary-color1, #fe5100);
+}
+.tc-content { flex: 1; min-width: 0; }
+.policy-page h4 { font-size: 20px; color: var(--title-color, #110f0f); margin: 4px 0 10px; }
+.policy-page p { margin-bottom: 12px; }
+.policy-page ul, .policy-page ol { padding-left: 20px; margin-bottom: 12px; }
+.policy-page li { margin-bottom: 8px; }
+.policy-page li::marker { color: var(--primary-color1, #fe5100); }
+.travel-points-section { margin-bottom: 36px; }
+.policy-category-badge {
+  display: inline-block; margin: 36px 0 10px; padding: 5px 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+}
+.wanderon-table {
+  width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px;
+  border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;
+}
+.wanderon-table th { background: #110f0f; color: #fff; font-weight: 600; padding: 14px 16px; text-align: left; }
+.wanderon-table td { padding: 14px 16px; border-top: 1px solid #e5e7eb; vertical-align: top; }
+.wanderon-table tbody tr:nth-child(even) td { background: #fafafa; }
+.general-policy-content { border-top: 1px solid #eee; }
+@media (max-width: 767px) {
+  .tc-wrapper, .wanderon-policy-wrapper { padding: 28px 18px; border-radius: 12px; }
+  .tc-header h2, .policy-header-title h2 { font-size: 24px; }
+  .tc-section { gap: 12px; }
+  .wanderon-table, .wanderon-table thead, .wanderon-table tbody, .wanderon-table tr,
+  .wanderon-table th, .wanderon-table td { display: block; width: 100% !important; }
+  .wanderon-table thead { display: none; }
+  .wanderon-table tr { border-top: 1px solid #e5e7eb; }
+  .wanderon-table td { border-top: 0; padding: 10px 14px; }
+}
