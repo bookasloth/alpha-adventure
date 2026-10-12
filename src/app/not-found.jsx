@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FoxRunner from "@/components/FoxRunner";
 
 export default function NotFound() {
   return (
@@ -7,6 +8,10 @@ export default function NotFound() {
         <p className="text-6xl font-bold text-primary">404</p>
         <h1 className="section-title mt-2">Page not found</h1>
         <p className="mt-3 text-gray-600">The trail you followed doesn&apos;t exist. Let&apos;s get you back on track.</p>
+        <div className="mt-8">
+          <FoxRunner />
+          <p className="mt-2 text-xs text-gray-400">Space / ↑ / tap to jump · ↓ to duck</p>
+        </div>
         <Link href="/" className="btn-primary mt-6 inline-flex">Back to Home</Link>
       </div>
     </section>
