@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,33 +12,46 @@ const inputCls =
 export default function ResetForm() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
+  const recoveryCheck = useRef<Promise<{ ready: boolean; error?: string }> | null>(null);
   // null = still exchanging the link's token; don't flash "open from email".
   const [ready, setReady] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A server-minted recovery link can land three ways: a hash session
-  // (#access_token, auto-detected), ?code (PKCE-style exchange), or
-  // ?token_hash&type=recovery. Handle all so the happy path can't silently die.
+  // Reset links use a one-time token hash for a single explicit recovery exchange.
   useEffect(() => {
     let cancelled = false;
-    async function establish() {
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get("code");
-      const tokenHash = url.searchParams.get("token_hash");
-      const type = url.searchParams.get("type");
-      try {
-        if (code) {
-          await supabase.auth.exchangeCodeForSession(code);
-        } else if (tokenHash && type === "recovery") {
-          await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+    if (!recoveryCheck.current) {
+      recoveryCheck.current = (async () => {
+        const url = new URL(window.location.href);
+        const tokenHash = url.searchParams.get("token_hash");
+        const type = url.searchParams.get("type");
+        let linkError: string | undefined;
+        if (tokenHash) window.history.replaceState(null, "", url.pathname);
+        if (tokenHash && type === "recovery") {
+          const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+          if (error) linkError = "This reset link is invalid or expired. Request a new one.";
+        } else if (tokenHash) {
+          linkError = "This reset link is invalid. Request a new one.";
         }
-      } catch { /* fall through to session check */ }
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled) setReady(!!data.session);
+        const { data } = await supabase.auth.getSession();
+        return { ready: !!data.session, error: linkError };
+      })();
     }
-    establish();
+    recoveryCheck.current
+      .then(({ ready: isReady, error: linkError }) => {
+        if (!cancelled) {
+          if (linkError) setError(linkError);
+          setReady(isReady);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError("We couldn't verify this reset link. Request a new one.");
+          setReady(false);
+        }
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => { if (session) setReady(true); });
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [supabase]);
@@ -62,10 +75,13 @@ export default function ResetForm() {
     return <p role="status" className="text-sm text-gray-500">Checking your reset link…</p>;
   if (!ready)
     return (
-      <p className="text-sm text-gray-500">
-        Open this page from your reset email.{" "}
-        <a className="text-primary hover:underline" href="/forgot-password">Request a new link</a>.
-      </p>
+      <div className="space-y-3">
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        <p className="text-sm text-gray-500">
+          Open this page from your reset email or{" "}
+          <a className="text-primary hover:underline" href="/forgot-password">request a new link</a>.
+        </p>
+      </div>
     );
   return (
     <form onSubmit={onSubmit} className="space-y-5">

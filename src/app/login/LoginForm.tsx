@@ -89,7 +89,11 @@ export default function LoginForm({
     setError(null); setNotice(null);
     if (!/.+@.+\..+/.test(email)) { setError("Enter your email above first."); return; }
     setBusy(true);
-    try { await requestPasswordReset(email); setNotice("If that email has an account, a reset link is on its way."); }
+    try {
+      const r = await requestPasswordReset(email);
+      if (!r.ok) setError(r.error);
+      else setNotice("If that email has an account, a reset link is on its way.");
+    }
     catch { setError(NET_ERR); }
     setBusy(false);
   }

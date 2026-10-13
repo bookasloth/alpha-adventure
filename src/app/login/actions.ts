@@ -68,16 +68,28 @@ export async function requestPasswordReset(rawEmail: unknown): Promise<Result> {
   if (!e.success) return { ok: true };
   try {
     const admin = createAdminClient();
-    const { data } = await admin.auth.admin.generateLink({
-      type: "recovery", email: e.data,
-      options: { redirectTo: `${siteUrl()}/reset-password` },
-    });
-    const link = data?.properties?.action_link;
-    if (link) {
-      const { sendResetEmail } = await import("@/lib/email");
-      background(sendResetEmail(e.data, link));
+    const { data, error } = await withTimeout(
+      admin.auth.admin.generateLink({ type: "recovery", email: e.data }),
+      10000,
+    );
+    if (error) {
+      console.error("[auth] password reset link generation failed:", error.message);
+      return { ok: true };
     }
-  } catch { /* fail-open: still return ok */ }
+
+    const tokenHash = data.properties?.hashed_token;
+    if (!tokenHash) {
+      console.error("[auth] password reset link generation returned no hashed token.");
+      return { ok: true };
+    }
+
+    const link = new URL("/reset-password", siteUrl());
+    link.searchParams.set("token_hash", tokenHash);
+    link.searchParams.set("type", "recovery");
+    const { sendResetEmail } = await import("@/lib/email");
+    background(sendResetEmail(e.data, link.toString()));
+  } catch (error) {
+    console.error("[auth] password reset request failed:", error instanceof Error ? error.message : error);
+  }
   return { ok: true };
 }
-

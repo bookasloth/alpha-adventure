@@ -25,9 +25,11 @@ uninterrupted.
 
 ## Password reset
 `requestPasswordReset` → `admin.generateLink({ type: "recovery" })` → link
-delivered by our mailer → `/reset-password` (browser client picks up the
-recovery session) → `supabase.auth.updateUser({ password })`. Requests always
-return ok (no account enumeration).
+delivered by our mailer with the one-time `token_hash` → `/reset-password`
+calls `supabase.auth.verifyOtp({ type: "recovery", token_hash })` to establish
+the recovery session → `supabase.auth.updateUser({ password })`. Requests
+always return ok (no account enumeration); rate-limit errors are shown without
+revealing whether the email belongs to an account.
 
 ## Booking identity (guest-first)
 `src/app/book/actions.ts` `authenticateBooking(bookingId, {name?, email,
