@@ -13,6 +13,25 @@ html .bg-primary { background-color: #fe5100 !important; }
 html .text-primary { color: #fe5100 !important; }
 html .border-primary { border-color: #fe5100 !important; }
 
+/* Bootstrap's .opacity-0 / .opacity-100 are !important and silently defeat
+   Tailwind's group-hover:opacity-* variants (e.g. the gallery card reveal).
+   Restore hover behaviour for both directions. */
+.group:hover .group-hover\:opacity-100 { opacity: 1 !important; }
+.group:hover .group-hover\:opacity-0 { opacity: 0 !important; }
+
+/* Sticky tab bar for the trek detail page. Written as plain CSS so it never
+   depends on Tailwind extracting arbitrary bracket/opacity utilities, and with
+   a fully opaque background so page content never shows through while it is
+   pinned. The navbar is not sticky, so the bar pins to the very top (top: 0)
+   — no strip of content can be visible above it. */
+.trek-tabbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: #ffffff;
+  border-bottom: 1px solid #E8E8E8;
+}
+
 /* Standard primary buttons (.btn-primary, booking .bk-btn-primary) get the same
    hover slide-to-dark as the legacy .primary-btn1: a dark panel slides up behind
    the label. Label stays above via the isolate/z-index:-1 pairing. */
