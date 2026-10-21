@@ -23,49 +23,67 @@ export default async function TourDetailPage(props) {
   if (!tour) return notFound();
   return (
     <>
-      <section className="relative bg-dark text-white">
-        <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: `url(${tour.image})` }} />
-        <div className="absolute inset-0 bg-hero-pattern" />
-        <div className="container-px relative py-16">
-          <nav className="text-sm text-white/70 mb-3">
-            <Link href="/" className="hover:text-white">Home</Link>
-            <span className="mx-2">/</span>
-            <Link href="/tour-packages" className="hover:text-white">Tour Packages</Link>
-            <span className="mx-2">/</span>
-            <span className="text-white">{tour.title}</span>
-          </nav>
-          <span className="inline-block bg-accent text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">{tour.type}</span>
-          <h1 className="text-3xl sm:text-4xl font-bold">{tour.title}</h1>
-          <p className="mt-2 text-white/80">{tour.duration}</p>
+      <section className="breadcrumb-section" style={{ backgroundImage: `url(${tour.image})` }}>
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-12">
+              <div className="banner-wrapper">
+                <div className="banner-content">
+                  <ul className="breadcrumb-list">
+                    <li><Link href="/">Home</Link></li>
+                    <li><Link href="/tour-packages">Tour Packages</Link></li>
+                    <li>{tour.title}</li>
+                  </ul>
+                  <h1>{tour.title}</h1>
+                  <div className="review-area">
+                    {tour.type && <span>{tour.type}</span>}
+                    {tour.duration && <span>{tour.duration}</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="container-px py-14 grid lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2">
-          <img src={tour.image} alt={tour.title} className="rounded-xl2 h-72 w-full object-cover mb-8" />
-          <h2 className="text-2xl font-bold text-ink mb-3">Overview</h2>
-          <p className="text-gray-600 leading-relaxed">{tour.description}</p>
-          <p className="mt-4 text-gray-600 leading-relaxed">
-            This package includes accommodation, transport between sectors, guided sightseeing and daily meals as
-            per the itinerary. Flights/trains to the base city are excluded unless mentioned. Customise the dates and
-            group size with our travel desk.
-          </p>
-        </div>
-        <aside>
-          <div className="card p-6 sticky top-20">
-            <div className="flex items-baseline justify-between">
-              <div>
-                <span className="block text-xs text-gray-400">Per Person</span>
-                <span className="text-2xl font-bold text-primary">₹{tour.price.toLocaleString("en-IN")}</span>
+      <div className="tour-package-details pt-120 mb-120">
+        <div className="container">
+          <div className="row g-lg-4 gy-5">
+            <div className="col-lg-8">
+              <div className="tour-package-info">
+                <div className="image-group">
+                  <img src={tour.image} alt={tour.title} className="img-fluid" />
+                </div>
+                <h3>Overview</h3>
+                <p>{tour.description}</p>
+                <p>
+                  This package includes accommodation, transport between sectors, guided sightseeing and daily meals as
+                  per the itinerary. Flights/trains to the base city are excluded unless mentioned. Customise the dates and
+                  group size with our travel desk.
+                </p>
               </div>
-              <span className="text-sm text-gray-500">{tour.duration}</span>
             </div>
-            <a href={site.whatsapp} target="_blank" rel="noreferrer" className="btn-primary w-full mt-5">
-              Book / Enquire
-            </a>
-            <Link href="/contact" className="btn-dark w-full mt-3">Talk To Our Desk</Link>
+            <div className="col-lg-4">
+              <div className="tour-sidebar">
+                <div className="booking-form-area">
+                  <h4>Starting From</h4>
+                  <div className="price-area">
+                    <span>₹{Number(tour.price || 0).toLocaleString("en-IN")}</span>
+                    <p>Per Person</p>
+                  </div>
+                  <div className="form-inner">
+                    <ul className="price-list">
+                      <li><span>Duration</span><span>{tour.duration || "-"}</span></li>
+                      {tour.type && <li><span>Type</span><span>{tour.type}</span></li>}
+                    </ul>
+                    <a href={site.whatsapp} target="_blank" rel="noreferrer" className="primary-btn1 two">Book / Enquire</a>
+                    <Link href="/contact" className="primary-btn1 transparent mt-3">Talk To Our Desk</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </aside>
+        </div>
       </div>
     </>
   );
