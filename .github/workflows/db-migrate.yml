@@ -1,0 +1,55 @@
+name: DB migrate
+
+# Applies pending Supabase migrations to the linked project when migration
+# files land on main. `supabase db push` runs ONLY the files under
+# supabase/migrations/** — it never runs supabase/seed.sql, so demo/seed data
+# stays local-only.
+#
+# This workflow is INERT until three repo secrets are set (Settings → Secrets
+# and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — a personal access token (Supabase dashboard →
+#                            Account → Access Tokens)
+#   SUPABASE_DB_PASSWORD   — the project's database password
+#   SUPABASE_PROJECT_ID    — rkzfezshvzszeykgrsdx
+# Without SUPABASE_PROJECT_ID the job is a green no-op and touches nothing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check configuration
+        id: cfg
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          if [ -z "$SUPABASE_PROJECT_ID" ]; then
+            echo "Secrets not set — skipping (nothing applied)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Supabase CLI
+        if: steps.cfg.outputs.configured == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Push migrations
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
