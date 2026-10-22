@@ -476,6 +476,45 @@
       },
     },
   });
+  // Home2 On Sale Tour Packages Slider
+  var swiper = new Swiper(".home2-onsale-slider", {
+    slidesPerView: 1,
+    speed: 1500,
+    spaceBetween: 24,
+    autoplay: {
+      delay: 2500,
+      pauseOnMouseEnter: true,
+      disableOnInteraction: false,
+    },
+    navigation: {
+      nextEl: ".onsale-slider-next",
+      prevEl: ".onsale-slider-prev",
+    },
+    breakpoints: {
+      280: {
+        slidesPerView: 1,
+      },
+      386: {
+        slidesPerView: 1,
+      },
+      576: {
+        slidesPerView: 1,
+      },
+      768: {
+        slidesPerView: 2,
+        spaceBetween: 15,
+      },
+      992: {
+        slidesPerView: 3,
+      },
+      1200: {
+        slidesPerView: 3,
+      },
+      1400: {
+        slidesPerView: 3,
+      },
+    },
+  });
   // Home3 Destination Slider
   var swiper = new Swiper(".home3-destination-slider", {
     slidesPerView: 1,

@@ -1,14 +1,14 @@
 import { reasons } from "@/data/reasons";
 import SectionHeading from "@/components/ui/SectionHeading";
 
-// "5 Reasons Why Alpha Adventures" — video cards alternating layout.
+// "4 Reasons Why Alpha Adventures" — video cards alternating layout.
 export default function WhyUs() {
   return (
     <section className="section bg-gray-50">
       <div className="container-px">
         <SectionHeading
           eyebrow="Why Choose Us"
-          title="5 Reasons Why Alpha Adventures"
+          title="4 Reasons Why Alpha Adventures"
           subtitle="Discover why thousands of trekkers choose us to conquer the Sahyadri peaks and historical forts."
         />
         <div className="space-y-10">

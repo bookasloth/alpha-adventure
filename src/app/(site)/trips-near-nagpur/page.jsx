@@ -14,6 +14,7 @@ export default async function TripsNearNagpurPage() {
         title="Trips Near Nagpur"
         crumb="Trips Near Nagpur"
         subtitle="Quick weekend getaways, hidden waterfalls and riverside camping — all close to Nagpur."
+        fullHeight
       />
       <PackageGrid treks={items} eyebrow="Near Nagpur" title="Weekend Escapes From Nagpur" />
     </>

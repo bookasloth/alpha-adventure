@@ -18,6 +18,7 @@ export default async function BackpackingTripsPage() {
         title="Backpacking Trips"
         crumb="Backpacking Trips"
         subtitle="Coastal escapes, desert circuits, hill stations and Himalayan valleys — curated backpacking across India."
+        fullHeight
       />
       <PackageGrid treks={items} eyebrow="Backpacking" title="Backpacking Trips Across India" />
     </>
