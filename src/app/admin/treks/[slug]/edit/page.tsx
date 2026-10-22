@@ -16,12 +16,13 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
     .maybeSingle();
   if (!t) notFound();
 
-  const [inc, exc, pkgs, iti, faq] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq, gal] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
     admin.from("itinerary_days").select("title,description,image,trek_distance,trek_duration,drive_distance,drive_duration,altitude_gain,altitude_loss,meals").eq("trek_id", t.id).order("day_no"),
     admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
+    admin.from("trek_gallery").select("image_url,caption").eq("trek_id", t.id).order("sort_order"),
   ]);
 
   const initial = {
@@ -71,6 +72,7 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
       meals: d.meals ?? "",
     })),
     faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
+    gallery: (gal.data ?? []).map((g) => ({ image_url: g.image_url ?? "", caption: g.caption ?? "" })),
   };
   return (
     <div className="min-h-screen bg-page text-ink">

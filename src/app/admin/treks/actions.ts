@@ -26,6 +26,7 @@ export type TrekDetail = {
   packages: { name: string; price: number; inclusions: string[]; ctaLabel: string }[];
   itinerary: { title: string; description: string }[];
   faqs: { question: string; answer: string }[];
+  gallery: { imageUrl: string; caption: string }[];
   departures: number;
 };
 
@@ -41,12 +42,13 @@ export async function getTrekDetail(
     .eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (!t) return { ok: false, error: "Trek not found." };
 
-  const [inc, exc, pkgs, iti, faq, deps] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq, gal, deps] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
     admin.from("itinerary_days").select("title,description").eq("trek_id", t.id).order("day_no"),
     admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
+    admin.from("trek_gallery").select("image_url,caption").eq("trek_id", t.id).order("sort_order"),
     admin.from("trek_departures").select("id", { count: "exact", head: true }).eq("trek_id", t.id).neq("status", "cancelled"),
   ]);
 
@@ -77,6 +79,7 @@ export async function getTrekDetail(
       packages: (pkgs.data ?? []).map((p) => ({ name: p.name ?? "", price: toRupees(p.price), inclusions: p.inclusions ?? [], ctaLabel: p.cta_label ?? "Book Now" })),
       itinerary: (iti.data ?? []).map((d) => ({ title: d.title ?? "", description: d.description ?? "" })),
       faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
+      gallery: (gal.data ?? []).map((g) => ({ imageUrl: g.image_url ?? "", caption: g.caption ?? "" })),
       departures: deps.count ?? 0,
     },
   };
@@ -135,6 +138,10 @@ const rowSchema = z.object({
     question: z.string().trim().min(1),
     answer: z.string().trim().min(1),
   })).default([]),
+  gallery: z.array(z.object({
+    image_url: z.string().trim().min(1),
+    caption: z.string().trim().optional().or(z.literal("")),
+  })).default([]),
 });
 
 type Result = { ok: true; slug: string } | { ok: false; error: string };
@@ -188,6 +195,7 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     admin.from("pricing_packages").delete().eq("trek_id", id),
     admin.from("itinerary_days").delete().eq("trek_id", id),
     admin.from("trek_faqs").delete().eq("trek_id", id),
+    admin.from("trek_gallery").delete().eq("trek_id", id),
   ]);
   const jobs = [];
   if (t.inclusions.length) jobs.push(admin.from("inclusions").insert(t.inclusions.map((text, sort) => ({ trek_id: id, text, sort }))));
@@ -205,6 +213,9 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
   ));
   if (t.faqs.length) jobs.push(admin.from("trek_faqs").insert(
     t.faqs.map((q, sort) => ({ trek_id: id, question: q.question, answer: q.answer, sort })),
+  ));
+  if (t.gallery.length) jobs.push(admin.from("trek_gallery").insert(
+    t.gallery.map((g, sort_order) => ({ trek_id: id, image_url: g.image_url, caption: blank(g.caption), sort_order })),
   ));
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[updateTrek] child insert:", r.error.message);

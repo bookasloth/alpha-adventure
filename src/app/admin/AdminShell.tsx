@@ -846,6 +846,17 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
               </DetailBox>
             )}
 
+            {detail.gallery.length > 0 && (
+              <DetailBox title={`Gallery (${detail.gallery.length})`} className="mt-4">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {detail.gallery.map((g, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={g.imageUrl} alt={g.caption} title={g.caption} className="h-20 w-full rounded-lg border border-line object-cover" />
+                  ))}
+                </div>
+              </DetailBox>
+            )}
+
             <div className="mt-5 flex justify-end gap-2">
               <a href={`/treks/${detail.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-slate-100">View on site ↗</a>
               <Button variant="secondary" size="sm" onClick={onClose}>Close</Button>

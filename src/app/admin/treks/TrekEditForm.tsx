@@ -14,6 +14,7 @@ const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 
 
 type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
 type Faq = { question: string; answer: string };
+type GalleryImg = { image_url: string; caption: string };
 type Day = {
   title: string; description: string; image: string;
   // Per-day metrics surfaced on the public detail page (migration 0027).
@@ -59,7 +60,7 @@ export type TrekEditInitial = {
   // Trek-detail extras shown on the public page (migration 0027).
   brochure_url: string; suitable_age: string; accommodation: string; fitness_criteria: string;
   not_to_miss: string[];
-  inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[]; faqs: Faq[];
+  inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[]; faqs: Faq[]; gallery: GalleryImg[];
 };
 
 export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) {
@@ -74,10 +75,13 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
   const [packages, setPackages] = useState<Pkg[]>(initial.packages);
   const [itinerary, setItinerary] = useState<Day[]>(initial.itinerary);
   const [faqs, setFaqs] = useState<Faq[]>(initial.faqs);
+  const [gallery, setGallery] = useState<GalleryImg[]>(initial.gallery);
   const setDay = (i: number, key: keyof Day, v: string) =>
     setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
   const setFaq = (i: number, key: keyof Faq, v: string) =>
     setFaqs((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
+  const setGal = (i: number, key: keyof GalleryImg, v: string) =>
+    setGallery((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,6 +114,10 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       // Both columns are NOT NULL — keep only rows with a question AND an answer.
       faqs: faqs.filter((q) => q.question.trim() && q.answer.trim()).map((q) => ({
         question: q.question.trim(), answer: q.answer.trim(),
+      })),
+      // image_url is NOT NULL — drop rows without an image; caption is optional.
+      gallery: gallery.filter((g) => g.image_url.trim()).map((g) => ({
+        image_url: g.image_url.trim(), caption: g.caption.trim(),
       })),
     };
     try {
@@ -256,6 +264,23 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
             </div>
           ))}
           <button type="button" onClick={() => setFaqs([...faqs, { question: "", answer: "" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add FAQ</button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Photo gallery <span className="text-sm font-normal text-gray-400">(shown on the trek page)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {gallery.map((g, i) => (
+            <div key={i} className="rounded-xl border border-line p-4">
+              <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-ink">Photo {i + 1}</span>
+                <button type="button" onClick={() => setGallery(gallery.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button></div>
+              <div className="space-y-3">
+                <Field label="Image"><ImageField className={inp} value={g.image_url} onChange={(v) => setGal(i, "image_url", v)} folder="treks/gallery" placeholder="/assets/img/... or upload" /></Field>
+                <Field label="Caption" hint="(optional)"><input className={inp} value={g.caption} onChange={(e) => setGal(i, "caption", e.target.value)} placeholder="Sunrise from Konkan Kada" /></Field>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={() => setGallery([...gallery, { image_url: "", caption: "" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add photo</button>
         </CardContent>
       </Card>
 
