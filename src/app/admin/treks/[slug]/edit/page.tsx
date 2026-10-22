@@ -16,11 +16,12 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
     .maybeSingle();
   if (!t) notFound();
 
-  const [inc, exc, pkgs, iti] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
     admin.from("itinerary_days").select("title,description,image,trek_distance,trek_duration,drive_distance,drive_duration,altitude_gain,altitude_loss,meals").eq("trek_id", t.id).order("day_no"),
+    admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
   ]);
 
   const initial = {
@@ -69,6 +70,7 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
       altitude_loss: d.altitude_loss ?? "",
       meals: d.meals ?? "",
     })),
+    faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
   };
   return (
     <div className="min-h-screen bg-page text-ink">

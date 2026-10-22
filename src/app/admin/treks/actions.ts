@@ -25,6 +25,7 @@ export type TrekDetail = {
   exclusions: string[];
   packages: { name: string; price: number; inclusions: string[]; ctaLabel: string }[];
   itinerary: { title: string; description: string }[];
+  faqs: { question: string; answer: string }[];
   departures: number;
 };
 
@@ -40,11 +41,12 @@ export async function getTrekDetail(
     .eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (!t) return { ok: false, error: "Trek not found." };
 
-  const [inc, exc, pkgs, iti, deps] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq, deps] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
     admin.from("itinerary_days").select("title,description").eq("trek_id", t.id).order("day_no"),
+    admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
     admin.from("trek_departures").select("id", { count: "exact", head: true }).eq("trek_id", t.id).neq("status", "cancelled"),
   ]);
 
@@ -74,6 +76,7 @@ export async function getTrekDetail(
       exclusions: (exc.data ?? []).map((r) => r.text),
       packages: (pkgs.data ?? []).map((p) => ({ name: p.name ?? "", price: toRupees(p.price), inclusions: p.inclusions ?? [], ctaLabel: p.cta_label ?? "Book Now" })),
       itinerary: (iti.data ?? []).map((d) => ({ title: d.title ?? "", description: d.description ?? "" })),
+      faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
       departures: deps.count ?? 0,
     },
   };
@@ -128,6 +131,10 @@ const rowSchema = z.object({
     altitude_loss: z.string().trim().max(60).optional().or(z.literal("")),
     meals: z.string().trim().max(120).optional().or(z.literal("")),
   })).default([]),
+  faqs: z.array(z.object({
+    question: z.string().trim().min(1),
+    answer: z.string().trim().min(1),
+  })).default([]),
 });
 
 type Result = { ok: true; slug: string } | { ok: false; error: string };
@@ -180,6 +187,7 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     admin.from("exclusions").delete().eq("trek_id", id),
     admin.from("pricing_packages").delete().eq("trek_id", id),
     admin.from("itinerary_days").delete().eq("trek_id", id),
+    admin.from("trek_faqs").delete().eq("trek_id", id),
   ]);
   const jobs = [];
   if (t.inclusions.length) jobs.push(admin.from("inclusions").insert(t.inclusions.map((text, sort) => ({ trek_id: id, text, sort }))));
@@ -194,6 +202,9 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
       drive_distance: blank(d.drive_distance), drive_duration: blank(d.drive_duration),
       altitude_gain: blank(d.altitude_gain), altitude_loss: blank(d.altitude_loss), meals: blank(d.meals),
     })),
+  ));
+  if (t.faqs.length) jobs.push(admin.from("trek_faqs").insert(
+    t.faqs.map((q, sort) => ({ trek_id: id, question: q.question, answer: q.answer, sort })),
   ));
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[updateTrek] child insert:", r.error.message);

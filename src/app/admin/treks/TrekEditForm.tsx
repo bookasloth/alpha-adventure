@@ -13,6 +13,7 @@ import ImageField from "@/app/admin/ImageField";
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
 type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
+type Faq = { question: string; answer: string };
 type Day = {
   title: string; description: string; image: string;
   // Per-day metrics surfaced on the public detail page (migration 0027).
@@ -58,7 +59,7 @@ export type TrekEditInitial = {
   // Trek-detail extras shown on the public page (migration 0027).
   brochure_url: string; suitable_age: string; accommodation: string; fitness_criteria: string;
   not_to_miss: string[];
-  inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[];
+  inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[]; faqs: Faq[];
 };
 
 export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) {
@@ -72,8 +73,11 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
   const [notToMiss, setNotToMiss] = useState<string[]>(initial.not_to_miss.length ? initial.not_to_miss : [""]);
   const [packages, setPackages] = useState<Pkg[]>(initial.packages);
   const [itinerary, setItinerary] = useState<Day[]>(initial.itinerary);
+  const [faqs, setFaqs] = useState<Faq[]>(initial.faqs);
   const setDay = (i: number, key: keyof Day, v: string) =>
     setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
+  const setFaq = (i: number, key: keyof Faq, v: string) =>
+    setFaqs((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +106,10 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
         trek_distance: d.trek_distance, trek_duration: d.trek_duration,
         drive_distance: d.drive_distance, drive_duration: d.drive_duration,
         altitude_gain: d.altitude_gain, altitude_loss: d.altitude_loss, meals: d.meals,
+      })),
+      // Both columns are NOT NULL — keep only rows with a question AND an answer.
+      faqs: faqs.filter((q) => q.question.trim() && q.answer.trim()).map((q) => ({
+        question: q.question.trim(), answer: q.answer.trim(),
       })),
     };
     try {
@@ -231,6 +239,23 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
             </div>
           ))}
           <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add package</button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>FAQs <span className="text-sm font-normal text-gray-400">(shown on the trek page)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {faqs.map((q, i) => (
+            <div key={i} className="rounded-xl border border-line p-4">
+              <div className="mb-3 flex items-center justify-between"><span className="text-sm font-semibold text-ink">FAQ {i + 1}</span>
+                <button type="button" onClick={() => setFaqs(faqs.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button></div>
+              <div className="space-y-3">
+                <Field label="Question"><input className={inp} value={q.question} onChange={(e) => setFaq(i, "question", e.target.value)} placeholder="What should I pack?" /></Field>
+                <Field label="Answer"><textarea className={`${inp} min-h-20`} value={q.answer} onChange={(e) => setFaq(i, "answer", e.target.value)} /></Field>
+              </div>
+            </div>
+          ))}
+          <button type="button" onClick={() => setFaqs([...faqs, { question: "", answer: "" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add FAQ</button>
         </CardContent>
       </Card>
 

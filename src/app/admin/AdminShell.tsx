@@ -833,6 +833,19 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
               </DetailBox>
             )}
 
+            {detail.faqs.length > 0 && (
+              <DetailBox title={`FAQs (${detail.faqs.length})`} className="mt-4">
+                <div className="divide-y divide-line">
+                  {detail.faqs.map((q, i) => (
+                    <div key={i} className="py-2 text-sm">
+                      <p className="font-medium text-ink">{q.question}</p>
+                      <p className="mt-0.5 text-gray-500 whitespace-pre-wrap">{q.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </DetailBox>
+            )}
+
             <div className="mt-5 flex justify-end gap-2">
               <a href={`/treks/${detail.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink hover:bg-slate-100">View on site ↗</a>
               <Button variant="secondary" size="sm" onClick={onClose}>Close</Button>
