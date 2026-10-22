@@ -43,7 +43,7 @@ function ago(iso: string) {
 export async function getAdminData() {
   const { admin } = await requireAdmin();
 
-  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes, galleryRes, testimonialsRes] = await Promise.all([
+  const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes, galleryRes, testimonialsRes, postsRes] = await Promise.all([
     admin.from("bookings")
       .select("id,reference,contact_name,contact_email,user_id,trek_title,departure_date,seats,grand_total,status,created_at")
       .order("created_at", { ascending: false }),
@@ -66,6 +66,9 @@ export async function getAdminData() {
       .select("slug,title,status,hero").is("deleted_at", null).order("sort").order("title"),
     admin.from("testimonials")
       .select("id,author_name,role,rating,status,position").order("position"),
+    admin.from("posts")
+      .select("slug,title,status,published_at,trek_id,created_at").is("deleted_at", null)
+      .order("created_at", { ascending: false }).limit(200),
   ]);
 
   const bookings = bookingsRes.data ?? [];
@@ -92,6 +95,15 @@ export async function getAdminData() {
   }));
   const testimonialRows = (testimonialsRes.data ?? []).map((t) => ({
     id: t.id, author: t.author_name, role: t.role ?? "—", rating: t.rating ?? 5, status: t.status, position: t.position ?? 0,
+  }));
+  // Blog posts, with the linked trek's title resolved for display.
+  const trekTitleById = new Map(treksData.map((t) => [t.id, t.title]));
+  const postRows = (postsRes.data ?? []).map((p) => ({
+    slug: p.slug,
+    title: p.title,
+    status: p.status,
+    trek: p.trek_id ? (trekTitleById.get(p.trek_id) ?? "—") : "—",
+    published: fmtDate(p.published_at),
   }));
   const tourRows = (toursRes.data ?? []).map((t) => ({
     slug: t.slug,
@@ -244,6 +256,7 @@ export async function getAdminData() {
     trekOptions,
     trekRows,
     tourRows,
+    postRows,
     galleryRows,
     testimonialRows,
     charts: { revenue: revenueSeries, status: statusSeries, topTreks },
