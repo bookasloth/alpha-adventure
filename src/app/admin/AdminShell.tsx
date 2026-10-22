@@ -28,6 +28,7 @@ import GalleryPage, { seedGallery, type GalleryImage } from "./GalleryPage";
 import type { AdminData } from "./data";
 import { createDeparture } from "./actions";
 import { deleteTour } from "./tours/actions";
+import { deletePost } from "./posts/actions";
 import { deleteTrek, getTrekDetail, type TrekDetail } from "./treks/actions";
 import { deleteGalleryAlbum } from "./gallery/actions";
 import { deleteTestimonial } from "./testimonials/actions";
@@ -74,6 +75,7 @@ type AdminActions = {
   customers: AdminData["customerRows"];
   payments: AdminData["paymentRows"];
   tours: AdminData["tourRows"];
+  posts: AdminData["postRows"];
   trekCatalog: AdminData["trekRows"];
   galleryAlbums: AdminData["galleryRows"];
   testimonials: AdminData["testimonialRows"];
@@ -87,7 +89,7 @@ const NAV = [
     { key: "all-bookings", label: "All Bookings" }, { key: "departures", label: "Departures" }, { key: "leads", label: "Leads" },
   ] },
   { key: "catalog", label: "Catalog", icon: Package, items: [
-    { key: "treks", label: "Treks" }, { key: "tours", label: "Tours" }, { key: "content", label: "Content" }, { key: "gallery", label: "Gallery" },
+    { key: "treks", label: "Treks" }, { key: "tours", label: "Tours" }, { key: "content", label: "Blog" }, { key: "gallery", label: "Gallery" },
   ] },
   { key: "customers", label: "Customers", icon: Users, items: [
     { key: "all-customers", label: "All Customers" }, { key: "reviews", label: "Testimonials" },
@@ -224,6 +226,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
     customers: data.customerRows,
     payments: data.paymentRows,
     tours: data.tourRows,
+    posts: data.postRows,
     trekCatalog: data.trekRows,
     galleryAlbums: data.galleryRows,
     testimonials: data.testimonialRows,
@@ -340,6 +343,7 @@ function Page({ item, actions }: { item: string; actions: AdminActions }) {
     case "leads": return <LeadsPage actions={actions} />;
     case "treks": return <TreksPage actions={actions} />;
     case "tours": return <ToursPage actions={actions} />;
+    case "content": return <PostsPage actions={actions} />;
     case "gallery": return <GalleryAlbumsPage actions={actions} />;
     case "all-customers": return <CustomersPage actions={actions} />;
     case "reviews": return <TestimonialsPage actions={actions} />;
@@ -1133,6 +1137,45 @@ function ToursPage({ actions }: { actions: AdminActions }) {
                 <TableCell className="font-semibold text-ink">{rupee(t.price)}</TableCell>
                 <TableCell><S s={t.status} /></TableCell>
                 <TableCell className="text-right"><RowMenu options={rowMenu(t.slug, t.title)} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+    </div>
+  );
+}
+
+function PostsPage({ actions }: { actions: AdminActions }) {
+  const posts = actions.posts;
+  const router = useRouter();
+  const rowMenu = (slug: string, title: string): MenuItem[] => [
+    { label: "View on site", onClick: () => window.open(`/blog/${slug}`, "_blank", "noopener") },
+    { label: "Edit", onClick: () => router.push(`/admin/posts/${slug}/edit`) },
+    {
+      label: "Delete", tone: "danger",
+      onClick: async () => {
+        if (!confirm(`Delete "${title}"? It will be removed from the blog.`)) return;
+        const r = await deletePost(slug);
+        actions.notify(r.ok ? `Deleted "${title}"` : r.error, r.ok);
+      },
+    },
+  ];
+  return (
+    <div>
+      <PageHead title="Blog" sub="Stories shown on /blog and linked trek pages." action={<Button asChild size="sm"><Link href="/admin/posts/new"><Plus size={16} /> Add post</Link></Button>} />
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent"><TableHead>Title</TableHead><TableHead>Linked trek</TableHead><TableHead>Published</TableHead><TableHead>Status</TableHead><TableHead></TableHead></TableRow></TableHeader>
+          <TableBody>
+            {posts.length === 0 && <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="py-10 text-center text-gray-400">No posts yet — add one.</TableCell></TableRow>}
+            {posts.map((p) => (
+              <TableRow key={p.slug}>
+                <TableCell className="font-medium text-ink">{p.title}</TableCell>
+                <TableCell>{p.trek}</TableCell>
+                <TableCell>{p.published}</TableCell>
+                <TableCell><S s={p.status} /></TableCell>
+                <TableCell className="text-right"><RowMenu options={rowMenu(p.slug, p.title)} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
