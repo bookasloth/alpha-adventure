@@ -151,10 +151,18 @@ Read server-side (see `.env.example`):
 
 ## 23. Important business rules
 Bookings are real records: seats, pricing (adult/child), and status live in the
-DB (`src/domain/booking`). Payment is currently **mocked** (`confirmMockPayment`);
-PhonePe is the planned server-verified flow. Amounts are **paise** integers in
-the DB, formatted to ₹ in the UI. Trek `group`/`tags`/`state` drive filtering.
-Full rules: [docs/BUSINESS_LOGIC.md](docs/BUSINESS_LOGIC.md).
+DB (`src/domain/booking`). Payments run through a **server-verified gateway
+chosen by `PAYMENT_PROVIDER`** (`razorpay` | `phonepe` | `mock`; unset = PhonePe
+if its creds are set, else mock — see `src/lib/payment/provider.ts`). Both
+**Razorpay** (Standard Checkout, HMAC signature + webhook) and **PhonePe PG V2**
+(Standard Checkout: OAuth client-credentials token → `/checkout/v2/pay` →
+server-side order-status check; callback Authorization = `SHA256(username:
+password)`) are implemented in `src/lib/payment/*`, settling through the locked,
+idempotent `settle_gateway_payment` RPC (migration 0026) so a redirect and a
+webhook can't double-confirm. `mock` (`confirmMockPayment`) is dev-only and
+self-guards against confirming once a real gateway is live. Amounts are **paise**
+integers in the DB, formatted to ₹ in the UI. Trek `group`/`tags`/`state` drive
+filtering. Full rules: [docs/BUSINESS_LOGIC.md](docs/BUSINESS_LOGIC.md).
 
 ## 24. Dangerous areas — do not change casually
 - `src/lib/assets.js` + `next.config.mjs` — break every asset if wrong.
@@ -164,11 +172,15 @@ Full rules: [docs/BUSINESS_LOGIC.md](docs/BUSINESS_LOGIC.md).
 - `supabase/migrations/**` + RLS — an RLS mistake exposes customer data.
 
 ## 25. Known technical debt
-[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Highlights: payment is mocked
-(PhonePe pending); admin catalog (treks/tours/gallery) and create-modals are
-not yet persisted to the DB; duplicate `IMG_BASE` in
-`BackpackingTripsClient.jsx`; incremental TS migration ongoing; stray dev
-`*.log` files.
+[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Highlights: Razorpay and PhonePe
+PG V2 are both implemented and server-verified (`mock` remains only as the dev
+fallback); the PhonePe webhook Authorization check (`verifyCallbackAuth`,
+`SHA256(username:password)`) is unit-tested but its exact header format should be
+confirmed against a real PhonePe callback, and the dashboard callback URL +
+`PHONEPE_WEBHOOK_USERNAME`/`PASSWORD` must be set before the webhook backstop
+works; admin catalog (treks/tours/gallery) and create-modals are not yet
+persisted to the DB; duplicate `IMG_BASE` in `BackpackingTripsClient.jsx`;
+incremental TS migration ongoing; stray dev `*.log` files.
 
 ## 26. Docs index
 [docs/DOCUMENTATION_INDEX.md](docs/DOCUMENTATION_INDEX.md) — the full map.
