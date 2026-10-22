@@ -13,7 +13,19 @@ import ImageField from "@/app/admin/ImageField";
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 
 type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
-type Day = { title: string; description: string; image: string };
+type Day = {
+  title: string; description: string; image: string;
+  // Per-day metrics surfaced on the public detail page (migration 0027).
+  trek_distance: string; trek_duration: string;
+  drive_distance: string; drive_duration: string;
+  altitude_gain: string; altitude_loss: string; meals: string;
+};
+// A fresh itinerary day with every field blank.
+const blankDay = (): Day => ({
+  title: "", description: "", image: "",
+  trek_distance: "", trek_duration: "", drive_distance: "", drive_duration: "",
+  altitude_gain: "", altitude_loss: "", meals: "",
+});
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -43,6 +55,9 @@ export type TrekEditInitial = {
   price: string; difficulty: string; status: string; group: string; tags: string; badge: string;
   region: string; location: string; state: string; duration_days: string; altitude: string;
   base_camp: string; best_season: string; group_size: string; featured: boolean;
+  // Trek-detail extras shown on the public page (migration 0027).
+  brochure_url: string; suitable_age: string; accommodation: string; fitness_criteria: string;
+  not_to_miss: string[];
   inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[];
 };
 
@@ -54,8 +69,11 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
   const set = (k: keyof TrekEditInitial, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
   const [inclusions, setInclusions] = useState<string[]>(initial.inclusions.length ? initial.inclusions : [""]);
   const [exclusions, setExclusions] = useState<string[]>(initial.exclusions.length ? initial.exclusions : [""]);
+  const [notToMiss, setNotToMiss] = useState<string[]>(initial.not_to_miss.length ? initial.not_to_miss : [""]);
   const [packages, setPackages] = useState<Pkg[]>(initial.packages);
   const [itinerary, setItinerary] = useState<Day[]>(initial.itinerary);
+  const setDay = (i: number, key: keyof Day, v: string) =>
+    setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,6 +89,9 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       duration_days: f.duration_days || undefined,
       altitude: f.altitude, base_camp: f.base_camp, best_season: f.best_season, group_size: f.group_size,
       featured: f.featured,
+      brochure_url: f.brochure_url, suitable_age: f.suitable_age,
+      accommodation: f.accommodation, fitness_criteria: f.fitness_criteria,
+      not_to_miss: list(notToMiss),
       inclusions: list(inclusions),
       exclusions: list(exclusions),
       packages: packages.filter((p) => p.name.trim()).map((p) => ({
@@ -78,6 +99,9 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       })),
       itinerary: itinerary.filter((d) => d.title.trim()).map((d) => ({
         title: d.title.trim(), description: d.description, image: d.image,
+        trek_distance: d.trek_distance, trek_duration: d.trek_duration,
+        drive_distance: d.drive_distance, drive_duration: d.drive_duration,
+        altitude_gain: d.altitude_gain, altitude_loss: d.altitude_loss, meals: d.meals,
       })),
     };
     try {
@@ -137,6 +161,22 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
           <Field label="Base camp"><input className={inp} value={f.base_camp} onChange={(e) => set("base_camp", e.target.value)} /></Field>
           <Field label="Best season"><input className={inp} value={f.best_season} onChange={(e) => set("best_season", e.target.value)} /></Field>
           <Field label="Group size"><input className={inp} value={f.group_size} onChange={(e) => set("group_size", e.target.value)} /></Field>
+          <Field label="Suitable age"><input className={inp} value={f.suitable_age} onChange={(e) => set("suitable_age", e.target.value)} placeholder="15 – 55 years" /></Field>
+          <Field label="Accommodation"><input className={inp} value={f.accommodation} onChange={(e) => set("accommodation", e.target.value)} placeholder="Tent / cave stay" /></Field>
+          <div className="sm:col-span-2"><Field label="Fitness criteria"><input className={inp} value={f.fitness_criteria} onChange={(e) => set("fitness_criteria", e.target.value)} placeholder="Able to walk 8–10 km with a light backpack" /></Field></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Highlights & brochure <span className="text-sm font-normal text-gray-400">(optional)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="mb-2 text-sm font-semibold text-ink">Not to miss</p>
+            <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" />
+          </div>
+          <Field label="Brochure / itinerary PDF" hint="(URL)">
+            <input className={inp} value={f.brochure_url} onChange={(e) => set("brochure_url", e.target.value)} placeholder="https://… .pdf" />
+          </Field>
         </CardContent>
       </Card>
 
@@ -159,10 +199,19 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
                 <Field label="Title"><input className={inp} value={d.title} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} placeholder="Base to summit" /></Field>
                 <Field label="Description"><textarea className={`${inp} min-h-20`} value={d.description} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} /></Field>
                 <Field label="Image" hint="(optional)"><ImageField className={inp} value={d.image} onChange={(v) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, image: v } : x))} folder="treks/itinerary" placeholder="/assets/img/... or upload" /></Field>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <Field label="Trek distance"><input className={inp} value={d.trek_distance} onChange={(e) => setDay(i, "trek_distance", e.target.value)} placeholder="6 km" /></Field>
+                  <Field label="Trek duration"><input className={inp} value={d.trek_duration} onChange={(e) => setDay(i, "trek_duration", e.target.value)} placeholder="4–5 hrs" /></Field>
+                  <Field label="Drive distance"><input className={inp} value={d.drive_distance} onChange={(e) => setDay(i, "drive_distance", e.target.value)} placeholder="180 km" /></Field>
+                  <Field label="Drive duration"><input className={inp} value={d.drive_duration} onChange={(e) => setDay(i, "drive_duration", e.target.value)} placeholder="5 hrs" /></Field>
+                  <Field label="Altitude gain"><input className={inp} value={d.altitude_gain} onChange={(e) => setDay(i, "altitude_gain", e.target.value)} placeholder="900 m" /></Field>
+                  <Field label="Altitude loss"><input className={inp} value={d.altitude_loss} onChange={(e) => setDay(i, "altitude_loss", e.target.value)} placeholder="0 m" /></Field>
+                  <div className="sm:col-span-2"><Field label="Meals"><input className={inp} value={d.meals} onChange={(e) => setDay(i, "meals", e.target.value)} placeholder="Dinner + Breakfast" /></Field></div>
+                </div>
               </div>
             </div>
           ))}
-          <button type="button" onClick={() => setItinerary([...itinerary, { title: "", description: "", image: "" }])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add day</button>
+          <button type="button" onClick={() => setItinerary([...itinerary, blankDay()])} className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><Plus size={15} /> Add day</button>
         </CardContent>
       </Card>
 

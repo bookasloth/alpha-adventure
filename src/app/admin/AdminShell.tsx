@@ -742,6 +742,8 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
         ["State", detail.facts.state], ["Duration", detail.facts.durationDays ? `${detail.facts.durationDays} days` : ""],
         ["Altitude", detail.facts.altitude], ["Base camp", detail.facts.baseCamp],
         ["Best season", detail.facts.bestSeason], ["Group size", detail.facts.groupSize],
+        ["Suitable age", detail.facts.suitableAge], ["Accommodation", detail.facts.accommodation],
+        ["Fitness", detail.facts.fitnessCriteria],
       ].filter(([, v]) => v) as [string, string][])
     : [];
   return (
@@ -784,6 +786,15 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
             </DetailBox>
 
             {detail.overview && <DetailBox title="Overview" className="mt-4"><p className="text-sm text-gray-600 whitespace-pre-wrap">{detail.overview}</p></DetailBox>}
+
+            {detail.notToMiss.length > 0 && (
+              <DetailBox title="Not to miss" className="mt-4">
+                <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">{detail.notToMiss.map((x, i) => <li key={i}>{x}</li>)}</ul>
+              </DetailBox>
+            )}
+            {detail.brochureUrl && (
+              <p className="mt-4 text-sm"><a href={detail.brochureUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">Download brochure / itinerary PDF ↗</a></p>
+            )}
 
             {(detail.inclusions.length > 0 || detail.exclusions.length > 0) && (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
