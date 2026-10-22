@@ -71,6 +71,11 @@ export default function NewTrekForm() {
   const [bestSeason, setBestSeason] = useState("");
   const [groupSize, setGroupSize] = useState("");
   const [featured, setFeatured] = useState(false);
+  const [suitableAge, setSuitableAge] = useState("");
+  const [accommodation, setAccommodation] = useState("");
+  const [fitnessCriteria, setFitnessCriteria] = useState("");
+  const [brochureUrl, setBrochureUrl] = useState("");
+  const [notToMiss, setNotToMiss] = useState<string[]>([""]);
 
   const [inclusions, setInclusions] = useState<string[]>([""]);
   const [exclusions, setExclusions] = useState<string[]>([""]);
@@ -91,6 +96,8 @@ export default function NewTrekForm() {
       region, location, state,
       duration_days: durationDays || undefined,
       altitude, base_camp: baseCamp, best_season: bestSeason, group_size: groupSize, featured,
+      suitable_age: suitableAge, accommodation, fitness_criteria: fitnessCriteria,
+      brochure_url: brochureUrl, not_to_miss: clean(notToMiss),
       inclusions: clean(inclusions),
       exclusions: clean(exclusions),
       packages: packages
@@ -172,6 +179,20 @@ export default function NewTrekForm() {
           <Field label="Base camp"><input className={inp} value={baseCamp} onChange={(e) => setBaseCamp(e.target.value)} placeholder="Khireshwar Village" /></Field>
           <Field label="Best season"><input className={inp} value={bestSeason} onChange={(e) => setBestSeason(e.target.value)} placeholder="June - February" /></Field>
           <Field label="Group size"><input className={inp} value={groupSize} onChange={(e) => setGroupSize(e.target.value)} placeholder="15 - 30 trekkers" /></Field>
+          <Field label="Suitable age"><input className={inp} value={suitableAge} onChange={(e) => setSuitableAge(e.target.value)} placeholder="15 – 55 years" /></Field>
+          <Field label="Accommodation"><input className={inp} value={accommodation} onChange={(e) => setAccommodation(e.target.value)} placeholder="Tent / cave stay" /></Field>
+          <div className="sm:col-span-2"><Field label="Fitness criteria"><input className={inp} value={fitnessCriteria} onChange={(e) => setFitnessCriteria(e.target.value)} placeholder="Able to walk 8–10 km with a light backpack" /></Field></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Highlights & brochure <span className="text-sm font-normal text-gray-400">(optional)</span></CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="mb-2 text-sm font-semibold text-ink">Not to miss</p>
+            <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" />
+          </div>
+          <Field label="Brochure / itinerary PDF" hint="(URL)"><input className={inp} value={brochureUrl} onChange={(e) => setBrochureUrl(e.target.value)} placeholder="https://… .pdf" /></Field>
         </CardContent>
       </Card>
 

@@ -3,8 +3,9 @@ import { useState } from "react";
 
 // Self-contained accordion — no Bootstrap. Smooth open/close via Tailwind
 // grid-rows 0fr↔1fr (no JS height measuring, no lag).
-export default function Accordion({ items }) {
-  const [open, setOpen] = useState(0); // single-open; first expanded
+// `defaultOpen` — index of the initially open item (-1 = all closed).
+export default function Accordion({ items, defaultOpen = 0 }) {
+  const [open, setOpen] = useState(defaultOpen); // single-open
   return (
     <div className="space-y-4">
       {items.map((it, i) => {

@@ -22,6 +22,7 @@ export default async function TreksPage() {
         title="Treks"
         crumb="Treks"
         subtitle="Handpicked batches across the Sahyadris, the Himalayas and Central India — with guides, stays and transport sorted."
+        fullHeight
       />
       <div className="py-14">
         <TrekGroupSections sections={sections} />

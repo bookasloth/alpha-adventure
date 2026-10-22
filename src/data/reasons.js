@@ -1,7 +1,7 @@
 import { img } from "../lib/assets";
 
 // ===========================================================================
-// "5 Reasons Why Alpha Adventures" (homepage Why-Us section)
+// "4 Reasons Why Alpha Adventures" (homepage Why-Us section)
 // ===========================================================================
 export const reasons = [
   {

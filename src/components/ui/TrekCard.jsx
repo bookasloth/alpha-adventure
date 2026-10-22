@@ -29,6 +29,11 @@ export default function TrekCard({ trek, href }) {
           )}
           {trek.duration && <span>{trek.duration}</span>}
         </div>
+        <ul className="mt-3 space-y-1.5 text-[13px] leading-snug text-gray-600">
+          <li className="flex items-start gap-2"><i className="bi bi-shield-check mt-0.5 text-primary" /> Your safety is our top priority.</li>
+          <li className="flex items-start gap-2"><i className="bi bi-people mt-0.5 text-primary" /> Small, expert-led batches.</li>
+          <li className="flex items-start gap-2"><i className="bi bi-arrow-repeat mt-0.5 text-primary" /> Free cancellation up to 72h before.</li>
+        </ul>
         <div className="btn-and-price-area">
           <Link href={link} className="primary-btn1"><span>Book Now</span><span>Book Now</span></Link>
           <div className="price-area">

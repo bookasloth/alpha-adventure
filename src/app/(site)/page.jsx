@@ -33,7 +33,7 @@ function sliceInner(html, anchor, openTag) {
 
 const PKG = sliceInner(homeHtml, "swiper home2-package-slider", '<div class="swiper-wrapper">');
 const DEST = sliceInner(homeHtml, "swiper home2-destination-slider", '<div class="swiper-wrapper">');
-const TOURS = sliceInner(homeHtml, "home2-oneday-trip-section", '<div class="row g-4 mb-40">');
+const TOURS = sliceInner(homeHtml, "swiper home2-onsale-slider", '<div class="swiper-wrapper">');
 const TESTI = sliceInner(homeHtml, "home1-testimonial-slider", '<div class="swiper-wrapper">');
 
 // Stitch the static HTML with per-region generated cards. `regions` is
@@ -100,7 +100,7 @@ function destinationCard(t) {
 
 function tourCard(t) {
   const href = `/tour-packages/${esc(t.slug)}`;
-  return `<div class="col-lg-4 col-md-6">
+  return `<div class="swiper-slide">
     <div class="package-card media-first">
       <div class="package-img-wrap">
         <a href="${href}" class="package-img"><img src="${esc(t.image)}" alt="${esc(t.title)}" onerror="this.onerror=null;this.src='${FALLBACK}';"></a>

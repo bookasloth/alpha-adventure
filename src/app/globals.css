@@ -19,17 +19,20 @@ html .border-primary { border-color: #fe5100 !important; }
 .group:hover .group-hover\:opacity-100 { opacity: 1 !important; }
 .group:hover .group-hover\:opacity-0 { opacity: 0 !important; }
 
-/* Sticky tab bar for the trek detail page. Written as plain CSS so it never
+/* Sticky section-nav bar for the trek detail page. Plain CSS so it never
    depends on Tailwind extracting arbitrary bracket/opacity utilities, and with
-   a fully opaque background so page content never shows through while it is
-   pinned. The navbar is not sticky, so the bar pins to the very top (top: 0)
-   — no strip of content can be visible above it. */
-.trek-tabbar {
+   a fully opaque background so page content never shows through while pinned. */
+.trek-section-nav {
   position: sticky;
   top: 0;
   z-index: 30;
   background-color: #ffffff;
+  padding: 12px 4px;
+  margin: 0 -4px 40px;
   border-bottom: 1px solid #E8E8E8;
+}
+@media (min-width: 1024px) {
+  .trek-section-nav { top: 0; }
 }
 
 /* Standard primary buttons (.btn-primary, booking .bk-btn-primary) get the same

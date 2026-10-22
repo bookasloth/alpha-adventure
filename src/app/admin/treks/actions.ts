@@ -18,11 +18,15 @@ export type TrekDetail = {
   group: string;
   tags: string[];
   badge: string;
-  facts: { region: string; location: string; state: string; durationDays: string; altitude: string; baseCamp: string; bestSeason: string; groupSize: string };
+  facts: { region: string; location: string; state: string; durationDays: string; altitude: string; baseCamp: string; bestSeason: string; groupSize: string; suitableAge: string; accommodation: string; fitnessCriteria: string };
+  notToMiss: string[];
+  brochureUrl: string;
   inclusions: string[];
   exclusions: string[];
   packages: { name: string; price: number; inclusions: string[]; ctaLabel: string }[];
   itinerary: { title: string; description: string }[];
+  faqs: { question: string; answer: string }[];
+  gallery: { imageUrl: string; caption: string }[];
   departures: number;
 };
 
@@ -34,15 +38,17 @@ export async function getTrekDetail(
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("treks")
-    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size")
+    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size,suitable_age,accommodation,fitness_criteria,not_to_miss,brochure_url")
     .eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (!t) return { ok: false, error: "Trek not found." };
 
-  const [inc, exc, pkgs, iti, deps] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq, gal, deps] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
     admin.from("itinerary_days").select("title,description").eq("trek_id", t.id).order("day_no"),
+    admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
+    admin.from("trek_gallery").select("image_url,caption").eq("trek_id", t.id).order("sort_order"),
     admin.from("trek_departures").select("id", { count: "exact", head: true }).eq("trek_id", t.id).neq("status", "cancelled"),
   ]);
 
@@ -64,11 +70,16 @@ export async function getTrekDetail(
         region: t.region ?? "", location: t.location ?? "", state: t.state ?? "",
         durationDays: t.duration_days != null ? String(t.duration_days) : "", altitude: t.altitude ?? "",
         baseCamp: t.base_camp ?? "", bestSeason: t.best_season ?? "", groupSize: t.group_size ?? "",
+        suitableAge: t.suitable_age ?? "", accommodation: t.accommodation ?? "", fitnessCriteria: t.fitness_criteria ?? "",
       },
+      notToMiss: t.not_to_miss ?? [],
+      brochureUrl: t.brochure_url ?? "",
       inclusions: (inc.data ?? []).map((r) => r.text),
       exclusions: (exc.data ?? []).map((r) => r.text),
       packages: (pkgs.data ?? []).map((p) => ({ name: p.name ?? "", price: toRupees(p.price), inclusions: p.inclusions ?? [], ctaLabel: p.cta_label ?? "Book Now" })),
       itinerary: (iti.data ?? []).map((d) => ({ title: d.title ?? "", description: d.description ?? "" })),
+      faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
+      gallery: (gal.data ?? []).map((g) => ({ imageUrl: g.image_url ?? "", caption: g.caption ?? "" })),
       departures: deps.count ?? 0,
     },
   };
@@ -96,6 +107,12 @@ const rowSchema = z.object({
   best_season: z.string().trim().max(120).optional().or(z.literal("")),
   group_size: z.string().trim().max(120).optional().or(z.literal("")),
   featured: z.boolean().default(false),
+  // Trek-detail extras shown on the public page (migration 0027).
+  brochure_url: z.string().trim().max(500).optional().or(z.literal("")),
+  suitable_age: z.string().trim().max(120).optional().or(z.literal("")),
+  accommodation: z.string().trim().max(200).optional().or(z.literal("")),
+  fitness_criteria: z.string().trim().max(500).optional().or(z.literal("")),
+  not_to_miss: z.array(z.string().trim().min(1)).default([]),
   // Child content (reconciled = delete + reinsert on save).
   inclusions: z.array(z.string().trim().min(1)).default([]),
   exclusions: z.array(z.string().trim().min(1)).default([]),
@@ -109,6 +126,21 @@ const rowSchema = z.object({
     title: z.string().trim().min(1),
     description: z.string().trim().optional().or(z.literal("")),
     image: z.string().trim().optional().or(z.literal("")),
+    trek_distance: z.string().trim().max(60).optional().or(z.literal("")),
+    trek_duration: z.string().trim().max(60).optional().or(z.literal("")),
+    drive_distance: z.string().trim().max(60).optional().or(z.literal("")),
+    drive_duration: z.string().trim().max(60).optional().or(z.literal("")),
+    altitude_gain: z.string().trim().max(60).optional().or(z.literal("")),
+    altitude_loss: z.string().trim().max(60).optional().or(z.literal("")),
+    meals: z.string().trim().max(120).optional().or(z.literal("")),
+  })).default([]),
+  faqs: z.array(z.object({
+    question: z.string().trim().min(1),
+    answer: z.string().trim().min(1),
+  })).default([]),
+  gallery: z.array(z.object({
+    image_url: z.string().trim().min(1),
+    caption: z.string().trim().optional().or(z.literal("")),
   })).default([]),
 });
 
@@ -146,6 +178,11 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     best_season: blank(t.best_season),
     group_size: blank(t.group_size),
     featured: t.featured,
+    brochure_url: blank(t.brochure_url),
+    suitable_age: blank(t.suitable_age),
+    accommodation: blank(t.accommodation),
+    fitness_criteria: blank(t.fitness_criteria),
+    not_to_miss: t.not_to_miss,
   }).eq("slug", slug).select("id").single();
 
   if (error || !trek) { console.error("[updateTrek]", error?.message); return { ok: false, error: "Could not save the trek." }; }
@@ -157,6 +194,8 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     admin.from("exclusions").delete().eq("trek_id", id),
     admin.from("pricing_packages").delete().eq("trek_id", id),
     admin.from("itinerary_days").delete().eq("trek_id", id),
+    admin.from("trek_faqs").delete().eq("trek_id", id),
+    admin.from("trek_gallery").delete().eq("trek_id", id),
   ]);
   const jobs = [];
   if (t.inclusions.length) jobs.push(admin.from("inclusions").insert(t.inclusions.map((text, sort) => ({ trek_id: id, text, sort }))));
@@ -165,7 +204,18 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     t.packages.map((p, sort) => ({ trek_id: id, name: p.name, price: toPaise(p.price), inclusions: p.inclusions, cta_label: p.cta_label, sort })),
   ));
   if (t.itinerary.length) jobs.push(admin.from("itinerary_days").insert(
-    t.itinerary.map((d, i) => ({ trek_id: id, day_no: i + 1, title: d.title, description: blank(d.description), image: blank(d.image) })),
+    t.itinerary.map((d, i) => ({
+      trek_id: id, day_no: i + 1, title: d.title, description: blank(d.description), image: blank(d.image),
+      trek_distance: blank(d.trek_distance), trek_duration: blank(d.trek_duration),
+      drive_distance: blank(d.drive_distance), drive_duration: blank(d.drive_duration),
+      altitude_gain: blank(d.altitude_gain), altitude_loss: blank(d.altitude_loss), meals: blank(d.meals),
+    })),
+  ));
+  if (t.faqs.length) jobs.push(admin.from("trek_faqs").insert(
+    t.faqs.map((q, sort) => ({ trek_id: id, question: q.question, answer: q.answer, sort })),
+  ));
+  if (t.gallery.length) jobs.push(admin.from("trek_gallery").insert(
+    t.gallery.map((g, sort_order) => ({ trek_id: id, image_url: g.image_url, caption: blank(g.caption), sort_order })),
   ));
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[updateTrek] child insert:", r.error.message);

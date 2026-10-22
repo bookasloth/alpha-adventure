@@ -50,6 +50,12 @@ const trekSchema = z.object({
   best_season: z.string().trim().max(120).optional().or(z.literal("")),
   group_size: z.string().trim().max(120).optional().or(z.literal("")),
   featured: z.boolean().default(false),
+  // trek-detail extras (migration 0027)
+  brochure_url: z.string().trim().max(500).optional().or(z.literal("")),
+  suitable_age: z.string().trim().max(120).optional().or(z.literal("")),
+  accommodation: z.string().trim().max(200).optional().or(z.literal("")),
+  fitness_criteria: z.string().trim().max(500).optional().or(z.literal("")),
+  not_to_miss: z.array(z.string().trim().min(1)).default([]),
   // children
   inclusions: z.array(z.string().trim().min(1)).default([]),
   exclusions: z.array(z.string().trim().min(1)).default([]),
@@ -101,6 +107,11 @@ export async function createTrek(raw: unknown): Promise<Result> {
       best_season: blank(t.best_season),
       group_size: blank(t.group_size),
       featured: t.featured,
+      brochure_url: blank(t.brochure_url),
+      suitable_age: blank(t.suitable_age),
+      accommodation: blank(t.accommodation),
+      fitness_criteria: blank(t.fitness_criteria),
+      not_to_miss: t.not_to_miss,
     })
     .select("id,slug")
     .single();

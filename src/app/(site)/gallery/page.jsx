@@ -56,11 +56,11 @@ export default async function GalleryPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                     <div className="absolute inset-x-4 bottom-4 translate-y-4 space-y-1.5 opacity-0 transition-all duration-300 ease-out group-hover:translate-y-0 group-hover:opacity-100">
-                      <h3 className="text-[19px] font-bold text-primary line-clamp-2">{a.title}</h3>
                       {a.trip_type && (
-                        <p className="text-[13px] font-semibold uppercase tracking-wider text-primary/80 line-clamp-1">{a.trip_type}</p>
+                        <p className="inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm line-clamp-1">{a.trip_type}</p>
                       )}
-                      <span className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+                      <h3 className="text-[19px] font-bold text-white line-clamp-2">{a.title}</h3>
+                      <span className="mt-1 inline-flex items-center gap-1.5 text-[13px] font-semibold text-white">
                         View Details <span aria-hidden="true">→</span>
                       </span>
                     </div>

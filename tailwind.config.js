@@ -3,6 +3,19 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx,mdx}",
   ],
+  // A few arbitrary-value utilities in the trek detail components are not
+  // reliably extracted alongside neighbouring bracket tokens (e.g.
+  // `supports-[backdrop-filter]:bg-white/80 top-[64px]`). Safelisting the
+  // specific offsets guarantees the sticky tab bar and fixed-height card
+  // regions always ship their CSS.
+  safelist: [
+    "top-[64px]",
+    "lg:top-[72px]",
+    "lg:top-[110px]",
+    "min-h-[220px]",
+    "min-h-[150px]",
+    "scroll-mt-[140px]",
+  ],
   theme: {
     extend: {
       colors: {
@@ -45,3 +58,4 @@ module.exports = {
   },
   plugins: [],
 };
+

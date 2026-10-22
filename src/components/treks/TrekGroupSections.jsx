@@ -12,7 +12,7 @@ export default function TrekGroupSections({ sections }) {
             <h2 className="text-2xl font-bold text-ink">{s.title}</h2>
             {s.blurb && <p className="mt-2 text-gray-600 max-w-2xl">{s.blurb}</p>}
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {s.items.map((t) => (
               <TrekCard key={t.slug} trek={t} />
             ))}

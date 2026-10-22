@@ -11,13 +11,15 @@ export default function TourPackages({ tours = [] }) {
           title="Explore Our Most Popular Tours"
           subtitle="Domestic and international tour packages, planned end-to-end."
         />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="row g-4">
           {tours.map((t) => (
-            <TourCard key={t.slug} tour={t} />
+            <div key={t.slug} className="col-xl-4 col-lg-4 col-md-6">
+              <TourCard tour={t} />
+            </div>
           ))}
         </div>
         <div className="text-center mt-10">
-          <a href="/tour-packages" className="btn-dark">View All Trips →</a>
+          <a href="/tour-packages" className="primary-btn1 transparent"><span>View All Trips</span><span>View All Trips</span></a>
         </div>
       </div>
     </section>

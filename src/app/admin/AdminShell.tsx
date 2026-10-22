@@ -742,6 +742,8 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
         ["State", detail.facts.state], ["Duration", detail.facts.durationDays ? `${detail.facts.durationDays} days` : ""],
         ["Altitude", detail.facts.altitude], ["Base camp", detail.facts.baseCamp],
         ["Best season", detail.facts.bestSeason], ["Group size", detail.facts.groupSize],
+        ["Suitable age", detail.facts.suitableAge], ["Accommodation", detail.facts.accommodation],
+        ["Fitness", detail.facts.fitnessCriteria],
       ].filter(([, v]) => v) as [string, string][])
     : [];
   return (
@@ -785,6 +787,15 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
 
             {detail.overview && <DetailBox title="Overview" className="mt-4"><p className="text-sm text-gray-600 whitespace-pre-wrap">{detail.overview}</p></DetailBox>}
 
+            {detail.notToMiss.length > 0 && (
+              <DetailBox title="Not to miss" className="mt-4">
+                <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">{detail.notToMiss.map((x, i) => <li key={i}>{x}</li>)}</ul>
+              </DetailBox>
+            )}
+            {detail.brochureUrl && (
+              <p className="mt-4 text-sm"><a href={detail.brochureUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">Download brochure / itinerary PDF ↗</a></p>
+            )}
+
             {(detail.inclusions.length > 0 || detail.exclusions.length > 0) && (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {detail.inclusions.length > 0 && (
@@ -819,6 +830,30 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
                     </li>
                   ))}
                 </ol>
+              </DetailBox>
+            )}
+
+            {detail.faqs.length > 0 && (
+              <DetailBox title={`FAQs (${detail.faqs.length})`} className="mt-4">
+                <div className="divide-y divide-line">
+                  {detail.faqs.map((q, i) => (
+                    <div key={i} className="py-2 text-sm">
+                      <p className="font-medium text-ink">{q.question}</p>
+                      <p className="mt-0.5 text-gray-500 whitespace-pre-wrap">{q.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </DetailBox>
+            )}
+
+            {detail.gallery.length > 0 && (
+              <DetailBox title={`Gallery (${detail.gallery.length})`} className="mt-4">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {detail.gallery.map((g, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={g.imageUrl} alt={g.caption} title={g.caption} className="h-20 w-full rounded-lg border border-line object-cover" />
+                  ))}
+                </div>
               </DetailBox>
             )}
 
