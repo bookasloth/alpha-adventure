@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { phonePeStatus, verifyCallbackChecksum, REDIRECT_BASE } from "@/lib/payment/phonepe";
+import { phonePeStatus, verifyCallbackAuth, REDIRECT_BASE } from "@/lib/payment/phonepe";
 import { confirmPhonePePayment } from "@/domain/booking/service";
 
 // PhonePe returns the user here (REDIRECT) and may also POST server-to-server.
@@ -24,18 +24,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // Audit L2: if PhonePe sent a signed server-to-server callback, verify the
-  // X-VERIFY checksum over the base64 `response` body before trusting it. We
+  // Audit L2: PhonePe's server-to-server webhook carries an Authorization header
+  // set to SHA256(username:password); verify it before trusting the POST. We
   // still re-query status (source of truth); this rejects forged/replayed POSTs
-  // cheaply. The browser REDIRECT path carries no signature, so only enforce
-  // when both the header and a response body are present.
+  // cheaply. When an Authorization header is present it must validate.
   const body = await request.json().catch(() => ({}) as Record<string, unknown>);
-  const base64 = typeof body?.response === "string" ? body.response : "";
-  const xVerify = request.headers.get("x-verify");
-  if (xVerify && base64 && !verifyCallbackChecksum(base64, xVerify)) {
+  const auth = request.headers.get("authorization");
+  if (auth && !verifyCallbackAuth(auth)) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
+  const payload = (body?.payload ?? {}) as Record<string, unknown>;
   const mtx = new URL(request.url).searchParams.get("mtx")
+    ?? (payload?.merchantOrderId as string | undefined)
     ?? (body?.merchantTransactionId as string | undefined)
     ?? null;
   return handle(mtx);
