@@ -29,9 +29,15 @@ export async function POST(request: Request) {
   // still re-query status (source of truth); this rejects forged/replayed POSTs
   // cheaply. When an Authorization header is present it must validate.
   const body = await request.json().catch(() => ({}) as Record<string, unknown>);
+  // Require a valid webhook Authorization on every POST. verifyCallbackAuth
+  // returns false when the header is missing/forged OR when the webhook creds
+  // aren't configured — so until the dashboard webhook is set up, every POST is
+  // rejected (bookings confirm via the browser-redirect GET path, not this).
+  // ponytail: header format (bare hex vs scheme prefix) still unconfirmed —
+  // verifyCallbackAuth accepts either; nail it down against a real callback.
   const auth = request.headers.get("authorization");
-  if (auth && !verifyCallbackAuth(auth)) {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  if (!verifyCallbackAuth(auth)) {
+    return NextResponse.json({ ok: false }, { status: 401 });
   }
   const payload = (body?.payload ?? {}) as Record<string, unknown>;
   const mtx = new URL(request.url).searchParams.get("mtx")
