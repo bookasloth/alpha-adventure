@@ -71,6 +71,30 @@ describe("priceBooking (server-authoritative)", () => {
     ).toThrow(/invalid addon quantity/);
   });
 
+  it("priceBooking adds boarding price per traveller", () => {
+    const base = priceBooking({ trekId: TREK, basePrice: 100000, adults: 2, children: 1 });
+    const p = priceBooking({ trekId: TREK, basePrice: 100000, adults: 2, children: 1, boardingPrice: 80000 });
+    expect(p.boardingTotal).toBe(240000); // 80000 x (2 adults + 1 child)
+    expect(p.grandTotal).toBe(base.grandTotal + 240000);
+    expect(p.subtotal).toBe(base.subtotal + 240000);
+  });
+
+  it("boardingPrice null/0/undefined -> no change", () => {
+    const base = priceBooking({ trekId: TREK, basePrice: 100000, adults: 2, children: 1 });
+    expect(base.boardingTotal).toBe(0);
+    for (const boardingPrice of [null, 0, undefined]) {
+      const p = priceBooking({ trekId: TREK, basePrice: 100000, adults: 2, children: 1, boardingPrice });
+      expect(p.boardingTotal).toBe(0);
+      expect(p.grandTotal).toBe(base.grandTotal);
+    }
+  });
+
+  it("rejects a negative boarding price", () => {
+    expect(() => priceBooking({ trekId: TREK, basePrice: 100000, adults: 1, children: 0, boardingPrice: -1 })).toThrow(
+      /invalid boarding/,
+    );
+  });
+
   it("requires at least one adult", () => {
     expect(() => priceBooking({ trekId: TREK, basePrice: 100000, adults: 0, children: 1 })).toThrow(
       /at least one adult/,

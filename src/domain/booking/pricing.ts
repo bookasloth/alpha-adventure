@@ -1,5 +1,5 @@
 // Server-authoritative booking price — mirrors price_booking() in
-// supabase/migrations/0006_booking_engine.sql. Money is bigint paise (INR).
+// supabase/migrations/0031_pricing_boarding.sql. Money is bigint paise (INR).
 // The client NEVER supplies price/total; the server recomputes from the catalog
 // and stores the snapshot on the booking.
 
@@ -15,6 +15,7 @@ export type PricingInput = {
   children: number;
   addons?: AddonSpec[];
   addonCatalog?: AddonCatalogRow[]; // active addons for this trek
+  boardingPrice?: number | null; // trek_boarding_locations.price (paise), per traveller; null => none
 };
 
 export type PriceSnapshot = {
@@ -22,6 +23,7 @@ export type PriceSnapshot = {
   priceAdult: number;
   priceChild: number;
   addonsTotal: number;
+  boardingTotal: number;
   discountAmount: number;
   taxAmount: number;
   subtotal: number;
@@ -38,6 +40,7 @@ export function priceBooking(input: PricingInput): PriceSnapshot {
     children,
     addons = [],
     addonCatalog = [],
+    boardingPrice,
   } = input;
 
   if (adults < 1) throw new Error("at least one adult required");
@@ -55,12 +58,17 @@ export function priceBooking(input: PricingInput): PriceSnapshot {
     addonsTotal += row.price * a.quantity;
   }
 
-  const subtotal = unitAdult * adults + unitChild * children + addonsTotal;
+  if (boardingPrice != null && (!Number.isFinite(boardingPrice) || boardingPrice < 0)) throw new Error("invalid boarding");
+  // ponytail: per-traveller; flat = drop the pax multiplier
+  const boardingTotal = (boardingPrice ?? 0) * (adults + children);
+
+  const subtotal = unitAdult * adults + unitChild * children + addonsTotal + boardingTotal;
   return {
     currency: "INR",
     priceAdult: unitAdult,
     priceChild: unitChild,
     addonsTotal,
+    boardingTotal,
     discountAmount: 0,
     taxAmount: 0,
     subtotal,

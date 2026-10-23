@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Trash2, ArrowLeft, Check, Sparkles, Compass, Star,
-  ListChecks, Package, CalendarDays, MapPin,
+  ListChecks, Package, CalendarDays, MapPin, Bus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createTrek } from "./actions";
 import ImageField from "@/app/admin/ImageField";
+import BoardingEditor, { boardingPayload, type BoardingRow } from "../BoardingEditor";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -79,6 +80,7 @@ const SECTIONS = [
   { id: "s-highlights", label: "Highlights", req: "opt" },
   { id: "s-incl", label: "Inclusions", req: "opt" },
   { id: "s-pkg", label: "Packages", req: "opt" },
+  { id: "s-boarding", label: "Boarding", req: "opt" },
   { id: "s-dates", label: "Dates", req: "1 req" },
 ];
 
@@ -118,6 +120,8 @@ export default function NewTrekForm() {
   const [inclusions, setInclusions] = useState<string[]>([""]);
   const [exclusions, setExclusions] = useState<string[]>([""]);
   const [packages, setPackages] = useState<Pkg[]>([{ name: "Standard Batch", price: "", inclusions: "", cta_label: "Book Now" }]);
+  const [boarding, setBoarding] = useState<BoardingRow[]>([]);
+  const [boardingDisclaimer, setBoardingDisclaimer] = useState("");
   const [departures, setDepartures] = useState<Dep[]>([{ start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" }]);
 
   const onTitle = (v: string) => { setTitle(v); if (!slugEdited) setSlug(slugify(v)); };
@@ -171,6 +175,8 @@ export default function NewTrekForm() {
           inclusions: clean(p.inclusions.split(/[\n,]/)),
           cta_label: p.cta_label.trim() || "Book Now",
         })),
+      boarding: boardingPayload(boarding),
+      boarding_disclaimer: boardingDisclaimer,
       departures: departures
         .filter((d) => d.start_date.trim())
         .map((d) => ({
@@ -347,6 +353,10 @@ export default function NewTrekForm() {
               <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add package</button>
             </div>
+          </SectionCard>
+
+          <SectionCard id="s-boarding" icon={<Bus size={16} />} title="Boarding locations" optional>
+            <BoardingEditor rows={boarding} setRows={setBoarding} disclaimer={boardingDisclaimer} setDisclaimer={setBoardingDisclaimer} />
           </SectionCard>
 
           <SectionCard id="s-dates" icon={<CalendarDays size={16} />} title="Dates" optional>

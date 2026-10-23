@@ -38,6 +38,7 @@ export const createDraftSchema = z
     travellers: z.array(travellerSchema).max(40).default([]),
     addons: z.array(addonSelectionSchema).max(20).default([]),
     account_manager_id: z.string().uuid().nullable().optional(),
+    boarding_location_id: z.string().uuid().nullable().optional(),
   })
   .refine((v) => v.adults + v.children >= 1, { message: "At least one traveller." });
 

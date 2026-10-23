@@ -815,6 +815,20 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
               </div>
             )}
 
+            {detail.boarding.length > 0 && (
+              <DetailBox title="Boarding locations" className="mt-4">
+                <div className="divide-y divide-line">
+                  {detail.boarding.map((b, i) => (
+                    <div key={i} className="py-2">
+                      <div className="flex items-center justify-between text-sm"><span className="font-medium text-ink">{b.name}</span><span className="font-semibold text-primary">{b.price ? `${money(b.price)} / traveller` : "Free"}</span></div>
+                      {b.subtext && <p className="mt-0.5 text-xs text-gray-500">{b.subtext}</p>}
+                    </div>
+                  ))}
+                </div>
+                {detail.boardingDisclaimer && <p className="mt-2 text-xs text-gray-500 whitespace-pre-wrap">{detail.boardingDisclaimer}</p>}
+              </DetailBox>
+            )}
+
             {detail.packages.length > 0 && (
               <DetailBox title="Pricing packages" className="mt-4">
                 <div className="divide-y divide-line">

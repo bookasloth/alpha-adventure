@@ -44,15 +44,30 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
   const seats = input.adults + input.children;
   if (dep.booked_seats + seats > dep.capacity) throw new Error("Not enough seats left.");
 
+  // Client-supplied id: must be one of THIS trek's own boarding locations (rejects
+  // tampered / foreign ids early). price_booking re-checks and prices it from the
+  // catalog — the client never supplies a boarding price.
+  const boardingId = input.boarding_location_id ?? null;
+  if (boardingId) {
+    const { data: bl } = await admin
+      .from("trek_boarding_locations")
+      .select("id")
+      .eq("id", boardingId)
+      .eq("trek_id", input.trek_id)
+      .maybeSingle();
+    if (!bl) throw new Error("Invalid boarding location.");
+  }
+
   const { data: priced, error: priceErr } = await admin.rpc("price_booking", {
     _trek_id: input.trek_id,
     _departure_id: input.departure_id,
     _adults: input.adults,
     _children: input.children,
     _addons: input.addons,
+    _boarding_id: boardingId,
   });
   if (priceErr || !priced) throw new Error(`Pricing failed: ${priceErr?.message ?? "unknown"}`);
-  const p = priced as Record<string, number>;
+  const p = priced as Record<string, number> & { boarding_name?: string | null };
 
   // Client-supplied id: store only if it names an ACTIVE team member (rejects
   // tampered / inactive / foreign ids), else null.
@@ -85,6 +100,9 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
       price_adult: p.price_adult,
       price_child: p.price_child,
       addons_total: p.addons_total,
+      boarding_location_id: boardingId,
+      boarding_name: p.boarding_name ?? null,
+      boarding_total: p.boarding_total ?? 0,
       subtotal: p.subtotal,
       grand_total: p.grand_total,
       trek_title: trek.title,
