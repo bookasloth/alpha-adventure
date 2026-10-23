@@ -10,7 +10,7 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("treks")
-    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size,featured,brochure_url,suitable_age,accommodation,fitness_criteria,not_to_miss,boarding_disclaimer")
+    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size,featured,brochure_url,suitable_age,accommodation,fitness_criteria,not_to_miss,boarding_disclaimer,deposit_type,deposit_value,balance_due_offset_days")
     .eq("slug", params.slug)
     .is("deleted_at", null)
     .maybeSingle();
@@ -76,6 +76,12 @@ export default async function EditTrekPage(props: { params: Promise<{ slug: stri
     gallery: (gal.data ?? []).map((g) => ({ image_url: g.image_url ?? "", caption: g.caption ?? "" })),
     boarding: (brd.data ?? []).map((b) => ({ id: b.id as string, name: b.name ?? "", subtext: b.subtext ?? "", price: String(Math.round((b.price ?? 0) / 100)) })),
     boarding_disclaimer: t.boarding_disclaimer ?? "",
+    // percent => whole number; flat => paise shown as rupees
+    deposit: {
+      type: (t.deposit_type ?? "none") as "none" | "percent" | "flat",
+      value: t.deposit_type === "flat" ? String(Math.round((t.deposit_value ?? 0) / 100)) : t.deposit_type === "percent" ? String(t.deposit_value ?? 0) : "",
+      offset: String(t.balance_due_offset_days ?? 2),
+    },
   };
   return (
     <div className="min-h-screen bg-page text-ink">

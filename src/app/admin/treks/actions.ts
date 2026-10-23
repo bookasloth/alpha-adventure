@@ -4,6 +4,7 @@ import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
 import { boardingListSchema, reconcileBoarding } from "./boarding";
+import { depositFields, refineDeposit, depositColumns } from "./deposit";
 
 const toRupees = (paise: number | null) => Math.round((paise || 0) / 100);
 
@@ -151,7 +152,9 @@ const rowSchema = z.object({
   // Boarding locations (migration 0029): max 4, priced per traveller.
   boarding: boardingListSchema,
   boarding_disclaimer: z.string().trim().max(1000).optional().or(z.literal("")),
-});
+  // Deposit config (migration 0030): percent => whole 1-100, flat => rupees (stored as paise).
+  ...depositFields,
+}).superRefine(refineDeposit);
 
 type Result = { ok: true; slug: string } | { ok: false; error: string };
 const blank = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
@@ -193,6 +196,7 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     fitness_criteria: blank(t.fitness_criteria),
     not_to_miss: t.not_to_miss,
     boarding_disclaimer: blank(t.boarding_disclaimer),
+    ...depositColumns(t),
   }).eq("slug", slug).select("id").single();
 
   if (error || !trek) { console.error("[updateTrek]", error?.message); return { ok: false, error: "Could not save the trek." }; }

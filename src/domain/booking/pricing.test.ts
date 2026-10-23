@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { priceBooking } from "./pricing";
+import { priceBooking, computeDeposit } from "./pricing";
 
 const TREK = "trek-1";
 
@@ -99,5 +99,24 @@ describe("priceBooking (server-authoritative)", () => {
     expect(() => priceBooking({ trekId: TREK, basePrice: 100000, adults: 0, children: 1 })).toThrow(
       /at least one adult/,
     );
+  });
+});
+
+describe("computeDeposit", () => {
+  it("percent: rounds share of total", () => {
+    expect(computeDeposit(1000000, { type: "percent", value: 30 })).toBe(300000);
+    expect(computeDeposit(333, { type: "percent", value: 50 })).toBe(167);
+  });
+  it("flat: capped at total", () => {
+    expect(computeDeposit(1000000, { type: "flat", value: 500000 })).toBe(500000);
+    expect(computeDeposit(300000, { type: "flat", value: 500000 })).toBe(300000);
+  });
+  it("none -> full payment", () => {
+    expect(computeDeposit(1000000, { type: "none", value: 0 })).toBe(1000000);
+  });
+  it("percent 0 -> full; never above total or below 0", () => {
+    expect(computeDeposit(1000000, { type: "percent", value: 0 })).toBe(1000000);
+    expect(computeDeposit(1000000, { type: "percent", value: 150 })).toBe(1000000);
+    expect(computeDeposit(1000000, { type: "flat", value: -5 })).toBe(0);
   });
 });

@@ -75,3 +75,14 @@ export function priceBooking(input: PricingInput): PriceSnapshot {
     grandTotal: subtotal,
   };
 }
+
+export type DepositConfig = { type: "none" | "percent" | "flat"; value: number };
+
+// Amount (paise) to charge up front. percent: `value` is a whole 1-100; flat: `value` is paise.
+// none / percent-with-0 => full payment. Clamped to [0, grandTotal].
+export function computeDeposit(grandTotal: number, cfg: DepositConfig): number {
+  let d = grandTotal;
+  if (cfg.type === "percent" && cfg.value > 0) d = Math.round((grandTotal * cfg.value) / 100);
+  else if (cfg.type === "flat") d = cfg.value;
+  return Math.max(0, Math.min(d, grandTotal));
+}
