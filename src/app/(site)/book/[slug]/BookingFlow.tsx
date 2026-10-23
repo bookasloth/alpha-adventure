@@ -13,6 +13,7 @@ type Departure = { id: string; start_date: string; end_date: string | null; capa
 type Addon = { id: string; name: string; price: number };
 type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 type Traveller = { full_name: string; age: string; gender: Gender | ""; emergency_contact_phone?: string };
+type TeamMember = { id: string; name: string };
 type Pay = "auth" | "pay";
 
 const rupees = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
@@ -48,7 +49,7 @@ function loadRazorpay(): Promise<void> {
 
 export type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
 
-export default function BookingFlow({ trek, departures, addons, payMode, user }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null }) {
+export default function BookingFlow({ trek, departures, addons, payMode, user, teamMembers }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null; teamMembers: TeamMember[] }) {
   const [step, setStep] = useState(0);
   const [departureId, setDepartureId] = useState("");
   const [adults, setAdults] = useState(1);
@@ -61,6 +62,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user }:
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState(user?.email ?? "");
+  const [managerId, setManagerId] = useState("");
   const [bookingId, setBookingId] = useState("");
   const [token, setToken] = useState("");
   const [serverTotal, setServerTotal] = useState<number | null>(null);
@@ -101,6 +103,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user }:
       contact_name: travellers[0]?.full_name || "Guest", contact_phone: travellers[0]?.emergency_contact_phone || "",
       travellers: travellers.map((t, i) => ({ full_name: t.full_name, age: t.age ? Number(t.age) : null, gender: t.gender || null, emergency_contact_phone: i === 0 ? t.emergency_contact_phone || "" : "", is_lead: i === 0 })),
       addons: addons.filter((a) => addonOn[a.id]).map((a) => ({ addon_id: a.id, quantity: pax })),
+      account_manager_id: managerId || null,
     });
     if (!r.ok) { setError(r.error); router.refresh(); return null; } // refresh seat counts
     setBookingId(r.bookingId); setToken(r.token); setServerTotal(r.total);
@@ -226,6 +229,15 @@ export default function BookingFlow({ trek, departures, addons, payMode, user }:
       </div></div>
     );
 
+  // Optional commission attribution. Shown on the last step before the draft is created
+  // (Extras for signed-in users, the auth panel for guests); the server validates the id.
+  const managerField = teamMembers.length > 0 && (<>
+    <label className="bk-fld" htmlFor="bk-manager">Account manager <span className="bk-tiny">(optional)</span></label>
+    <select id="bk-manager" className="bk-inp" value={managerId} onChange={(e) => { setManagerId(e.target.value); resetDraft(); }}>
+      <option value="">None</option>
+      {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+    </select>
+  </>);
   const stateOf = (i: number) => (step === i ? "active" : i < step ? "done" : "todo");
   const doneSub = (i: number) => [departure ? shortLabel(departure) : "", `${pax} ${pax > 1 ? "people" : "person"}`, "", ""][i] || "";
 
@@ -301,6 +313,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user }:
                   </button>
                 ))}
                 {addons.length > 0 && <div className="bk-tiny" style={{ marginTop: 4 }}>Optional — priced per traveller (×{pax}).</div>}
+                {user && managerField}
                 <Foot back={{ onClick: () => go(2) }} next={{ label: busy ? "Please wait…" : "Continue", onClick: () => (user ? continueSignedIn() : go(4)), disabled: busy }} />
               </Panel>
             )}
@@ -319,6 +332,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user }:
                 <input className={"bk-inp" + (authTried && !password ? " err" : "")} aria-invalid={authTried && !password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={authMode === "register" ? "8+ chars, 1 capital, 1 number, 1 symbol" : "Your password"} />
                 {authTried && !password && <span className="bk-fielderr">Enter your password.</span>}
                 {authMode === "register" && <div className="bk-tiny" style={{ marginTop: 6 }}>At least 8 characters, one capital, one number, one special character.</div>}
+                {managerField}
                 <div style={{ display: "flex", gap: 16, marginTop: 10 }}>
                   <button type="button" className="bk-linkbtn" onClick={() => { setError(null); setAuthMode(authMode === "register" ? "signin" : "register"); }}>
                     {authMode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}

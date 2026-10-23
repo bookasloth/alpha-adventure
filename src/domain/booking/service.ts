@@ -54,6 +54,19 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
   if (priceErr || !priced) throw new Error(`Pricing failed: ${priceErr?.message ?? "unknown"}`);
   const p = priced as Record<string, number>;
 
+  // Client-supplied id: store only if it names an ACTIVE team member (rejects
+  // tampered / inactive / foreign ids), else null.
+  let accountManagerId: string | null = null;
+  if (input.account_manager_id) {
+    const { data: mgr } = await admin
+      .from("team_members")
+      .select("id")
+      .eq("id", input.account_manager_id)
+      .eq("active", true)
+      .maybeSingle();
+    accountManagerId = mgr?.id ?? null;
+  }
+
   const draftToken = crypto.randomUUID();
   const { data: booking, error: insErr } = await admin
     .from("bookings")
@@ -67,6 +80,7 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
       children: input.children,
       contact_name: input.contact_name,
       contact_phone: input.contact_phone,
+      account_manager_id: accountManagerId,
       currency: "INR",
       price_adult: p.price_adult,
       price_child: p.price_child,

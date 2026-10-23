@@ -37,7 +37,7 @@ import { cancelBooking, getBookingDetail, type BookingDetail } from "./bookings/
 import { updateLeadStatus, replyToLead } from "./leads/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
-type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
+type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string; manager?: string };
 type Trek = { title: string; region: string; difficulty: string; price: number; departures: number; status: string };
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
 type MenuItem = { label: string; onClick: () => void | Promise<unknown>; tone?: "danger" };
@@ -99,6 +99,7 @@ const NAV = [
   ] },
   { key: "settings", label: "Settings", icon: Cog, items: [
     { key: "s-general", label: "General" }, { key: "s-email", label: "Email" }, { key: "s-payments", label: "Payments" }, { key: "s-team", label: "Team" },
+    { key: "team-members", label: "Account Managers", href: "/admin/team" },
   ] },
 ] as const;
 
@@ -141,6 +142,7 @@ const genRef = (used: string[]) => {
 
 /* ─────────────────────────── shell ─────────────────────────── */
 export default function AdminShell({ data }: { data: AdminData }) {
+  const router = useRouter();
   const [section, setSection] = useState("overview");
   const [item, setItem] = useState("dashboard");
   // Seed editable state from real data (falls back to mock if a slice is empty
@@ -262,7 +264,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
             const on = item === it.key;
             const Icon = PAGE_ICON[it.key];
             return (
-              <button key={it.key} onClick={() => setItem(it.key)}
+              <button key={it.key} onClick={() => ("href" in it ? router.push(it.href) : setItem(it.key))}
                 className={cn("flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   on ? "bg-primary/10 text-primary" : "text-gray-600 hover:bg-slate-100")}>
                 {Icon ? <Icon size={16} /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />}
@@ -505,13 +507,13 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
     <Table>
       <TableHeader><TableRow className="hover:bg-transparent">
         <TableHead>Ref</TableHead><TableHead>Customer</TableHead><TableHead>Trek</TableHead><TableHead>Departure</TableHead>
-        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead>
+        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Manager</TableHead><TableHead>Status</TableHead>
         {rowMenu && <TableHead></TableHead>}
       </TableRow></TableHeader>
       <TableBody>
         {rows.length === 0 ? (
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={rowMenu ? 8 : 7} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
+            <TableCell colSpan={rowMenu ? 9 : 8} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
           </TableRow>
         ) : rows.map((b) => (
           <TableRow key={b.ref}>
@@ -521,6 +523,7 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
             <TableCell>{b.date}</TableCell>
             <TableCell>{b.pax}</TableCell>
             <TableCell className="font-semibold text-ink">{rupee(b.amount)}</TableCell>
+            <TableCell className="text-gray-500">{b.manager ?? "—"}</TableCell>
             <TableCell><S s={b.status} /></TableCell>
             {rowMenu && <TableCell className="text-right">{<RowMenu options={rowMenu(b)} />}</TableCell>}
           </TableRow>
@@ -665,6 +668,7 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
                 <DRow k="Name" v={detail.contact.name || "—"} />
                 <DRow k="Email" v={detail.contact.email || "—"} />
                 <DRow k="Phone" v={detail.contact.phone || "—"} />
+                <DRow k="Account manager" v={detail.accountManager || "—"} />
                 <DRow k="Travellers" v={`${detail.adults} adult${detail.adults === 1 ? "" : "s"}${detail.children ? ` · ${detail.children} child` : ""} · ${detail.seats} seat(s)`} />
               </DetailBox>
               <DetailBox title="Payment">
