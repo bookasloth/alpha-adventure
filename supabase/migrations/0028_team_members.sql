@@ -15,7 +15,7 @@ alter table team_members enable row level security;
 
 -- Names are shown in the public checkout dropdown; staff manage the list.
 drop policy if exists team_read on team_members;
-create policy team_read on team_members for select using (true);
+create policy team_read on team_members for select using (active or is_staff());
 drop policy if exists team_staff on team_members;
 create policy team_staff on team_members for all using (is_staff()) with check (is_staff());
 
