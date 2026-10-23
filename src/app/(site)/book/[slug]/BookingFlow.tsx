@@ -14,6 +14,7 @@ type Addon = { id: string; name: string; price: number };
 type Gender = "male" | "female" | "other" | "prefer_not_to_say";
 type Traveller = { full_name: string; age: string; gender: Gender | ""; emergency_contact_phone?: string };
 type TeamMember = { id: string; name: string };
+type Boarding = { id: string; name: string; subtext: string | null; price: number };
 type Pay = "auth" | "pay";
 
 const rupees = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
@@ -22,6 +23,7 @@ const GENDERS: { v: Gender; label: string }[] = [
 ];
 const STEPS = [
   { key: "Departure", sub: "Pick a date" },
+  { key: "Boarding", sub: "Pickup point" },
   { key: "Travellers", sub: "Who's coming?" },
   { key: "Details", sub: "Traveller info" },
   { key: "Extras", sub: "Add-ons" },
@@ -49,7 +51,7 @@ function loadRazorpay(): Promise<void> {
 
 export type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
 
-export default function BookingFlow({ trek, departures, addons, payMode, user, teamMembers }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null; teamMembers: TeamMember[] }) {
+export default function BookingFlow({ trek, departures, addons, payMode, user, teamMembers, boardingLocations, boardingDisclaimer }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null; teamMembers: TeamMember[]; boardingLocations: Boarding[]; boardingDisclaimer: string | null }) {
   const [step, setStep] = useState(0);
   const [departureId, setDepartureId] = useState("");
   const [adults, setAdults] = useState(1);
@@ -63,6 +65,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState(user?.email ?? "");
   const [managerId, setManagerId] = useState("");
+  const [boardingId, setBoardingId] = useState("");
   const [bookingId, setBookingId] = useState("");
   const [token, setToken] = useState("");
   const [serverTotal, setServerTotal] = useState<number | null>(null);
@@ -81,8 +84,14 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const seatsLeft = departure ? Math.max(0, departure.capacity - departure.booked_seats) : Infinity;
   const adultUnit = departure?.price_override ?? trek.base_price;
   const childUnit = trek.child_price ?? adultUnit;
+  // Step numbers are fixed (0 Departure, 1 Boarding, 2 Travellers, 3 Details, 4 Extras, 5 Pay, 6 done);
+  // with no boarding locations step 1 is skipped and hidden, and labels renumber.
+  const hasB = boardingLocations.length > 0;
+  const boarding = boardingLocations.find((b) => b.id === boardingId);
+  const stepNo = (i: number) => (hasB || i < 1 ? i : i - 1) + 1;
+  const stepTotal = hasB ? STEPS.length : STEPS.length - 1;
   const addonsTotal = addons.reduce((s, a) => s + (addonOn[a.id] ? a.price * pax : 0), 0);
-  const total = serverTotal ?? adults * adultUnit + children * childUnit + addonsTotal;
+  const total = serverTotal ?? adults * adultUnit + children * childUnit + addonsTotal + (boarding ? boarding.price * pax : 0);
 
   function syncTravellers(n: number) {
     setTravellers((prev) => { const next = prev.slice(0, n); while (next.length < n) next.push({ full_name: "", age: "", gender: "" }); return next; });
@@ -94,7 +103,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
     if (k === "adults") { setAdults(val); syncTravellers(val + children); } else { setChildren(val); syncTravellers(adults + val); }
     resetDraft();
   }
-  function go(i: number) { setError(null); if (i <= 3) resetDraft(); setStep(i); }
+  function go(i: number) { setError(null); if (i <= 4) resetDraft(); setStep(i); }
 
   async function ensureDraft(): Promise<{ id: string; token: string } | null> {
     if (bookingId) return { id: bookingId, token };
@@ -104,6 +113,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
       travellers: travellers.map((t, i) => ({ full_name: t.full_name, age: t.age ? Number(t.age) : null, gender: t.gender || null, emergency_contact_phone: i === 0 ? t.emergency_contact_phone || "" : "", is_lead: i === 0 })),
       addons: addons.filter((a) => addonOn[a.id]).map((a) => ({ addon_id: a.id, quantity: pax })),
       account_manager_id: managerId || null,
+      boarding_location_id: boardingId || null,
     });
     if (!r.ok) { setError(r.error); router.refresh(); return null; } // refresh seat counts
     setBookingId(r.bookingId); setToken(r.token); setServerTotal(r.total);
@@ -138,7 +148,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
       if (!d) return;
       const r = await finalizeAsCurrentUser(d.id, d.token);
       if (!r.ok) { setError(r.error); if (/seat/i.test(r.error)) router.refresh(); return; }
-      setReference(r.reference); setPayToken(r.payToken); setPay("pay"); setStep(4);
+      setReference(r.reference); setPayToken(r.payToken); setPay("pay"); setStep(5);
     } catch {
       setError("Network problem — your details are kept. Please try again.");
     } finally {
@@ -153,7 +163,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
       if (r.ok && r.razorpay) return openRazorpay(r.razorpay); // modal owns busy from here
       setBusy(false);
       if (!r.ok) return setError(r.error);
-      setReference(r.reference!); setStep(5); // mock path: confirmed by the server
+      setReference(r.reference!); setStep(6); // mock path: confirmed by the server
     } catch {
       // Outcome unknown (request may have reached the server) - never claim success.
       setBusy(false);
@@ -197,7 +207,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
           const v = await verifyRazorpayPayment(bookingId, payToken, resp);
           if (!v.ok) return setError(v.error);
           if (v.reference) setReference(v.reference);
-          setStep(5);
+          setStep(6);
         } catch {
           setError("We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly.");
         } finally {
@@ -212,7 +222,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
     rzp.open();
   }
 
-  if (step >= 5)
+  if (step >= 6)
     return (
       <div className="bk-root"><div className="bk-wrap">
         <div className="bk-card bk-confirm" style={{ maxWidth: 620, margin: "40px auto" }}>
@@ -239,7 +249,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
     </select>
   </>);
   const stateOf = (i: number) => (step === i ? "active" : i < step ? "done" : "todo");
-  const doneSub = (i: number) => [departure ? shortLabel(departure) : "", `${pax} ${pax > 1 ? "people" : "person"}`, "", ""][i] || "";
+  const doneSub = (i: number) => [departure ? shortLabel(departure) : "", boarding?.name ?? "", `${pax} ${pax > 1 ? "people" : "person"}`, "", ""][i] || "";
 
   return (
     <div className="bk-root">
@@ -253,9 +263,9 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
         </div>
 
         <div className="bk-stepper">
-          {STEPS.map((s, i) => (
+          {STEPS.map((s, i) => (!hasB && i === 1) ? null : (
             <div className="bk-node" key={s.key} data-on={stateOf(i)}>
-              <div className="bk-circle">{i < step ? "✓" : i + 1}</div>
+              <div className="bk-circle">{i < step ? "✓" : stepNo(i)}</div>
               <div className="bk-lbl">{s.key}</div>
               <div className="bk-nsub">{i < step && doneSub(i) ? doneSub(i) : s.sub}</div>
             </div>
@@ -265,7 +275,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
         <div className="bk-split">
           <div className="bk-card bk-panel">
             {step === 0 && (
-              <Panel eyebrow="Step 1 of 5" title="Choose your departure" desc="Pick the date that works for you. You can change it anytime.">
+              <Panel eyebrow={`Step ${stepNo(0)} of ${stepTotal}`} title="Choose your departure" desc="Pick the date that works for you. You can change it anytime.">
                 {departures.length === 0 && <p>No upcoming departures right now.</p>}
                 {departures.map((d) => { const left = d.capacity - d.booked_seats; const sold = left <= 0; return (
                   <button key={d.id} type="button" className="bk-opt" aria-checked={departureId === d.id} disabled={sold} onClick={() => { setDepartureId(d.id); resetDraft(); }}>
@@ -274,12 +284,25 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                     <span style={{ textAlign: "right" }}>{sold ? <div className="bk-full">Sold out</div> : left <= 3 ? <div className="bk-left">Only {left} left</div> : null}<div className="bk-price">{rupees(adultUnit)}<span className="bk-tiny"> /adult</span></div></span>
                   </button>
                 ); })}
-                <Foot next={departureId ? { label: "Continue", onClick: () => go(1) } : undefined} />
+                <Foot next={departureId ? { label: "Continue", onClick: () => go(hasB ? 1 : 2) } : undefined} />
               </Panel>
             )}
 
-            {step === 1 && (
-              <Panel eyebrow="Step 2 of 5" title="How many travellers?" desc="Add the number of people joining this trek.">
+            {step === 1 && hasB && (
+              <Panel eyebrow={`Step ${stepNo(1)} of ${stepTotal}`} title="Choose your boarding point" desc="Where would you like to join the trek? Priced per traveller.">
+                {/* ponytail: display-only; add an ack checkbox only if the client later asks */}
+                {boardingDisclaimer && <div className="bk-note"><InfoIcon /> {boardingDisclaimer}</div>}
+                {boardingLocations.map((b) => (
+                  <button key={b.id} type="button" className="bk-opt" aria-checked={boardingId === b.id} onClick={() => { setBoardingId(b.id); resetDraft(); }}>
+                    <span className="bk-radio" /><span className="bk-m"><div className="bk-lead">{b.name}</div>{b.subtext && <div className="bk-tiny">{b.subtext}</div>}</span><span className="bk-price">{rupees(b.price)}</span>
+                  </button>
+                ))}
+                <Foot back={{ onClick: () => go(0) }} next={{ label: "Continue", onClick: () => go(2), disabled: !boardingId }} />
+              </Panel>
+            )}
+
+            {step === 2 && (
+              <Panel eyebrow={`Step ${stepNo(2)} of ${stepTotal}`} title="How many travellers?" desc="Add the number of people joining this trek.">
                 <div className="bk-crow"><span className="bk-av a"><PersonIcon /></span>
                   <div className="bk-m"><div className="bk-lead">Adults</div><div className="bk-tiny">Age 13+ · {rupees(adultUnit)} each</div></div>
                   <div className="bk-stepc"><button onClick={() => setPaxCount("adults", adults - 1)} aria-label="Remove adult">−</button><span className="bk-n">{adults}</span><button onClick={() => setPaxCount("adults", adults + 1)} disabled={pax >= seatsLeft} aria-label="Add adult">+</button></div></div>
@@ -287,25 +310,25 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                   <div className="bk-m"><div className="bk-lead">Children</div><div className="bk-tiny">Age 5–12 · {rupees(childUnit)} each</div></div>
                   <div className="bk-stepc"><button onClick={() => setPaxCount("children", children - 1)} aria-label="Remove child">−</button><span className="bk-n">{children}</span><button onClick={() => setPaxCount("children", children + 1)} disabled={pax >= seatsLeft} aria-label="Add child">+</button></div></div>
                 <div className="bk-note"><InfoIcon /> Infants below 5 years can join for free.</div>
-                <Foot back={{ onClick: () => go(0) }} next={{ label: "Continue", onClick: () => { setTIndex(0); go(2); } }} />
+                <Foot back={{ onClick: () => go(hasB ? 1 : 0) }} next={{ label: "Continue", onClick: () => { setTIndex(0); go(3); } }} />
               </Panel>
             )}
 
-            {step === 2 && (
-              <Panel eyebrow="Step 3 of 5" title="Traveller details" desc={tIndex === 0 ? "We'll use the lead trekker's details for updates." : "Just a few details for each trekker."}>
+            {step === 3 && (
+              <Panel eyebrow={`Step ${stepNo(3)} of ${stepTotal}`} title="Traveller details" desc={tIndex === 0 ? "We'll use the lead trekker's details for updates." : "Just a few details for each trekker."}>
                 <div className="bk-tiny" style={{ margin: "-8px 0 16px" }}>Traveller {tIndex + 1} of {pax}{tIndex === 0 ? " · lead trekker" : ""}</div>
                 <TravellerForm
                   key={tIndex}
                   value={travellers[tIndex]} isLead={tIndex === 0}
                   onChange={(t) => setTravellers((prev) => prev.map((x, i) => (i === tIndex ? t : x)))}
-                  back={{ label: tIndex === 0 ? "Back" : "Previous", onClick: () => { if (tIndex === 0) go(1); else setTIndex(tIndex - 1); } }}
-                  next={{ label: tIndex + 1 < pax ? "Save & next" : "Continue", onClick: () => { setError(null); if (tIndex + 1 < pax) setTIndex(tIndex + 1); else { setTIndex(0); go(3); } } }}
+                  back={{ label: tIndex === 0 ? "Back" : "Previous", onClick: () => { if (tIndex === 0) go(2); else setTIndex(tIndex - 1); } }}
+                  next={{ label: tIndex + 1 < pax ? "Save & next" : "Continue", onClick: () => { setError(null); if (tIndex + 1 < pax) setTIndex(tIndex + 1); else { setTIndex(0); go(4); } } }}
                 />
               </Panel>
             )}
 
-            {step === 3 && (
-              <Panel eyebrow="Step 4 of 5" title="Make it easier" desc="Add transport, gear or meals. Skip if you don't need them.">
+            {step === 4 && (
+              <Panel eyebrow={`Step ${stepNo(4)} of ${stepTotal}`} title="Make it easier" desc="Add transport, gear or meals. Skip if you don't need them.">
                 {addons.length === 0 && <p className="bk-tiny">No add-ons for this trek.</p>}
                 {addons.map((a) => (
                   <button key={a.id} type="button" className="bk-opt" aria-checked={!!addonOn[a.id]} onClick={() => { setAddonOn((s) => ({ ...s, [a.id]: !s[a.id] })); resetDraft(); }}>
@@ -314,12 +337,12 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                 ))}
                 {addons.length > 0 && <div className="bk-tiny" style={{ marginTop: 4 }}>Optional — priced per traveller (×{pax}).</div>}
                 {user && managerField}
-                <Foot back={{ onClick: () => go(2) }} next={{ label: busy ? "Please wait…" : "Continue", onClick: () => (user ? continueSignedIn() : go(4)), disabled: busy }} />
+                <Foot back={{ onClick: () => go(3) }} next={{ label: busy ? "Please wait…" : "Continue", onClick: () => (user ? continueSignedIn() : go(5)), disabled: busy }} />
               </Panel>
             )}
 
-            {step === 4 && pay === "auth" && (
-              <Panel eyebrow="Step 5 of 5" title={authMode === "register" ? "Create your account" : "Sign in to book"} desc={authMode === "register" ? "Set a password — you'll use it to manage your bookings." : "Welcome back — sign in to confirm your booking."}>
+            {step === 5 && pay === "auth" && (
+              <Panel eyebrow={`Step ${stepNo(5)} of ${stepTotal}`} title={authMode === "register" ? "Create your account" : "Sign in to book"} desc={authMode === "register" ? "Set a password — you'll use it to manage your bookings." : "Welcome back — sign in to confirm your booking."}>
                 {authMode === "register" && (<>
                   <label className="bk-fld">Full name <span className="bk-req">*</span></label>
                   <input className={"bk-inp" + (authTried && name.trim().length < 2 ? " err" : "")} aria-invalid={authTried && name.trim().length < 2} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
@@ -338,11 +361,11 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                     {authMode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}
                   </button>
                 </div>
-                <Foot back={{ onClick: () => go(3) }} next={{ label: busy ? "Please wait…" : (authMode === "register" ? "Create & continue" : "Sign in & continue"), onClick: authenticate, disabled: busy }} />
+                <Foot back={{ onClick: () => go(4) }} next={{ label: busy ? "Please wait…" : (authMode === "register" ? "Create & continue" : "Sign in & continue"), onClick: authenticate, disabled: busy }} />
               </Panel>
             )}
-            {step === 4 && pay === "pay" && (
-              <Panel eyebrow="Step 5 of 5" title="Confirm & pay" desc="Your seats are held for 30 minutes.">
+            {step === 5 && pay === "pay" && (
+              <Panel eyebrow={`Step ${stepNo(5)} of ${stepTotal}`} title="Confirm & pay" desc="Your seats are held for 30 minutes.">
                 <div className="bk-opt" aria-checked="true"><span className="bk-radio" /><span className="bk-m">
                   <div className="bk-lead">{payMode.provider === "phonepe" ? "PhonePe · UPI · Card" : "UPI · Cards · Netbanking · Wallets"}</div>
                   <div className="bk-tiny">{payMode.testMode ? "Test mode — no real money is charged" : payMode.provider === "razorpay" ? "Secure payment by Razorpay" : "Secure payment"}</div>
@@ -364,6 +387,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
             <div className="bk-pl"><span>Adults ({adults})</span><b>{rupees(adults * adultUnit)}</b></div>
             {children > 0 && <div className="bk-pl"><span>Children ({children})</span><b>{rupees(children * childUnit)}</b></div>}
             {addons.filter((a) => addonOn[a.id]).map((a) => <div className="bk-pl" key={a.id}><span>{a.name}</span><b>{rupees(a.price * pax)}</b></div>)}
+            {boarding && <div className="bk-pl"><span>Boarding — {boarding.name}</span><b>{rupees(boarding.price * pax)}</b></div>}
             <div className="bk-pl"><span>Taxes &amp; fees</span><b>Included</b></div>
             <div className="bk-hr" />
             <div className="bk-total"><span className="bk-t">Total</span><span className="bk-v">{rupees(total)}</span></div>

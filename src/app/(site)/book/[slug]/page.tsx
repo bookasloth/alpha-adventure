@@ -19,13 +19,13 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
 
   const { data: trek } = await supabase
     .from("treks")
-    .select("id,slug,title,summary,location,state,base_price,child_price,status,deleted_at")
+    .select("id,slug,title,summary,location,state,base_price,child_price,boarding_disclaimer,status,deleted_at")
     .eq("slug", params.slug)
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
 
   // All independent of each other (departures/addons only need trek.id) - fetch in parallel.
-  const [{ data: departures }, { data: addons }, { data: { user } }, { data: teamMembers }] = await Promise.all([
+  const [{ data: departures }, { data: addons }, { data: { user } }, { data: teamMembers }, { data: boardingLocations }] = await Promise.all([
     supabase
       .from("trek_departures")
       .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
@@ -41,6 +41,7 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       .order("position", { ascending: true }),
     supabase.auth.getUser(),
     supabase.from("team_members").select("id,name").eq("active", true).order("position", { ascending: true }),
+    supabase.from("trek_boarding_locations").select("id,name,subtext,price").eq("trek_id", trek.id).order("position", { ascending: true }),
   ]);
 
   return (
@@ -59,6 +60,8 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       payMode={payModeNow()}
       user={user?.email ? { email: user.email } : null}
       teamMembers={teamMembers ?? []}
+      boardingLocations={boardingLocations ?? []}
+      boardingDisclaimer={trek.boarding_disclaimer ?? null}
     />
   );
 }
