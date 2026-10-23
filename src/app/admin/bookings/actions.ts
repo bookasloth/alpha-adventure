@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/app/admin/data";
 import { background } from "@/lib/after";
+import { siteUrl } from "@/lib/siteUrl";
 import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingCancelledEmail } from "@/lib/email";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -23,6 +24,9 @@ export type BookingDetail = {
   seats: number;
   notes: string | null;
   accountManager: string | null;
+  balanceDueDate: string | null;
+  /** Absolute /pay-balance link for staff to send manually; only for deposit_paid. */
+  payBalanceUrl: string | null;
   totals: { priceAdult: number; priceChild: number; addons: number; subtotal: number; grandTotal: number; amountPaid: number; balanceDue: number };
   travellers: { name: string; age: number | null; gender: string | null; isLead: boolean; phone: string | null; email: string | null; emergencyPhone: string | null }[];
   addons: { name: string; unitPrice: number; quantity: number; lineTotal: number }[];
@@ -37,7 +41,7 @@ export async function getBookingDetail(
   const { admin } = await requireAdmin();
   const [{ data: b, error }, { data: travellers }, { data: addons }, { data: payments }] = await Promise.all([
     admin.from("bookings")
-      .select("reference,status,trek_title,departure_date,created_at,confirmed_at,cancelled_at,contact_name,contact_email,contact_phone,adults,children,seats,notes,team_members(name),price_adult,price_child,addons_total,subtotal,grand_total,amount_paid,balance_due")
+      .select("reference,status,trek_title,departure_date,created_at,confirmed_at,cancelled_at,contact_name,contact_email,contact_phone,adults,children,seats,notes,team_members(name),price_adult,price_child,addons_total,subtotal,grand_total,amount_paid,balance_due,balance_due_date")
       .eq("id", id).maybeSingle(),
     admin.from("booking_travellers")
       .select("full_name,age,gender,is_lead,phone,email,emergency_contact_phone,position")
@@ -65,6 +69,8 @@ export async function getBookingDetail(
       seats: b.seats ?? 0,
       notes: b.notes,
       accountManager: (b.team_members as { name?: string } | null)?.name ?? null,
+      balanceDueDate: b.balance_due_date,
+      payBalanceUrl: b.status === "deposit_paid" ? `${siteUrl()}/pay-balance/${encodeURIComponent(b.reference)}` : null,
       totals: {
         priceAdult: rupees(b.price_adult), priceChild: rupees(b.price_child), addons: rupees(b.addons_total),
         subtotal: rupees(b.subtotal), grandTotal: rupees(b.grand_total), amountPaid: rupees(b.amount_paid), balanceDue: rupees(b.balance_due),

@@ -37,7 +37,7 @@ import { cancelBooking, getBookingDetail, type BookingDetail } from "./bookings/
 import { updateLeadStatus, replyToLead } from "./leads/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
-type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string; manager?: string };
+type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string; manager?: string; paid?: number; balance?: number; balanceDue?: string };
 type Trek = { title: string; region: string; difficulty: string; price: number; departures: number; status: string };
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
 type MenuItem = { label: string; onClick: () => void | Promise<unknown>; tone?: "danger" };
@@ -507,13 +507,13 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
     <Table>
       <TableHeader><TableRow className="hover:bg-transparent">
         <TableHead>Ref</TableHead><TableHead>Customer</TableHead><TableHead>Trek</TableHead><TableHead>Departure</TableHead>
-        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Manager</TableHead><TableHead>Status</TableHead>
+        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Paid</TableHead><TableHead>Balance</TableHead><TableHead>Manager</TableHead><TableHead>Status</TableHead>
         {rowMenu && <TableHead></TableHead>}
       </TableRow></TableHeader>
       <TableBody>
         {rows.length === 0 ? (
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={rowMenu ? 9 : 8} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
+            <TableCell colSpan={rowMenu ? 11 : 10} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
           </TableRow>
         ) : rows.map((b) => (
           <TableRow key={b.ref}>
@@ -523,6 +523,8 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
             <TableCell>{b.date}</TableCell>
             <TableCell>{b.pax}</TableCell>
             <TableCell className="font-semibold text-ink">{rupee(b.amount)}</TableCell>
+            <TableCell>{rupee(b.paid ?? 0)}</TableCell>
+            <TableCell>{b.balance ? <>{rupee(b.balance)}<span className="block text-xs text-gray-400">by {b.balanceDue}</span></> : "—"}</TableCell>
             <TableCell className="text-gray-500">{b.manager ?? "—"}</TableCell>
             <TableCell><S s={b.status} /></TableCell>
             {rowMenu && <TableCell className="text-right">{<RowMenu options={rowMenu(b)} />}</TableCell>}
@@ -536,12 +538,13 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
 const BOOKING_TABS = [
   { key: "all", label: "All" },
   { key: "confirmed", label: "Confirmed" },
+  { key: "deposit_paid", label: "Deposit paid" },
   { key: "pending_payment", label: "Pending" },
   { key: "completed", label: "Completed" },
   { key: "cancelled", label: "Cancelled" },
 ];
 const BOOKING_TAB_STATUS: Record<string, string> = {
-  all: "", confirmed: "confirmed", pending_payment: "pending_payment", completed: "completed", cancelled: "cancelled",
+  all: "", confirmed: "confirmed", deposit_paid: "deposit_paid", pending_payment: "pending_payment", completed: "completed", cancelled: "cancelled",
 };
 const selectCls = "rounded-lg border border-line bg-slate-50 px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:bg-white";
 const PAGE_SIZE = 4;
@@ -656,7 +659,7 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold">{detail.reference}</h2>
-                  <Badge variant={badgeVariant(detail.status)}>{detail.status}</Badge>
+                  <Badge variant={badgeVariant(detail.status)}>{label(detail.status)}</Badge>
                 </div>
                 <p className="mt-0.5 text-sm text-gray-500">{detail.trekTitle} · {fmtDay(detail.departureDate)}</p>
               </div>
@@ -677,6 +680,8 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
                 <DRow k="Grand total" v={money(detail.totals.grandTotal)} />
                 <DRow k="Paid" v={money(detail.totals.amountPaid)} />
                 {detail.totals.balanceDue > 0 && <DRow k="Balance due" v={money(detail.totals.balanceDue)} />}
+                {detail.balanceDueDate && <DRow k="Balance due by" v={fmtDay(detail.balanceDueDate)} />}
+                {detail.payBalanceUrl && <CopyLink url={detail.payBalanceUrl} />}
               </DetailBox>
             </div>
 
@@ -720,6 +725,19 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function CopyLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Pay-balance link"
+        className="min-w-0 flex-1 rounded-lg border border-line bg-slate-50 px-2 py-1.5 text-xs text-ink" />
+      <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}>
+        {copied ? "Copied" : "Copy link"}
+      </Button>
     </div>
   );
 }
