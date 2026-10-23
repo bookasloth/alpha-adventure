@@ -16,6 +16,10 @@ export function refineDeposit(t: DepositIn, ctx: z.RefinementCtx) {
   if (t.deposit_type === "percent" && (!Number.isInteger(t.deposit_value) || t.deposit_value < 1 || t.deposit_value > 100)) {
     ctx.addIssue({ code: "custom", path: ["deposit_value"], message: "Deposit percentage must be a whole number from 1 to 100" });
   }
+  // flat 0 would charge nothing up front (opposite of percent-0 = full), so require a positive amount.
+  if (t.deposit_type === "flat" && !(t.deposit_value > 0)) {
+    ctx.addIssue({ code: "custom", path: ["deposit_value"], message: "Flat deposit amount must be greater than 0" });
+  }
 }
 
 // DB columns for the treks insert/update. type 'none' stores value 0.
