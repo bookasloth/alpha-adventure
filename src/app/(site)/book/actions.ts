@@ -6,6 +6,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment } from "@/domain/booking/service";
+import { resolveCharge, type Charge, type DepositConfig } from "@/domain/booking/pricing";
 import { phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
 import { paymentProvider } from "@/lib/payment/provider";
 import { startRazorpayCheckout, verifyAndSettleCheckout, type CheckoutOrder } from "@/domain/booking/razorpayPayment";
@@ -210,6 +211,7 @@ export async function finalizeAsCurrentUser(
 export async function startPayment(
   bookingId: string,
   payToken?: string,
+  mode: "full" | "deposit" = "full",
 ): Promise<Result<{ redirectUrl?: string; reference?: string; razorpay?: CheckoutOrder }>> {
   if (!(await limitByIp("pay-start", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const supabase = createClient(await cookies());
@@ -217,13 +219,34 @@ export async function startPayment(
   if (!userId) return { ok: false, error: "Please verify your email first." };
 
   const admin = createAdminClient();
-  const { data: b } = await admin.from("bookings").select("id,user_id,contact_email").eq("id", bookingId).maybeSingle();
+  const { data: b } = await admin
+    .from("bookings")
+    .select("id,user_id,contact_email,grand_total,trek_id")
+    .eq("id", bookingId)
+    .maybeSingle();
   if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
+
+  // Server-authoritative charge: the client only picks the mode. For a deposit we
+  // re-read the trek's deposit config and recompute the slice; resolveCharge falls
+  // back to full unless it's a real partial (> 0 and < total).
+  let charge: Charge = { amount: b.grand_total, kind: "full" };
+  if (mode === "deposit") {
+    const { data: trek } = await admin
+      .from("treks")
+      .select("deposit_type,deposit_value")
+      .eq("id", b.trek_id)
+      .maybeSingle();
+    const cfg: DepositConfig = {
+      type: (trek?.deposit_type as DepositConfig["type"]) ?? "none",
+      value: Number(trek?.deposit_value ?? 0),
+    };
+    charge = resolveCharge(b.grand_total, "deposit", cfg);
+  }
 
   const provider = paymentProvider();
   if (provider === "razorpay") {
     try {
-      return { ok: true, razorpay: await startRazorpayCheckout(admin, bookingId) };
+      return { ok: true, razorpay: await startRazorpayCheckout(admin, bookingId, charge) };
     } catch (e) {
       console.error("[pay] razorpay start failed:", (e as Error).message);
       const msg = (e as Error).message;
@@ -231,11 +254,15 @@ export async function startPayment(
     }
   }
   if (provider === "mock") {
+    // ponytail: mock is the dev-only fallback and confirms the FULL total via
+    // confirm_mock_payment (0019); it ignores deposit mode. The real gateways
+    // (razorpay/phonepe) carry the deposit slice. Add a mock-deposit RPC only if
+    // deposits ever need exercising without a live gateway.
     const r = await confirmMockAndNotify(admin, bookingId, b.contact_email);
     return r.ok ? { ok: true, reference: r.reference } : r;
   }
   try {
-    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId);
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId, charge);
     const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
     const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId, redirectUrl: cb, callbackUrl: cb });
     if (!init.ok) return { ok: false, error: init.error };
@@ -321,7 +348,8 @@ export async function verifyRazorpayPayment(
 
   try {
     const r = await verifyAndSettleCheckout(admin, bookingId, orderId, paymentId);
-    if (r.outcome === "confirmed" || r.outcome === "already_settled") return { ok: true, reference: r.reference ?? "" };
+    if (r.outcome === "confirmed" || r.outcome === "deposit_paid" || r.outcome === "already_settled")
+      return { ok: true, reference: r.reference ?? "" };
     if (r.outcome === "refunded")
       return { ok: false, error: "Your seat hold ended before the payment completed, so we've refunded you in full. Please book again." };
     if (r.outcome === "not_captured")

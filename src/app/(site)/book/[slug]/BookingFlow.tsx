@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import "./booking.css";
 import { createDraft, authenticateBooking, finalizeAsCurrentUser, startPayment, verifyRazorpayPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
+import { resolveCharge } from "@/domain/booking/pricing";
 import type { CheckoutOrder } from "@/domain/booking/razorpayPayment";
 
-type Trek = { id: string; slug: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string };
+type Trek = { id: string; slug: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string; deposit_type: "none" | "percent" | "flat"; deposit_value: number; balance_due_offset_days: number };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
 type Addon = { id: string; name: string; price: number };
 type Gender = "male" | "female" | "other" | "prefer_not_to_say";
@@ -60,6 +61,8 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const [tIndex, setTIndex] = useState(0);
   const [addonOn, setAddonOn] = useState<Record<string, boolean>>({});
   const [pay, setPay] = useState<Pay>("auth");
+  const [payChoice, setPayChoice] = useState<"full" | "deposit">("full");
+  const [paidAsDeposit, setPaidAsDeposit] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "register">("register");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -92,6 +95,13 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const stepTotal = hasB ? STEPS.length : STEPS.length - 1;
   const addonsTotal = addons.reduce((s, a) => s + (addonOn[a.id] ? a.price * pax : 0), 0);
   const total = serverTotal ?? adults * adultUnit + children * childUnit + addonsTotal + (boarding ? boarding.price * pax : 0);
+  // Deposit option — mirrors the server's resolveCharge exactly, so the split
+  // shown here is the split that will be charged. Only a real partial qualifies.
+  const depositCharge = resolveCharge(total, "deposit", { type: trek.deposit_type, value: trek.deposit_value });
+  const allowsDeposit = depositCharge.kind === "deposit";
+  const depositAmount = depositCharge.amount;
+  const balanceAmount = total - depositAmount;
+  const balanceDueDate = departure ? addDays(departure.start_date, -trek.balance_due_offset_days) : "";
 
   function syncTravellers(n: number) {
     setTravellers((prev) => { const next = prev.slice(0, n); while (next.length < n) next.push({ full_name: "", age: "", gender: "" }); return next; });
@@ -155,10 +165,13 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
       setBusy(false);
     }
   }
-  async function doPay() {
+  async function doPay(mode: "full" | "deposit" = "full") {
     setError(null); setBusy(true);
+    // mock (dev fallback) always confirms the full total, so only a real gateway
+    // deposit should render the deposit confirmation copy.
+    setPaidAsDeposit(mode === "deposit" && payMode.provider !== "mock");
     try {
-      const r = await startPayment(bookingId, payToken);
+      const r = await startPayment(bookingId, payToken, mode);
       if (r.ok && r.redirectUrl) { window.location.href = r.redirectUrl; return; } // to PhonePe; stay busy
       if (r.ok && r.razorpay) return openRazorpay(r.razorpay); // modal owns busy from here
       setBusy(false);
@@ -232,7 +245,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
           <p>Reference <span className="bk-ref">{reference}</span></p>
           <div style={{ maxWidth: 340, margin: "20px auto 0" }}>
             <div className="bk-pl"><span>{trek.title}</span><b>{departure ? label(departure) : ""}</b></div>
-            <div className="bk-pl"><span>{pax} traveller(s)</span><b>{rupees(total)} paid</b></div>
+            <div className="bk-pl"><span>{pax} traveller(s)</span><b>{paidAsDeposit ? `Deposit ${rupees(depositAmount)} paid · ${rupees(balanceAmount)} due${balanceDueDate ? ` by ${balanceDueDate}` : ""}` : `${rupees(total)} paid`}</b></div>
           </div>
           <div style={{ marginTop: 24 }}><Link className="bk-btn bk-btn-primary" href="/user-dashboard">View my bookings <Arrow /></Link></div>
         </div>
@@ -370,7 +383,15 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                   <div className="bk-lead">{payMode.provider === "phonepe" ? "PhonePe · UPI · Card" : "UPI · Cards · Netbanking · Wallets"}</div>
                   <div className="bk-tiny">{payMode.testMode ? "Test mode — no real money is charged" : payMode.provider === "razorpay" ? "Secure payment by Razorpay" : "Secure payment"}</div>
                 </span></div>
-                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} aria-busy={busy} onClick={doPay}>{verifying ? "Confirming payment…" : busy ? "Processing…" : `Pay ${rupees(total)}`}</button></div>
+                {allowsDeposit && (<>
+                  <button type="button" className="bk-opt" aria-checked={payChoice === "full"} onClick={() => setPayChoice("full")}>
+                    <span className="bk-radio" /><span className="bk-m"><div className="bk-lead">Pay full</div><div className="bk-tiny">Pay the whole amount now</div></span><span className="bk-price">{rupees(total)}</span>
+                  </button>
+                  <button type="button" className="bk-opt" aria-checked={payChoice === "deposit"} onClick={() => setPayChoice("deposit")}>
+                    <span className="bk-radio" /><span className="bk-m"><div className="bk-lead">Pay deposit now</div><div className="bk-tiny">{rupees(balanceAmount)} due{balanceDueDate ? ` by ${balanceDueDate}` : ""}</div></span><span className="bk-price">{rupees(depositAmount)}</span>
+                  </button>
+                </>)}
+                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} aria-busy={busy} onClick={() => doPay(allowsDeposit ? payChoice : "full")}>{verifying ? "Confirming payment…" : busy ? "Processing…" : `Pay ${rupees(allowsDeposit && payChoice === "deposit" ? depositAmount : total)}`}</button></div>
               </Panel>
             )}
 
@@ -410,6 +431,13 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
 
 function label(d: Departure) { return d.end_date && d.end_date !== d.start_date ? `${d.start_date} → ${d.end_date}` : d.start_date; }
 function shortLabel(d: Departure) { return d.start_date; }
+// Balance-due date = departure date minus the trek's offset days. Mirrors the
+// server (settle_gateway_payment sets departure_date - balance_due_offset_days).
+function addDays(isoDate: string, days: number): string {
+  const d = new Date(isoDate + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
 
 function Panel({ eyebrow, title, desc, children }: { eyebrow: string; title: string; desc: string; children: React.ReactNode }) {
   return (<><div className="bk-eyebrow">{eyebrow}</div><h2>{title}</h2><p className="bk-desc">{desc}</p>{children}</>);

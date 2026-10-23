@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { priceBooking, computeDeposit } from "./pricing";
+import { priceBooking, computeDeposit, resolveCharge } from "./pricing";
 
 const TREK = "trek-1";
 
@@ -118,5 +118,25 @@ describe("computeDeposit", () => {
     expect(computeDeposit(1000000, { type: "percent", value: 0 })).toBe(1000000);
     expect(computeDeposit(1000000, { type: "percent", value: 150 })).toBe(1000000);
     expect(computeDeposit(1000000, { type: "flat", value: -5 })).toBe(0);
+  });
+});
+
+describe("resolveCharge (what the gateway actually charges)", () => {
+  it("deposit mode on a trek that allows it -> the deposit slice", () => {
+    expect(resolveCharge(1000000, "deposit", { type: "percent", value: 30 })).toEqual({ amount: 300000, kind: "deposit" });
+    expect(resolveCharge(1000000, "deposit", { type: "flat", value: 250000 })).toEqual({ amount: 250000, kind: "deposit" });
+  });
+  it("full mode is always the whole total, even when deposits are configured", () => {
+    expect(resolveCharge(1000000, "full", { type: "percent", value: 30 })).toEqual({ amount: 1000000, kind: "full" });
+  });
+  it("deposit falls back to full when the trek doesn't allow deposits", () => {
+    expect(resolveCharge(1000000, "deposit", { type: "none", value: 0 })).toEqual({ amount: 1000000, kind: "full" });
+  });
+  it("no ₹0 or full-sized deposit: a deposit that isn't a real partial falls back to full", () => {
+    // percent 0 / flat >= total compute to the full total -> never a 'deposit' charge
+    expect(resolveCharge(1000000, "deposit", { type: "percent", value: 0 })).toEqual({ amount: 1000000, kind: "full" });
+    expect(resolveCharge(1000000, "deposit", { type: "percent", value: 100 })).toEqual({ amount: 1000000, kind: "full" });
+    expect(resolveCharge(1000000, "deposit", { type: "flat", value: 1000000 })).toEqual({ amount: 1000000, kind: "full" });
+    expect(resolveCharge(1000000, "deposit", { type: "flat", value: 0 })).toEqual({ amount: 1000000, kind: "full" });
   });
 });

@@ -19,7 +19,7 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
 
   const { data: trek } = await supabase
     .from("treks")
-    .select("id,slug,title,summary,location,state,base_price,child_price,boarding_disclaimer,status,deleted_at")
+    .select("id,slug,title,summary,location,state,base_price,child_price,boarding_disclaimer,deposit_type,deposit_value,balance_due_offset_days,status,deleted_at")
     .eq("slug", params.slug)
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
@@ -54,6 +54,9 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
         base_price: trek.base_price ?? 0,
         child_price: trek.child_price ?? null,
         place: trek.location || trek.state || "India",
+        deposit_type: (trek.deposit_type ?? "none") as "none" | "percent" | "flat",
+        deposit_value: Number(trek.deposit_value ?? 0),
+        balance_due_offset_days: Number(trek.balance_due_offset_days ?? 2),
       }}
       departures={departures ?? []}
       addons={addons ?? []}

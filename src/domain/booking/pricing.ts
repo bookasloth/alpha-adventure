@@ -86,3 +86,17 @@ export function computeDeposit(grandTotal: number, cfg: DepositConfig): number {
   else if (cfg.type === "flat") d = cfg.value;
   return Math.max(0, Math.min(d, grandTotal));
 }
+
+export type Charge = { amount: number; kind: "full" | "deposit" };
+
+// What to actually charge up front. A 'deposit' charge is only honoured when the
+// trek allows it AND the computed deposit is a real partial (> 0 and < total) —
+// otherwise it falls back to full, so there is never a ₹0 or full-sized
+// "deposit". Server-authoritative: the client only picks the mode.
+export function resolveCharge(grandTotal: number, mode: "full" | "deposit", cfg: DepositConfig): Charge {
+  if (mode === "deposit" && cfg.type !== "none") {
+    const d = computeDeposit(grandTotal, cfg);
+    if (d > 0 && d < grandTotal) return { amount: d, kind: "deposit" };
+  }
+  return { amount: grandTotal, kind: "full" };
+}

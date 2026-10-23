@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "./service";
+import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment, confirmPhonePePayment } from "./service";
+import { computeDeposit } from "./pricing";
 
 // Load .env.local (vitest does not inject it).
 try {
@@ -198,5 +199,122 @@ const RUN = Boolean(url && key);
 
     const { data: depAfter } = await admin.from("trek_departures").select("booked_seats").eq("id", departureId).single();
     expect(depAfter!.booked_seats).toBe(dep!.booked_seats + 2);
+  });
+});
+
+// Deposit (split) payment: a 'deposit'-kind settle moves the booking to
+// deposit_paid (NOT confirmed), part-credits amount_paid, records the balance +
+// its due date, and keeps the seats reserved. (Task 6, Review Focus #1.)
+(RUN ? describe : describe.skip)("deposit payment (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+  let trekId = "";
+  // Original per-trek deposit config, restored in afterAll so the live row is untouched.
+  let origCfg: { deposit_type: string; deposit_value: number; balance_due_offset_days: number } | null = null;
+  const email = `test+deposit${Date.now()}@example.com`;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    if (trekId && origCfg) await admin.from("treks").update(origCfg).eq("id", trekId);
+  });
+
+  it("a deposit payment moves the booking to deposit_paid, not confirmed", async () => {
+    const { data: trek } = await admin
+      .from("treks")
+      .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
+      .eq("status", "published")
+      .not("base_price", "is", null)
+      .limit(1)
+      .single();
+    expect(trek).toBeTruthy();
+    trekId = trek!.id;
+    origCfg = {
+      deposit_type: trek!.deposit_type,
+      deposit_value: trek!.deposit_value,
+      balance_due_offset_days: trek!.balance_due_offset_days,
+    };
+    // Make this trek take a 30% deposit with the balance due 2 days before departure.
+    await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
+
+    const { data: dep } = await admin
+      .from("trek_departures")
+      .select("id,booked_seats")
+      .eq("trek_id", trekId)
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: true })
+      .limit(1)
+      .single();
+    departureId = dep!.id;
+
+    const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    userId = created!.user!.id;
+
+    // Draft → pending_auth → finalize (reserve 2 seats, pending_payment).
+    const draft = await createDraftBooking(admin, {
+      trek_id: trekId, departure_id: departureId, adults: 2, children: 0,
+      contact_name: "Deposit Guest", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+    await admin.from("bookings").update({ status: "pending_auth", contact_email: email }).eq("id", bookingId);
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    expect(finalized.status).toBe("pending_payment");
+
+    const grandTotal = finalized.grand_total;
+    const deposit = computeDeposit(grandTotal, { type: "percent", value: 30 });
+    expect(deposit).toBeGreaterThan(0);
+    expect(deposit).toBeLessThan(grandTotal);
+
+    // Charge the deposit slice via the real service path, then settle it like the
+    // PhonePe callback does (server-verified amount == the deposit we charged).
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    expect(amountPaise).toBe(deposit);
+    const settled = await confirmPhonePePayment(admin, merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+    expect(settled).not.toBeNull();
+
+    // Booking settled to deposit_paid, part-paid, balance recorded — NOT confirmed.
+    const { data: b } = await admin
+      .from("bookings")
+      .select("status,amount_paid,balance_due,balance_due_date,deposit_amount,grand_total")
+      .eq("id", bookingId)
+      .single();
+    expect(b!.status).toBe("deposit_paid");
+    expect(b!.status).not.toBe("confirmed");
+    expect(b!.amount_paid).toBe(deposit);
+    expect(b!.deposit_amount).toBe(deposit);
+    expect(b!.balance_due).toBe(grandTotal - deposit);
+    expect(b!.balance_due_date).toBeTruthy();
+
+    // Seats stay reserved while the balance is pending.
+    const { data: depAfter } = await admin.from("trek_departures").select("booked_seats").eq("id", departureId).single();
+    expect(depAfter!.booked_seats).toBe(dep!.booked_seats + 2);
+
+    // Payment row recorded as a successful deposit.
+    const { data: pay } = await admin.from("payments").select("status,amount,kind,verified_at").eq("booking_id", bookingId).single();
+    expect(pay!.status).toBe("success");
+    expect(pay!.amount).toBe(deposit);
+    expect(pay!.kind).toBe("deposit");
+    expect(pay!.verified_at).toBeTruthy();
+
+    // Idempotent: settling the same deposit again is a no-op, never over-credits.
+    const again = await confirmPhonePePayment(admin, merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+    expect(again).not.toBeNull();
+    const { data: b2 } = await admin.from("bookings").select("status,amount_paid").eq("id", bookingId).single();
+    expect(b2!.status).toBe("deposit_paid");
+    expect(b2!.amount_paid).toBe(deposit);
   });
 });

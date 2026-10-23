@@ -26,8 +26,12 @@ export type CheckoutOrder = {
   secondsLeft: number; // until the seat hold expires; Checkout closes itself then
 };
 
+// The slice to charge. Defaults to the full grand_total so existing callers are
+// unchanged; the deposit path passes { amount, kind }.
+export type ChargeInput = { amount?: number; kind?: "full" | "deposit" | "balance" };
+
 // Create a Razorpay order for a held booking + the matching pending payment row.
-export async function startRazorpayCheckout(admin: Admin, bookingId: string): Promise<CheckoutOrder> {
+export async function startRazorpayCheckout(admin: Admin, bookingId: string, charge: ChargeInput = {}): Promise<CheckoutOrder> {
   if (!isRazorpayConfigured()) throw new Error("Online payment is temporarily unavailable. Please try again shortly.");
   const { data: b } = await admin
     .from("bookings")
@@ -39,24 +43,27 @@ export async function startRazorpayCheckout(admin: Admin, bookingId: string): Pr
   if (b.status !== "pending_payment") throw new Error("This booking can no longer be paid. Please start a new booking.");
   const secondsLeft = b.expires_at ? Math.floor((new Date(b.expires_at).getTime() - Date.now()) / 1000) : 1800;
   if (secondsLeft < 60) throw new Error("Your seat hold has run out. Please start the booking again.");
-  if (!b.grand_total || b.grand_total < 100) throw new Error("Invalid booking amount.");
 
-  const order = await createOrder(b.grand_total, b.reference, { booking_id: b.id, reference: b.reference });
+  const amount = charge.amount ?? b.grand_total;
+  const kind = charge.kind ?? "full";
+  if (!amount || amount < 100) throw new Error("Invalid booking amount.");
+
+  const order = await createOrder(amount, b.reference, { booking_id: b.id, reference: b.reference });
   const { error } = await admin.from("payments").insert({
     booking_id: b.id,
     provider: "razorpay",
     merchant_order_id: order.id,
-    amount: b.grand_total,
+    amount,
     currency: "INR",
     status: "pending",
     idempotency_key: order.id,
-    kind: "full",
+    kind,
   });
   if (error) throw new Error(`Payment record failed: ${error.message}`);
   return {
     keyId: razorpayKeyId(),
     orderId: order.id,
-    amount: b.grand_total,
+    amount,
     reference: b.reference,
     trekTitle: b.trek_title ?? "Trek booking",
     email: b.contact_email ?? "",
@@ -66,7 +73,7 @@ export async function startRazorpayCheckout(admin: Admin, bookingId: string): Pr
 }
 
 export type SettleResult =
-  | { outcome: "confirmed" | "already_settled"; bookingId: string; reference: string | null }
+  | { outcome: "confirmed" | "deposit_paid" | "already_settled"; bookingId: string; reference: string | null }
   | { outcome: "refunded"; bookingId: string; reference: string | null; reason: string }
   | { outcome: "not_captured" | "not_found"; bookingId?: string; reference?: null };
 
@@ -113,6 +120,9 @@ export async function settleRazorpayPayment(admin: Admin, paymentIn: RzpPayment,
     return { outcome: "confirmed", bookingId: res.booking_id!, reference };
   }
   if (res.outcome === "already_settled") return { outcome: "already_settled", bookingId: res.booking_id!, reference };
+  // Deposit slice captured, seats held, balance still owed — a success, never a refund.
+  // ponytail: no deposit email yet; the balance-reminder mail ships with Task 7.
+  if (res.outcome === "deposit_paid") return { outcome: "deposit_paid", bookingId: res.booking_id!, reference };
 
   // refund_required | amount_mismatch: we hold money we can't use. Refund what was paid.
   const reason = res.outcome === "amount_mismatch" ? "amount_mismatch" : `booking_${res.booking_status ?? "unpayable"}`;
