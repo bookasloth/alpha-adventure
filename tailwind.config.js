@@ -10,8 +10,10 @@ module.exports = {
   // regions always ship their CSS.
   safelist: [
     "top-[64px]",
+    "top-[88px]",
     "lg:top-[72px]",
     "lg:top-[110px]",
+    "scroll-mt-[90px]",
     "min-h-[220px]",
     "min-h-[150px]",
     "scroll-mt-[140px]",
