@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Trash2, ArrowLeft, Check, Sparkles, Compass, Star,
-  ListChecks, Package, CalendarDays, MapPin, Bus,
+  ListChecks, Footprints, Package, HelpCircle, Images, CalendarDays, MapPin, Bus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createTrek } from "./actions";
@@ -19,6 +19,21 @@ const inr = (v: string) => (v && Number(v) > 0 ? Number(v).toLocaleString("en-IN
 
 type Pkg = { name: string; price: string; inclusions: string; cta_label: string };
 type Dep = { start_date: string; end_date: string; start_time: string; capacity: string; price_override: string; status: string };
+type Faq = { question: string; answer: string };
+type GalleryImg = { image_url: string; caption: string };
+type Day = {
+  title: string; description: string; image: string;
+  // Per-day metrics surfaced on the public detail page (migration 0027).
+  trek_distance: string; trek_duration: string;
+  drive_distance: string; drive_duration: string;
+  altitude_gain: string; altitude_loss: string; meals: string;
+};
+// A fresh itinerary day with every field blank.
+const blankDay = (): Day => ({
+  title: "", description: "", image: "",
+  trek_distance: "", trek_duration: "", drive_distance: "", drive_duration: "",
+  altitude_gain: "", altitude_loss: "", meals: "",
+});
 const DEP_STATUS = ["open", "scheduled", "full", "closed", "cancelled", "completed"];
 const DIFF: { v: string; label: string; dot: string }[] = [
   { v: "beginner", label: "Beginner", dot: "#16a34a" },
@@ -39,7 +54,7 @@ function Field({ label, children, hint, required }: { label: string; children: R
   );
 }
 
-// Simple string-list repeater (highlights / inclusions / exclusions).
+// Simple string-list repeater (not-to-miss / inclusions / exclusions).
 function ListRepeater({ items, setItems, placeholder, addLabel = "Add row" }: { items: string[]; setItems: (v: string[]) => void; placeholder: string; addLabel?: string }) {
   return (
     <div className="space-y-2">
@@ -77,9 +92,12 @@ function SectionCard({ id, icon, title, optional, badge, children }: {
 const SECTIONS = [
   { id: "s-basics", label: "Essentials", req: "4 req" },
   { id: "s-facts", label: "Trek facts", req: "opt" },
-  { id: "s-highlights", label: "Highlights", req: "opt" },
+  { id: "s-notmiss", label: "Not to miss", req: "opt" },
   { id: "s-incl", label: "Inclusions", req: "opt" },
+  { id: "s-itin", label: "Itinerary", req: "opt" },
   { id: "s-pkg", label: "Packages", req: "opt" },
+  { id: "s-faq", label: "FAQs", req: "opt" },
+  { id: "s-gallery", label: "Gallery", req: "opt" },
   { id: "s-boarding", label: "Boarding", req: "opt" },
   { id: "s-dates", label: "Dates", req: "1 req" },
 ];
@@ -119,10 +137,16 @@ export default function NewTrekForm() {
 
   const [inclusions, setInclusions] = useState<string[]>([""]);
   const [exclusions, setExclusions] = useState<string[]>([""]);
+  const [itinerary, setItinerary] = useState<Day[]>([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [gallery, setGallery] = useState<GalleryImg[]>([]);
   const [packages, setPackages] = useState<Pkg[]>([{ name: "Standard Batch", price: "", inclusions: "", cta_label: "Book Now" }]);
   const [boarding, setBoarding] = useState<BoardingRow[]>([]);
   const [boardingDisclaimer, setBoardingDisclaimer] = useState("");
   const [departures, setDepartures] = useState<Dep[]>([{ start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" }]);
+  const setDay = (i: number, key: keyof Day, v: string) => setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
+  const setFaq = (i: number, key: keyof Faq, v: string) => setFaqs((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
+  const setGal = (i: number, key: keyof GalleryImg, v: string) => setGallery((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
 
   const onTitle = (v: string) => { setTitle(v); if (!slugEdited) setSlug(slugify(v)); };
 
@@ -136,6 +160,9 @@ export default function NewTrekForm() {
   const basicsCount = essentials.slice(0, 4).filter(Boolean).length + (Number(basePrice) > 0 ? 1 : 0);
   const sectionDone: Record<string, boolean> = {
     "s-basics": essentials.slice(0, 7).every(Boolean),
+    "s-itin": itinerary.some((d) => d.title.trim()),
+    "s-faq": faqs.some((q) => q.question.trim() && q.answer.trim()),
+    "s-gallery": gallery.some((g) => g.image_url.trim()),
     "s-dates": departures.some((d) => d.start_date.trim()),
   };
 
@@ -175,6 +202,22 @@ export default function NewTrekForm() {
           inclusions: clean(p.inclusions.split(/[\n,]/)),
           cta_label: p.cta_label.trim() || "Book Now",
         })),
+      itinerary: itinerary
+        .filter((d) => d.title.trim())
+        .map((d) => ({
+          title: d.title.trim(), description: d.description, image: d.image,
+          trek_distance: d.trek_distance, trek_duration: d.trek_duration,
+          drive_distance: d.drive_distance, drive_duration: d.drive_duration,
+          altitude_gain: d.altitude_gain, altitude_loss: d.altitude_loss, meals: d.meals,
+        })),
+      // Both columns are NOT NULL — keep only rows with a question AND an answer.
+      faqs: faqs
+        .filter((q) => q.question.trim() && q.answer.trim())
+        .map((q) => ({ question: q.question.trim(), answer: q.answer.trim() })),
+      // image_url is NOT NULL — drop rows without an image; caption is optional.
+      gallery: gallery
+        .filter((g) => g.image_url.trim())
+        .map((g) => ({ image_url: g.image_url.trim(), caption: g.caption.trim() })),
       boarding: boardingPayload(boarding),
       boarding_disclaimer: boardingDisclaimer,
       departures: departures
@@ -316,12 +359,9 @@ export default function NewTrekForm() {
             </div>
           </SectionCard>
 
-          <SectionCard id="s-highlights" icon={<Star size={16} />} title="Highlights & brochure" optional>
+          <SectionCard id="s-notmiss" icon={<Star size={16} />} title="Not to miss" optional>
             <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-xs font-semibold text-ink">Not to miss</p>
-                <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" addLabel="Add highlight" />
-              </div>
+              <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" addLabel="Add highlight" />
               <Field label="Brochure / itinerary PDF" hint="· URL"><input className={inp} value={brochureUrl} onChange={(e) => setBrochureUrl(e.target.value)} placeholder="https://… .pdf" /></Field>
             </div>
           </SectionCard>
@@ -330,6 +370,33 @@ export default function NewTrekForm() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div><p className="mb-2 text-xs font-semibold text-green-600">✓ What&apos;s included</p><ListRepeater items={inclusions} setItems={setInclusions} placeholder="Return transport from Nagpur" addLabel="Add" /></div>
               <div><p className="mb-2 text-xs font-semibold text-amber-600">✕ What&apos;s not included</p><ListRepeater items={exclusions} setItems={setExclusions} placeholder="Personal expenses & tips" addLabel="Add" /></div>
+            </div>
+          </SectionCard>
+
+          <SectionCard id="s-itin" icon={<Footprints size={16} />} title="Itinerary" optional>
+            <div className="space-y-4">
+              <p className="-mt-1 text-[11.5px] text-gray-400">Day by day — shown on the public trek page.</p>
+              {itinerary.map((d, i) => (
+                <div key={i} className="rounded-xl border border-line bg-slate-50/60 p-4">
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold text-ink">Day {i + 1}</span>
+                    <button type="button" onClick={() => setItinerary(itinerary.filter((_, j) => j !== i))} className="text-gray-400 transition hover:text-red-600"><Trash2 size={15} /></button></div>
+                  <div className="space-y-3">
+                    <Field label="Title"><input className={inp} value={d.title} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} placeholder="Base to summit" /></Field>
+                    <Field label="Description"><textarea className={`${inp} min-h-20`} value={d.description} onChange={(e) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} /></Field>
+                    <Field label="Image" hint="· optional"><ImageField className={inp} value={d.image} onChange={(v) => setItinerary(itinerary.map((x, j) => j === i ? { ...x, image: v } : x))} folder="treks/itinerary" placeholder="/assets/img/... or upload" /></Field>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <Field label="Trek distance"><input className={inp} value={d.trek_distance} onChange={(e) => setDay(i, "trek_distance", e.target.value)} placeholder="6 km" /></Field>
+                      <Field label="Trek duration"><input className={inp} value={d.trek_duration} onChange={(e) => setDay(i, "trek_duration", e.target.value)} placeholder="4–5 hrs" /></Field>
+                      <Field label="Drive distance"><input className={inp} value={d.drive_distance} onChange={(e) => setDay(i, "drive_distance", e.target.value)} placeholder="180 km" /></Field>
+                      <Field label="Drive duration"><input className={inp} value={d.drive_duration} onChange={(e) => setDay(i, "drive_duration", e.target.value)} placeholder="5 hrs" /></Field>
+                      <Field label="Altitude gain"><input className={inp} value={d.altitude_gain} onChange={(e) => setDay(i, "altitude_gain", e.target.value)} placeholder="900 m" /></Field>
+                      <Field label="Altitude loss"><input className={inp} value={d.altitude_loss} onChange={(e) => setDay(i, "altitude_loss", e.target.value)} placeholder="0 m" /></Field>
+                      <div className="sm:col-span-2"><Field label="Meals"><input className={inp} value={d.meals} onChange={(e) => setDay(i, "meals", e.target.value)} placeholder="Dinner + Breakfast" /></Field></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setItinerary([...itinerary, blankDay()])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add day</button>
             </div>
           </SectionCard>
 
@@ -352,6 +419,40 @@ export default function NewTrekForm() {
               ))}
               <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add package</button>
+            </div>
+          </SectionCard>
+
+          <SectionCard id="s-faq" icon={<HelpCircle size={16} />} title="FAQs" optional>
+            <div className="space-y-4">
+              <p className="-mt-1 text-[11.5px] text-gray-400">Shown on the trek page.</p>
+              {faqs.map((q, i) => (
+                <div key={i} className="rounded-xl border border-line bg-slate-50/60 p-4">
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold text-ink">FAQ {i + 1}</span>
+                    <button type="button" onClick={() => setFaqs(faqs.filter((_, j) => j !== i))} className="text-gray-400 transition hover:text-red-600"><Trash2 size={15} /></button></div>
+                  <div className="space-y-3">
+                    <Field label="Question"><input className={inp} value={q.question} onChange={(e) => setFaq(i, "question", e.target.value)} placeholder="What should I pack?" /></Field>
+                    <Field label="Answer"><textarea className={`${inp} min-h-20`} value={q.answer} onChange={(e) => setFaq(i, "answer", e.target.value)} /></Field>
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setFaqs([...faqs, { question: "", answer: "" }])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add FAQ</button>
+            </div>
+          </SectionCard>
+
+          <SectionCard id="s-gallery" icon={<Images size={16} />} title="Photo gallery" optional>
+            <div className="space-y-4">
+              <p className="-mt-1 text-[11.5px] text-gray-400">Shown on the trek page.</p>
+              {gallery.map((g, i) => (
+                <div key={i} className="rounded-xl border border-line bg-slate-50/60 p-4">
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs font-bold text-ink">Photo {i + 1}</span>
+                    <button type="button" onClick={() => setGallery(gallery.filter((_, j) => j !== i))} className="text-gray-400 transition hover:text-red-600"><Trash2 size={15} /></button></div>
+                  <div className="space-y-3">
+                    <Field label="Image"><ImageField className={inp} value={g.image_url} onChange={(v) => setGal(i, "image_url", v)} folder="treks/gallery" placeholder="/assets/img/... or upload" /></Field>
+                    <Field label="Caption" hint="· optional"><input className={inp} value={g.caption} onChange={(e) => setGal(i, "caption", e.target.value)} placeholder="Sunrise from Konkan Kada" /></Field>
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setGallery([...gallery, { image_url: "", caption: "" }])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add photo</button>
             </div>
           </SectionCard>
 

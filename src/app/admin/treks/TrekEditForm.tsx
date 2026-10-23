@@ -84,7 +84,7 @@ function SectionCard({ id, icon, title, optional, children }: {
 const SECTIONS = [
   { id: "s-basics", label: "Essentials" },
   { id: "s-facts", label: "Trek facts" },
-  { id: "s-highlights", label: "Highlights" },
+  { id: "s-highlights", label: "Not to miss" },
   { id: "s-incl", label: "Inclusions" },
   { id: "s-itin", label: "Itinerary" },
   { id: "s-pkg", label: "Packages" },
@@ -319,12 +319,9 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
             </div>
           </SectionCard>
 
-          <SectionCard id="s-highlights" icon={<Star size={16} />} title="Highlights & brochure" optional>
+          <SectionCard id="s-highlights" icon={<Star size={16} />} title="Not to miss" optional>
             <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-xs font-semibold text-ink">Not to miss</p>
-                <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" addLabel="Add highlight" />
-              </div>
+              <ListRepeater items={notToMiss} setItems={setNotToMiss} placeholder="Konkan Kada cliff at sunrise" addLabel="Add highlight" />
               <Field label="Brochure / itinerary PDF" hint="· URL"><input className={inp} value={f.brochure_url} onChange={(e) => set("brochure_url", e.target.value)} placeholder="https://… .pdf" /></Field>
             </div>
           </SectionCard>
