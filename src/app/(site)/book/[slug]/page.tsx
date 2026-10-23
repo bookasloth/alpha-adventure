@@ -24,8 +24,8 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
 
-  // Both only need trek.id - fetch in parallel, not one after the other.
-  const [{ data: departures }, { data: addons }] = await Promise.all([
+  // All independent of each other (departures/addons only need trek.id) - fetch in parallel.
+  const [{ data: departures }, { data: addons }, { data: { user } }] = await Promise.all([
     supabase
       .from("trek_departures")
       .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
@@ -39,6 +39,7 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       .eq("trek_id", trek.id)
       .eq("active", true)
       .order("position", { ascending: true }),
+    supabase.auth.getUser(),
   ]);
 
   return (
@@ -55,6 +56,7 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       departures={departures ?? []}
       addons={addons ?? []}
       payMode={payModeNow()}
+      user={user?.email ? { email: user.email } : null}
     />
   );
 }

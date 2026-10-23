@@ -121,8 +121,7 @@ const RUN = Boolean(url && key);
     expect(pay!.verified_at).toBeTruthy();
   });
 
-  it("DB rejects an invalid transition (draft → confirmed)", async () => {
-    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").limit(1).single();
+  it("DB rejects an invalid transition (draft → confirmed)", async () => {    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").limit(1).single();
     const { data: dep } = await admin
       .from("trek_departures")
       .select("id")
@@ -140,5 +139,64 @@ const RUN = Boolean(url && key);
     expect(error).not.toBeNull(); // enforce_booking_transition() blocks it
 
     await admin.from("bookings").delete().eq("id", b!.id);
+  });
+});
+
+// finalizeAsCurrentUser (book/actions.ts) is link + finalize for a session user
+// with no OTP/password step; this exercises that same linkAndFinalize path.
+(RUN ? describe : describe.skip)("signed-in finalize (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+  });
+
+  it("finalize reserves seats for a signed-in user without the auth form", async () => {
+    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").not("base_price", "is", null).limit(1).single();
+    const { data: dep } = await admin
+      .from("trek_departures")
+      .select("id,booked_seats")
+      .eq("trek_id", trek!.id)
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: true })
+      .limit(1)
+      .single();
+    departureId = dep!.id;
+
+    const { data: created } = await admin.auth.admin.createUser({ email: `test+signedin${Date.now()}@example.com`, email_confirm: true });
+    userId = created!.user!.id;
+
+    const draft = await createDraftBooking(admin, {
+      trek_id: trek!.id, departure_id: dep!.id, adults: 2, children: 0,
+      contact_name: "Signed In", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+
+    // Draft straight to pending_payment, no pending_auth/OTP step in between.
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    expect(finalized.status).toBe("pending_payment");
+
+    const { data: b } = await admin.from("bookings").select("status,user_id").eq("id", bookingId).single();
+    expect(b!.status).toBe("pending_payment");
+    expect(b!.user_id).toBe(userId);
+
+    const { data: depAfter } = await admin.from("trek_departures").select("booked_seats").eq("id", departureId).single();
+    expect(depAfter!.booked_seats).toBe(dep!.booked_seats + 2);
   });
 });

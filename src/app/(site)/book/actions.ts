@@ -144,6 +144,18 @@ export async function authenticateBooking(
     userId = res.data.user.id;
   }
 
+  return reserveForUser(admin, bookingId, draftToken, userId, email.data);
+}
+
+// Shared tail of authenticateBooking / finalizeAsCurrentUser: link the draft to
+// the user and reserve seats (pending_payment), then mint the pay bearer.
+async function reserveForUser(
+  admin: ReturnType<typeof createAdminClient>,
+  bookingId: string,
+  draftToken: string,
+  userId: string,
+  email: string,
+): Promise<Result<{ reference: string; payToken: string }>> {
   try {
     const finalized = await linkAndFinalize(admin, bookingId, draftToken, userId);
     (await cookies()).delete(DRAFT_COOKIE);
@@ -152,7 +164,7 @@ export async function authenticateBooking(
     // the reservation, and a mail failure must not fail a finalized booking.
     background(
       sendBookingPendingEmail({
-        to: email.data,
+        to: email,
         reference: finalized.reference,
         trekTitle: finalized.trek_title ?? "your trek",
         departureDate: finalized.departure_date,
@@ -167,6 +179,29 @@ export async function authenticateBooking(
       : "Could not complete your booking. Please try again.";
     return { ok: false, error: msg };
   }
+}
+
+// ── 2+3 (signed-in). Already have a session: skip the email/password step and
+// reserve seats for that user via the same linkAndFinalize path (no oversell).
+export async function finalizeAsCurrentUser(
+  bookingId: string,
+  draftToken?: string,
+): Promise<Result<{ reference: string; payToken: string }>> {
+  if (!(await limitByIp("book-auth", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const { data: { user } } = await createClient(await cookies()).auth.getUser();
+  if (!user?.email) return { ok: false, error: "Please sign in to continue." };
+
+  const token = await draftTokenFrom(draftToken);
+  if (!token) return { ok: false, error: "Your booking session expired. Please start again." };
+
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,draft_token,status").eq("id", bookingId).maybeSingle();
+  if (!b || b.draft_token !== token) return { ok: false, error: "Booking not found." };
+  if (b.status !== "draft" && b.status !== "pending_auth")
+    return { ok: false, error: "This booking can no longer be verified." };
+  await admin.from("bookings").update({ contact_email: user.email, status: "pending_auth" }).eq("id", bookingId);
+
+  return reserveForUser(admin, bookingId, token, user.id, user.email);
 }
 
 // ── 4b. Start payment on the configured gateway (PAYMENT_PROVIDER).

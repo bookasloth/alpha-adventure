@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import "./booking.css";
-import { createDraft, authenticateBooking, startPayment, verifyRazorpayPayment } from "../actions";
+import { createDraft, authenticateBooking, finalizeAsCurrentUser, startPayment, verifyRazorpayPayment } from "../actions";
 import { createClient } from "@/utils/supabase/client";
 import type { CheckoutOrder } from "@/domain/booking/razorpayPayment";
 
@@ -48,7 +48,7 @@ function loadRazorpay(): Promise<void> {
 
 export type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
 
-export default function BookingFlow({ trek, departures, addons, payMode }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode }) {
+export default function BookingFlow({ trek, departures, addons, payMode, user }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null }) {
   const [step, setStep] = useState(0);
   const [departureId, setDepartureId] = useState("");
   const [adults, setAdults] = useState(1);
@@ -60,7 +60,7 @@ export default function BookingFlow({ trek, departures, addons, payMode }: { tre
   const [authMode, setAuthMode] = useState<"signin" | "register">("register");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [bookingId, setBookingId] = useState("");
   const [token, setToken] = useState("");
   const [serverTotal, setServerTotal] = useState<number | null>(null);
@@ -121,6 +121,21 @@ export default function BookingFlow({ trek, departures, addons, payMode }: { tre
       // booking (the pay step itself authorises off the payToken, not the session).
       try { await createClient().auth.signInWithPassword({ email, password }); } catch { /* non-fatal */ }
       setReference(r.reference); setPayToken(r.payToken); setPay("pay");
+    } catch {
+      setError("Network problem — your details are kept. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  // Signed in: no auth form - reserve seats for the session user, straight to pay.
+  async function continueSignedIn() {
+    setError(null); setBusy(true);
+    try {
+      const d = await ensureDraft();
+      if (!d) return;
+      const r = await finalizeAsCurrentUser(d.id, d.token);
+      if (!r.ok) { setError(r.error); if (/seat/i.test(r.error)) router.refresh(); return; }
+      setReference(r.reference); setPayToken(r.payToken); setPay("pay"); setStep(4);
     } catch {
       setError("Network problem — your details are kept. Please try again.");
     } finally {
@@ -286,7 +301,7 @@ export default function BookingFlow({ trek, departures, addons, payMode }: { tre
                   </button>
                 ))}
                 {addons.length > 0 && <div className="bk-tiny" style={{ marginTop: 4 }}>Optional — priced per traveller (×{pax}).</div>}
-                <Foot back={{ onClick: () => go(2) }} next={{ label: "Continue", onClick: () => go(4) }} />
+                <Foot back={{ onClick: () => go(2) }} next={{ label: busy ? "Please wait…" : "Continue", onClick: () => (user ? continueSignedIn() : go(4)), disabled: busy }} />
               </Panel>
             )}
 
