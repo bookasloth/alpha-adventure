@@ -205,10 +205,13 @@ export type ChargeInput = { amount?: number; kind?: "full" | "deposit" | "balanc
 export async function createPhonePePayment(admin: Admin, bookingId: string, charge: ChargeInput = {}): Promise<{ merchantTransactionId: string; amountPaise: number }> {
   const { data: b } = await admin.from("bookings").select("id,status,grand_total").eq("id", bookingId).maybeSingle();
   if (!b) throw new Error("Booking not found.");
-  if (b.status !== "pending_payment") throw new Error(`Booking not payable (is ${b.status}).`);
+  const kind = charge.kind ?? "full";
+  // A balance slice is collected from a deposit_paid booking (off-session link);
+  // full/deposit are collected during the pending_payment hold.
+  const payableStatus = kind === "balance" ? "deposit_paid" : "pending_payment";
+  if (b.status !== payableStatus) throw new Error(`Booking not payable (is ${b.status}).`);
 
   const amount = charge.amount ?? b.grand_total;
-  const kind = charge.kind ?? "full";
   if (!amount || amount < 100) throw new Error("Invalid payment amount.");
 
   const mtx = `AA${Date.now().toString(36)}${bookingId.replace(/-/g, "").slice(0, 12)}`.slice(0, 38);

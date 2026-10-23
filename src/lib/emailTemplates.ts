@@ -29,6 +29,9 @@ export type BookingEmail = {
   startTime?: string | null;
   meetingPoint?: string | null;
   trekSlug?: string | null;
+  // Split-payment (deposit/balance) rows carry these.
+  balanceDue?: number; // paise still owed
+  balanceDueDate?: string | null; // plain YYYY-MM-DD
 };
 
 export type LeadEmail = {
@@ -235,6 +238,52 @@ ${b.addonsTotal ? `<tr><td style="padding:6px 0;color:${C.muted};font-size:14px"
   });
 }
 
+// Deposit slice settled: seats held, balance still owed by a date. Sent in place
+// of the full confirmation when a booking settles to deposit_paid (Task 7).
+export function depositReceived(base: string, b: BookingEmail): Rendered {
+  const balance = b.balanceDue ?? 0;
+  const deposit = b.total - balance;
+  const due = fmtDate(b.balanceDueDate);
+  const payUrl = `${base}/pay-balance/${encodeURIComponent(b.reference)}`;
+  return layout({
+    base, subject: `Deposit received for ${b.trekTitle} — balance due ${due || "soon"}`,
+    preheader: `We've got your deposit. ${rupees(balance)} is due by ${due || "the balance date"} to confirm your seats.`,
+    heading: "Deposit received — your spot is held",
+    body: p(`Thanks! We've received your deposit of <strong>${rupees(deposit)}</strong> for <strong>${esc(b.trekTitle)}</strong> and your ${b.seats === 1 ? "seat is" : "seats are"} held.`)
+      + details([
+        ...bookingRows(b),
+        ["Deposit paid", rupees(deposit)],
+        ["Balance due", `<strong>${rupees(balance)}</strong>`],
+        ["Pay balance by", esc(due)],
+      ])
+      + p(`Please pay the balance of <strong>${rupees(balance)}</strong> by <strong>${esc(due)}</strong> to confirm your booking. You can pay anytime using the button below.`)
+      + button("Pay the balance", payUrl)
+      + note(`If the balance isn't paid by ${esc(due)}, your seats may be released. Questions? Call or WhatsApp <strong>${esc(site.phone)}</strong>.`),
+  });
+}
+
+// Balance-due nudge sent by the daily cron a couple of days before the balance
+// date, linking to the off-session pay-balance page.
+export function balanceDueReminder(base: string, b: BookingEmail): Rendered {
+  const balance = b.balanceDue ?? 0;
+  const due = fmtDate(b.balanceDueDate);
+  const payUrl = `${base}/pay-balance/${encodeURIComponent(b.reference)}`;
+  return layout({
+    base, subject: `Balance due for ${b.trekTitle} — pay now to keep your seats`,
+    preheader: `${rupees(balance)} is due by ${due || "soon"}. Pay now to confirm your booking.`,
+    heading: "Your balance is due",
+    body: p(`Your trek <strong>${esc(b.trekTitle)}</strong> is coming up and the balance on your booking is now due.`)
+      + details([
+        ...bookingRows(b),
+        ["Balance due", `<strong>${rupees(balance)}</strong>`],
+        ["Due by", esc(due)],
+      ])
+      + p(`Pay the remaining <strong>${rupees(balance)}</strong> now to confirm your seats.`)
+      + button("Pay the balance", payUrl)
+      + note(`Seats may be released if the balance isn't paid by ${esc(due)}. Need help? Call or WhatsApp <strong>${esc(site.phone)}</strong>.`),
+  });
+}
+
 export function bookingReminder(base: string, b: BookingEmail): Rendered {
   const when = [fmtDate(b.departureDate), fmtTime(b.startTime)].filter(Boolean).join(" at ");
   return layout({
@@ -423,6 +472,8 @@ export function emailPreviews(base: string): { key: string; label: string; audie
     { key: "reset", label: "Reset password", audience: "Customer", when: "Forgot password", r: resetPassword(base, `${base}/reset-password?code=sample`) },
     { key: "pending", label: "Spot on hold", audience: "Customer", when: "Booking created, awaiting payment", r: bookingPending(base, b) },
     { key: "confirmed", label: "Booking confirmed + receipt", audience: "Customer", when: "Payment completed", r: bookingConfirmed(base, b) },
+    { key: "deposit", label: "Deposit received", audience: "Customer", when: "Deposit paid, balance due", r: depositReceived(base, { ...b, balanceDue: 377790, balanceDueDate: "2026-11-12" }) },
+    { key: "balance-due", label: "Balance due reminder", audience: "Customer", when: "Balance due soon", r: balanceDueReminder(base, { ...b, balanceDue: 377790, balanceDueDate: "2026-11-12" }) },
     { key: "reminder", label: "Trek reminder", audience: "Customer", when: "2 days before departure", r: bookingReminder(base, b) },
     { key: "cancelled", label: "Booking cancelled", audience: "Customer", when: "Customer or team cancels", r: bookingCancelled(base, b, "customer") },
     { key: "expired", label: "Hold ended", audience: "Customer", when: "Payment not completed in time", r: holdExpired(base, b) },

@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createOrder, fetchPayment, capturePayment, refundPayment, razorpayKeyId, isRazorpayConfigured, type RzpPayment,
 } from "@/lib/payment/razorpay";
-import { sendBookingConfirmedEmail, sendPaymentRefundedEmail, sendRefundFailedAlert } from "@/lib/email";
+import { sendBookingConfirmedEmail, sendDepositReceivedEmail, sendPaymentRefundedEmail, sendRefundFailedAlert } from "@/lib/email";
 import { background } from "@/lib/after";
 
 // Razorpay booking payments. Money rules:
@@ -40,12 +40,19 @@ export async function startRazorpayCheckout(admin: Admin, bookingId: string, cha
     .maybeSingle();
   if (!b) throw new Error("Booking not found.");
   if (b.status === "confirmed") throw new Error("This booking is already paid.");
-  if (b.status !== "pending_payment") throw new Error("This booking can no longer be paid. Please start a new booking.");
-  const secondsLeft = b.expires_at ? Math.floor((new Date(b.expires_at).getTime() - Date.now()) / 1000) : 1800;
-  if (secondsLeft < 60) throw new Error("Your seat hold has run out. Please start the booking again.");
+  const kind = charge.kind ?? "full";
+  // A balance slice is collected from a deposit_paid booking (off-session link);
+  // full/deposit are collected during the pending_payment seat hold.
+  const payableStatus = kind === "balance" ? "deposit_paid" : "pending_payment";
+  if (b.status !== payableStatus) throw new Error("This booking can no longer be paid. Please start a new booking.");
+  // Balance has no 30-min seat hold (seats are firmly held while deposit_paid);
+  // give Checkout a standard window. Full/deposit must beat the hold expiry.
+  const secondsLeft = kind === "balance"
+    ? 1800
+    : b.expires_at ? Math.floor((new Date(b.expires_at).getTime() - Date.now()) / 1000) : 1800;
+  if (kind !== "balance" && secondsLeft < 60) throw new Error("Your seat hold has run out. Please start the booking again.");
 
   const amount = charge.amount ?? b.grand_total;
-  const kind = charge.kind ?? "full";
   if (!amount || amount < 100) throw new Error("Invalid booking amount.");
 
   const order = await createOrder(amount, b.reference, { booking_id: b.id, reference: b.reference });
@@ -104,7 +111,7 @@ export async function settleRazorpayPayment(admin: Admin, paymentIn: RzpPayment,
 
   const { data: b } = await admin
     .from("bookings")
-    .select("id,reference,trek_title,departure_date,adults,children,price_adult,price_child,addons_total,grand_total,contact_email")
+    .select("id,reference,trek_title,departure_date,adults,children,price_adult,price_child,addons_total,grand_total,balance_due,balance_due_date,contact_email")
     .eq("id", res.booking_id!)
     .single();
   const reference = b?.reference ?? null;
@@ -121,8 +128,17 @@ export async function settleRazorpayPayment(admin: Admin, paymentIn: RzpPayment,
   }
   if (res.outcome === "already_settled") return { outcome: "already_settled", bookingId: res.booking_id!, reference };
   // Deposit slice captured, seats held, balance still owed — a success, never a refund.
-  // ponytail: no deposit email yet; the balance-reminder mail ships with Task 7.
-  if (res.outcome === "deposit_paid") return { outcome: "deposit_paid", bookingId: res.booking_id!, reference };
+  // Send "deposit received, ₹balance due by {date}" in place of the confirmation.
+  if (res.outcome === "deposit_paid") {
+    if (b?.contact_email) {
+      background(sendDepositReceivedEmail({
+        to: b.contact_email, reference: b.reference, trekTitle: b.trek_title ?? "your trek",
+        departureDate: b.departure_date, seats: (b.adults ?? 0) + (b.children ?? 0), total: b.grand_total,
+        balanceDue: b.balance_due, balanceDueDate: b.balance_due_date,
+      }));
+    }
+    return { outcome: "deposit_paid", bookingId: res.booking_id!, reference };
+  }
 
   // refund_required | amount_mismatch: we hold money we can't use. Refund what was paid.
   const reason = res.outcome === "amount_mismatch" ? "amount_mismatch" : `booking_${res.booking_status ?? "unpayable"}`;

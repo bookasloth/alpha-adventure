@@ -361,3 +361,92 @@ export async function verifyRazorpayPayment(
     return { ok: false, error: "We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly." };
   }
 }
+
+// ── 5. Collect the BALANCE on a deposit_paid booking, off-session.
+// Auth is lightweight by design — a balance link is opened without a login:
+// the caller proves identity with the booking reference AND the contact email.
+// The amount is ALWAYS the server-computed balance_due of the locked booking,
+// never anything the client sends. Routes to the gateway exactly like startPayment.
+export async function startBalancePayment(
+  reference: string,
+  email: string,
+): Promise<Result<{ redirectUrl?: string; reference?: string; razorpay?: CheckoutOrder }>> {
+  if (!(await limitByIp("pay-balance", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success || typeof reference !== "string" || !reference)
+    return { ok: false, error: "Enter the email on your booking." };
+
+  const admin = createAdminClient();
+  const { data: b } = await admin
+    .from("bookings")
+    .select("id,user_id,status,balance_due,contact_email")
+    .eq("reference", reference)
+    .maybeSingle();
+  // Vague on mismatch so a wrong email can't probe which references exist.
+  if (!b || (b.contact_email ?? "").toLowerCase() !== parsedEmail.data.toLowerCase())
+    return { ok: false, error: "We couldn't find a balance to pay for that reference and email." };
+  if (b.status !== "deposit_paid" || !b.balance_due || b.balance_due <= 0)
+    return { ok: false, error: "This balance is already paid or not due." };
+
+  // Server-authoritative amount: the locked booking's balance_due, kind='balance'.
+  const charge = { amount: b.balance_due, kind: "balance" as const };
+  const provider = paymentProvider();
+  if (provider === "razorpay") {
+    try {
+      return { ok: true, razorpay: await startRazorpayCheckout(admin, b.id, charge) };
+    } catch (e) {
+      const msg = (e as Error).message;
+      return { ok: false, error: msg.startsWith("Razorpay") ? "Couldn't start the payment. Please try again." : msg };
+    }
+  }
+  if (provider === "mock") {
+    // ponytail: mock (confirm_mock_payment) only confirms the FULL total from
+    // pending_payment; it can't settle a balance slice. Balance needs a live gateway.
+    return { ok: false, error: "Balance payment isn't available in test mode." };
+  }
+  try {
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, b.id, charge);
+    const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
+    const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId: b.user_id ?? reference, redirectUrl: cb, callbackUrl: cb });
+    if (!init.ok) return { ok: false, error: init.error };
+    return { ok: true, redirectUrl: init.redirectUrl };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+// ── 5b. Razorpay Checkout success handler for a BALANCE payment. Same server-side
+// re-verification as verifyRazorpayPayment, but authed off reference+email (no
+// session) and settling the deposit_paid booking to confirmed.
+export async function verifyBalancePayment(
+  reference: string,
+  email: string,
+  resp: { razorpay_order_id?: unknown; razorpay_payment_id?: unknown; razorpay_signature?: unknown },
+): Promise<Result<{ reference: string }>> {
+  if (!(await limitByIp("pay-verify", 20, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const orderId = typeof resp?.razorpay_order_id === "string" ? resp.razorpay_order_id : "";
+  const paymentId = typeof resp?.razorpay_payment_id === "string" ? resp.razorpay_payment_id : "";
+  const signature = typeof resp?.razorpay_signature === "string" ? resp.razorpay_signature : "";
+  if (!verifyPaymentSignature(orderId, paymentId, signature)) return { ok: false, error: "Payment could not be verified." };
+
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success || !reference) return { ok: false, error: "Payment could not be verified." };
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,contact_email").eq("reference", reference).maybeSingle();
+  if (!b || (b.contact_email ?? "").toLowerCase() !== parsedEmail.data.toLowerCase())
+    return { ok: false, error: "Payment could not be verified." };
+
+  try {
+    const r = await verifyAndSettleCheckout(admin, b.id, orderId, paymentId);
+    if (r.outcome === "confirmed" || r.outcome === "already_settled")
+      return { ok: true, reference: r.reference ?? reference };
+    if (r.outcome === "refunded")
+      return { ok: false, error: "This booking could no longer take the payment, so we've refunded you in full." };
+    if (r.outcome === "not_captured")
+      return { ok: false, error: "Your payment is still processing. We'll email you as soon as it's confirmed." };
+    return { ok: false, error: "Payment could not be verified." };
+  } catch (e) {
+    console.error("[pay] balance verify failed:", (e as Error).message);
+    return { ok: false, error: "We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly." };
+  }
+}

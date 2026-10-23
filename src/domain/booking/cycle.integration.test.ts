@@ -318,3 +318,123 @@ const RUN = Boolean(url && key);
     expect(b2!.amount_paid).toBe(deposit);
   });
 });
+
+// Balance (split) payment: from a deposit_paid booking, a 'balance'-kind settle
+// confirms the booking, credits the FULL grand_total, and zeroes balance_due —
+// and a SECOND settle of the same order is a no-op (no double-credit). Exercises
+// the same service path startBalancePayment uses (createPhonePePayment with a
+// balance charge + settle_gateway_payment). (Task 7, Review Focus #2.)
+(RUN ? describe : describe.skip)("balance payment (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+  let trekId = "";
+  let origCfg: { deposit_type: string; deposit_value: number; balance_due_offset_days: number } | null = null;
+  const email = `test+balance${Date.now()}@example.com`;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    if (trekId && origCfg) await admin.from("treks").update(origCfg).eq("id", trekId);
+  });
+
+  it("paying the balance confirms the booking and is idempotent", async () => {
+    const { data: trek } = await admin
+      .from("treks")
+      .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
+      .eq("status", "published")
+      .not("base_price", "is", null)
+      .limit(1)
+      .single();
+    trekId = trek!.id;
+    origCfg = {
+      deposit_type: trek!.deposit_type,
+      deposit_value: trek!.deposit_value,
+      balance_due_offset_days: trek!.balance_due_offset_days,
+    };
+    await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
+
+    const { data: dep } = await admin
+      .from("trek_departures")
+      .select("id,booked_seats")
+      .eq("trek_id", trekId)
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: true })
+      .limit(1)
+      .single();
+    departureId = dep!.id;
+
+    const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    userId = created!.user!.id;
+
+    // Draft → finalize → pay the deposit → deposit_paid.
+    const draft = await createDraftBooking(admin, {
+      trek_id: trekId, departure_id: departureId, adults: 2, children: 0,
+      contact_name: "Balance Guest", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+    await admin.from("bookings").update({ status: "pending_auth", contact_email: email }).eq("id", bookingId);
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    const grandTotal = finalized.grand_total;
+
+    const deposit = computeDeposit(grandTotal, { type: "percent", value: 30 });
+    const depPay = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    await confirmPhonePePayment(admin, depPay.merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+
+    const { data: afterDeposit } = await admin
+      .from("bookings")
+      .select("status,balance_due")
+      .eq("id", bookingId)
+      .single();
+    expect(afterDeposit!.status).toBe("deposit_paid");
+    const balance = afterDeposit!.balance_due as number;
+    expect(balance).toBe(grandTotal - deposit);
+    expect(balance).toBeGreaterThan(0);
+
+    // Charge + settle the BALANCE slice (the path startBalancePayment drives).
+    const balPay = await createPhonePePayment(admin, bookingId, { amount: balance, kind: "balance" });
+    expect(balPay.amountPaise).toBe(balance);
+    const settled = await confirmPhonePePayment(admin, balPay.merchantTransactionId, `txn_bal_${Date.now()}`, balance);
+    expect(settled).not.toBeNull();
+
+    // Booking confirmed, FULL total credited, nothing left owing.
+    const { data: b } = await admin
+      .from("bookings")
+      .select("status,amount_paid,balance_due,grand_total")
+      .eq("id", bookingId)
+      .single();
+    expect(b!.status).toBe("confirmed");
+    expect(b!.amount_paid).toBe(grandTotal);
+    expect(b!.balance_due).toBe(0);
+
+    // Balance payment recorded as a successful 'balance' slice.
+    const { data: pay } = await admin
+      .from("payments")
+      .select("status,amount,kind")
+      .eq("merchant_order_id", balPay.merchantTransactionId)
+      .single();
+    expect(pay!.status).toBe("success");
+    expect(pay!.amount).toBe(balance);
+    expect(pay!.kind).toBe("balance");
+
+    // Idempotent: settling the same balance order again is a no-op, never over-credits.
+    const again = await confirmPhonePePayment(admin, balPay.merchantTransactionId, `txn_bal_${Date.now()}`, balance);
+    expect(again).not.toBeNull();
+    const { data: b2 } = await admin.from("bookings").select("status,amount_paid").eq("id", bookingId).single();
+    expect(b2!.status).toBe("confirmed");
+    expect(b2!.amount_paid).toBe(grandTotal);
+  });
+});
