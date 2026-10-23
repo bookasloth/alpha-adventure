@@ -111,7 +111,7 @@ export async function settleRazorpayPayment(admin: Admin, paymentIn: RzpPayment,
 
   const { data: b } = await admin
     .from("bookings")
-    .select("id,reference,trek_title,departure_date,adults,children,price_adult,price_child,addons_total,grand_total,balance_due,balance_due_date,contact_email")
+    .select("id,reference,trek_title,departure_date,adults,children,price_adult,price_child,addons_total,boarding_total,grand_total,balance_due,balance_due_date,contact_email")
     .eq("id", res.booking_id!)
     .single();
   const reference = b?.reference ?? null;
@@ -134,7 +134,7 @@ export async function settleRazorpayPayment(admin: Admin, paymentIn: RzpPayment,
       background(sendDepositReceivedEmail({
         to: b.contact_email, reference: b.reference, trekTitle: b.trek_title ?? "your trek",
         departureDate: b.departure_date, seats: (b.adults ?? 0) + (b.children ?? 0), total: b.grand_total,
-        balanceDue: b.balance_due, balanceDueDate: b.balance_due_date,
+        balanceDue: b.balance_due, balanceDueDate: b.balance_due_date, boardingTotal: b.boarding_total,
       }));
     }
     return { outcome: "deposit_paid", bookingId: res.booking_id!, reference };

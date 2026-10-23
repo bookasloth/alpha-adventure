@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { startBalancePayment, verifyBalancePayment } from "../../book/actions";
 import type { CheckoutOrder } from "@/domain/booking/razorpayPayment";
+import { noticeText, type PaymentNotice } from "@/domain/booking/paymentNotice";
 
 type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
 type RzpResponse = { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string };
@@ -34,8 +35,9 @@ function fmtDate(d: string | null): string {
 }
 
 export default function PayBalance({
-  reference, trekTitle, status, balanceDue, balanceDueDate, payable, payMode,
+  reference, trekTitle, status, balanceDue, balanceDueDate, payable, payMode, paymentNotice = null,
 }: {
+  paymentNotice?: PaymentNotice | null;
   reference: string; trekTitle: string; status: string; balanceDue: number;
   balanceDueDate: string | null; payable: boolean; payMode: PayMode;
 }) {
@@ -44,6 +46,18 @@ export default function PayBalance({
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Back from PhonePe's hosted page can restore this page frozen on "Starting…";
+  // mirror Razorpay's ondismiss so it's retryable, never a dead end.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setBusy(false);
+      setError("Payment window closed. Tap Pay balance to try again.");
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   async function pay() {
     setError(null);
@@ -116,7 +130,7 @@ export default function PayBalance({
       <div className="container-px">
         <div className={card}>
           <h1 className="text-2xl font-bold text-ink mb-3">Balance paid — you&apos;re confirmed!</h1>
-          <p className="text-[#6b6460]">Your booking <strong>{reference}</strong> for {trekTitle} is now fully paid and confirmed. A confirmation email is on its way.</p>
+          <p className="text-[#6b6460]">Your booking <strong>{reference}</strong> for {trekTitle} is now fully paid and confirmed — we received your balance of <strong>{rupees(balanceDue)}</strong>. A confirmation email is on its way.</p>
         </div>
       </div>
     );
@@ -161,6 +175,7 @@ export default function PayBalance({
         />
         <p className="text-xs text-[#6b6460] mb-4">We use this to confirm it&apos;s your booking.</p>
 
+        {paymentNotice && !error && <p className="text-sm text-[#6b6460] mb-3" role="alert">{noticeText(paymentNotice, "balance")}</p>}
         {error && <p className="text-sm text-red-600 mb-3" role="alert">{error}</p>}
 
         <button

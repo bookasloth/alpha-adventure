@@ -32,6 +32,7 @@ export type BookingEmail = {
   // Split-payment (deposit/balance) rows carry these.
   balanceDue?: number; // paise still owed
   balanceDueDate?: string | null; // plain YYYY-MM-DD
+  boardingTotal?: number | null; // paise; the non-refundable pickup charge, if any
 };
 
 export type LeadEmail = {
@@ -258,6 +259,7 @@ export function depositReceived(base: string, b: BookingEmail): Rendered {
       ])
       + p(`Please pay the balance of <strong>${rupees(balance)}</strong> by <strong>${esc(due)}</strong> to confirm your booking. You can pay anytime using the button below.`)
       + button("Pay the balance", payUrl)
+      + note(`<strong>Non-refundable:</strong> your deposit of <strong>${rupees(deposit)}</strong>${b.boardingTotal ? ` and the pickup charge of <strong>${rupees(b.boardingTotal)}</strong> are` : " is"} non-refundable as per our <a href="${esc(base)}/cancellation-policy" style="color:${C.brand}">cancellation policy</a>.`)
       + note(`If the balance isn't paid by ${esc(due)}, your seats may be released. Questions? Call or WhatsApp <strong>${esc(site.phone)}</strong>.`),
   });
 }
@@ -435,7 +437,9 @@ export function adminBookingAlert(base: string, kind: "pending" | "confirmed" | 
     base, audience: "operator", subject: `[Booking] ${label}: ${b.trekTitle} (${b.reference})`,
     preheader: `${b.trekTitle} · ${b.seats} traveller(s) · ${rupees(b.total)}`,
     heading: label,
-    body: details([...bookingRows(b), ["Amount", rupees(b.total)], ["Customer", esc(b.to)]])
+    body: details([...bookingRows(b), ...((b.balanceDue
+        ? [["Deposit paid", rupees(b.total - b.balanceDue)], ["Balance due", rupees(b.balanceDue)]]
+        : [["Amount", rupees(b.total)]]) as [string, string][]), ["Customer", esc(b.to)]])
       + button("Open admin panel", `${base}/admin`),
   });
 }

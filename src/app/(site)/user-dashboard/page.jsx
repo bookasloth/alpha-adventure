@@ -20,7 +20,7 @@ export default async function UserDashboardPage() {
   const [{ data: bookings }, { data: profile }] = await Promise.all([
     supabase
       .from("bookings")
-      .select("id,reference,trek_title,departure_date,status,adults,children,grand_total,created_at")
+      .select("id,reference,trek_title,departure_date,status,adults,children,grand_total,amount_paid,created_at")
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
   ]);
@@ -30,12 +30,12 @@ export default async function UserDashboardPage() {
   const stats = {
     total: rows.length,
     upcoming: rows.filter((b) => PAID.has(b.status) && (b.departure_date ?? "") >= today).length,
-    spent: rows.filter((b) => PAID.has(b.status)).reduce((s, b) => s + (b.grand_total ?? 0), 0),
+    spent: rows.filter((b) => PAID.has(b.status)).reduce((s, b) => s + (b.amount_paid || b.grand_total || 0), 0),
   };
   // Payments derived from paid bookings (no separate payments table yet).
   const payments = rows
     .filter((b) => PAID.has(b.status))
-    .map((b) => ({ id: b.id, date: b.created_at, reference: b.reference, amount: b.grand_total, status: b.status }));
+    .map((b) => ({ id: b.id, date: b.created_at, reference: b.reference, amount: b.amount_paid || b.grand_total, status: b.status }));
 
   return (
     <Dashboard

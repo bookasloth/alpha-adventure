@@ -232,7 +232,10 @@ export async function createPhonePePayment(admin: Admin, bookingId: string, char
 // PhonePe: after a server-verified success, settle through the same locked,
 // idempotent DB function as Razorpay (settle_gateway_payment, 0026), so a
 // redirect and a server callback arriving together can't both confirm.
-export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<BookingRow | null> {
+// Returns the booking plus the settle outcome (callers send emails only on the first
+// "confirmed"/"deposit_paid"), or null when the payment was NOT applied.
+export type PhonePeSettle = BookingRow & { outcome: "confirmed" | "deposit_paid" | "already_settled" };
+export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<PhonePeSettle | null> {
   const { data: pay } = await admin.from("payments").select("amount").eq("merchant_order_id", merchantTransactionId).maybeSingle();
   if (!pay) return null;
   const { data, error } = await admin.rpc("settle_gateway_payment", {
@@ -250,6 +253,12 @@ export async function confirmPhonePePayment(admin: Admin, merchantTransactionId:
     console.error(`[phonepe] ${merchantTransactionId} not confirmed: ${res.outcome} — refund manually.`);
     return null;
   }
+  // already_settled also covers a payment the guard already rejected (amount_mismatch
+  // = status 'failed'); a replayed callback must NOT read as success for those.
+  if (res.outcome === "already_settled") {
+    const { data: done } = await admin.from("payments").select("status").eq("merchant_order_id", merchantTransactionId).maybeSingle();
+    if (done?.status !== "success") return null;
+  }
   const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", res.booking_id!).single();
-  return (b as BookingRow) ?? null;
+  return b ? { ...(b as BookingRow), outcome: res.outcome as PhonePeSettle["outcome"] } : null;
 }

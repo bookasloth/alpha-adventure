@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import "./booking.css";
@@ -8,6 +8,7 @@ import { createDraft, authenticateBooking, finalizeAsCurrentUser, startPayment, 
 import { createClient } from "@/utils/supabase/client";
 import { resolveCharge } from "@/domain/booking/pricing";
 import type { CheckoutOrder } from "@/domain/booking/razorpayPayment";
+import { noticeText, type PaymentNotice } from "@/domain/booking/paymentNotice";
 
 type Trek = { id: string; slug: string; title: string; summary: string | null; base_price: number; child_price: number | null; place: string; deposit_type: "none" | "percent" | "flat"; deposit_value: number; balance_due_offset_days: number };
 type Departure = { id: string; start_date: string; end_date: string | null; capacity: number; booked_seats: number; price_override: number | null };
@@ -52,7 +53,7 @@ function loadRazorpay(): Promise<void> {
 
 export type PayMode = { provider: "razorpay" | "phonepe" | "mock"; testMode: boolean };
 
-export default function BookingFlow({ trek, departures, addons, payMode, user, teamMembers, boardingLocations, boardingDisclaimer }: { trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null; teamMembers: TeamMember[]; boardingLocations: Boarding[]; boardingDisclaimer: string | null }) {
+export default function BookingFlow({ trek, departures, addons, payMode, user, teamMembers, boardingLocations, boardingDisclaimer, paymentNotice = null }: { paymentNotice?: PaymentNotice | null; trek: Trek; departures: Departure[]; addons: Addon[]; payMode: PayMode; user: { email: string } | null; teamMembers: TeamMember[]; boardingLocations: Boarding[]; boardingDisclaimer: string | null }) {
   const [step, setStep] = useState(0);
   const [departureId, setDepartureId] = useState("");
   const [adults, setAdults] = useState(1);
@@ -79,6 +80,18 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const [error, setError] = useState<string | null>(null);
   const [authTried, setAuthTried] = useState(false);
   const router = useRouter();
+  // PhonePe is a full-page redirect: if the customer hits Back from its hosted page
+  // the browser may restore this page frozen on "Processing…". Mirror Razorpay's
+  // ondismiss so it's never a dead end (the callback route handles real failures).
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setBusy(false);
+      setError("Payment window closed. Your seats are still held for a few minutes. Tap Pay to try again.");
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   const departure = useMemo(() => departures.find((d) => d.id === departureId), [departures, departureId]);
   const pax = adults + children;
@@ -101,6 +114,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
   const allowsDeposit = depositCharge.kind === "deposit";
   const depositAmount = depositCharge.amount;
   const balanceAmount = total - depositAmount;
+  const payingDeposit = allowsDeposit && payChoice === "deposit";
   const balanceDueDate = departure ? addDays(departure.start_date, -trek.balance_due_offset_days) : "";
 
   function syncTravellers(n: number) {
@@ -240,12 +254,14 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
       <div className="bk-root"><div className="bk-wrap">
         <div className="bk-card bk-confirm" style={{ maxWidth: 620, margin: "40px auto" }}>
           <div className="bk-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><path d="M20 6L9 17l-5-5" /></svg></div>
-          <h2 style={{ margin: "0 0 6px", fontSize: 26 }}>You&apos;re booked! 🎉</h2>
-          <p className="bk-desc" style={{ maxWidth: 420, margin: "0 auto 14px" }}>A confirmation is on its way to {email}. See you on the trail.</p>
+          <h2 style={{ margin: "0 0 6px", fontSize: 26 }}>{paidAsDeposit ? "Deposit received — seats held" : "You're booked! 🎉"}</h2>
+          <p className="bk-desc" style={{ maxWidth: 420, margin: "0 auto 14px" }}>{paidAsDeposit
+            ? `Your booking is confirmed once the remaining ${rupees(balanceAmount)} is paid${balanceDueDate ? ` by ${balanceDueDate}` : ""}. We've emailed a pay link to ${email}. The deposit is non-refundable.`
+            : `A confirmation is on its way to ${email}. See you on the trail.`}</p>
           <p>Reference <span className="bk-ref">{reference}</span></p>
           <div style={{ maxWidth: 340, margin: "20px auto 0" }}>
             <div className="bk-pl"><span>{trek.title}</span><b>{departure ? label(departure) : ""}</b></div>
-            <div className="bk-pl"><span>{pax} traveller(s)</span><b>{paidAsDeposit ? `Deposit ${rupees(depositAmount)} paid · ${rupees(balanceAmount)} due${balanceDueDate ? ` by ${balanceDueDate}` : ""}` : `${rupees(total)} paid`}</b></div>
+            <div className="bk-pl"><span>{pax} traveller(s)</span><b>{paidAsDeposit ? `Deposit ${rupees(depositAmount)} paid · ${rupees(balanceAmount)} balance due${balanceDueDate ? ` by ${balanceDueDate}` : ""}` : `${rupees(total)} paid in full`}</b></div>
           </div>
           <div style={{ marginTop: 24 }}><Link className="bk-btn bk-btn-primary" href="/user-dashboard">View my bookings <Arrow /></Link></div>
         </div>
@@ -305,6 +321,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
               <Panel eyebrow={`Step ${stepNo(1)} of ${stepTotal}`} title="Choose your boarding point" desc="Where would you like to join the trek? Priced per traveller.">
                 {/* ponytail: display-only; add an ack checkbox only if the client later asks */}
                 {boardingDisclaimer && <div className="bk-note"><InfoIcon /> {boardingDisclaimer}</div>}
+                <div className="bk-note"><InfoIcon /> <span>Pickup charges are non-refundable as per our <a href="/cancellation-policy" target="_blank" rel="noreferrer">cancellation policy</a>{boarding ? <> — {rupees(boarding.price * pax)} for your {pax} traveller{pax > 1 ? "s" : ""}.</> : <> (the amount for your group is shown once you pick a point).</>}</span></div>
                 {boardingLocations.map((b) => (
                   <button key={b.id} type="button" className="bk-opt" aria-checked={boardingId === b.id} onClick={() => { setBoardingId(b.id); resetDraft(); }}>
                     <span className="bk-radio" /><span className="bk-m"><div className="bk-lead">{b.name}</div>{b.subtext && <div className="bk-tiny">{b.subtext}</div>}</span><span className="bk-price">{rupees(b.price)}</span>
@@ -391,10 +408,12 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
                     <span className="bk-radio" /><span className="bk-m"><div className="bk-lead">Pay deposit now</div><div className="bk-tiny">{rupees(balanceAmount)} due{balanceDueDate ? ` by ${balanceDueDate}` : ""}</div></span><span className="bk-price">{rupees(depositAmount)}</span>
                   </button>
                 </>)}
-                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} aria-busy={busy} onClick={() => doPay(allowsDeposit ? payChoice : "full")}>{verifying ? "Confirming payment…" : busy ? "Processing…" : `Pay ${rupees(allowsDeposit && payChoice === "deposit" ? depositAmount : total)}`}</button></div>
+                {(payingDeposit || boarding) && <div className="bk-note"><InfoIcon /> <span>Non-refundable as per our <a href="/cancellation-policy" target="_blank" rel="noreferrer">cancellation policy</a>: {[payingDeposit && `your ${rupees(depositAmount)} deposit`, boarding && `the ${rupees(boarding.price * pax)} pickup charge`].filter(Boolean).join(" and ")}.{payingDeposit ? ` The ${rupees(balanceAmount)} balance is due${balanceDueDate ? ` by ${balanceDueDate}` : ""}.` : ""}</span></div>}
+                <div className="bk-pfoot"><span /><button className="bk-btn bk-btn-primary" disabled={busy} aria-busy={busy} onClick={() => doPay(allowsDeposit ? payChoice : "full")}>{verifying ? "Confirming payment…" : busy ? "Processing…" : `Pay ${payingDeposit ? "deposit " : ""}${rupees(payingDeposit ? depositAmount : total)}`}</button></div>
               </Panel>
             )}
 
+            {paymentNotice && !error && <div className="bk-note" role="alert"><InfoIcon /> <span>{noticeText(paymentNotice, "booking")}</span></div>}
             {error && <p className="bk-err" role="alert">{error}</p>}
           </div>
 
@@ -412,7 +431,7 @@ export default function BookingFlow({ trek, departures, addons, payMode, user, t
             <div className="bk-pl"><span>Taxes &amp; fees</span><b>Included</b></div>
             <div className="bk-hr" />
             <div className="bk-total"><span className="bk-t">Total</span><span className="bk-v">{rupees(total)}</span></div>
-            <div className="bk-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 6L9 17l-5-5" /></svg>Free cancellation up to 72h before departure.</div>
+            <div className="bk-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20 6L9 17l-5-5" /></svg>Free cancellation up to 72h before departure{payingDeposit || boarding ? ", except the non-refundable amounts shown at payment" : ""}.</div>
           </div></aside>
         </div>
 

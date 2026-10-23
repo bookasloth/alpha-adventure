@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { istToday } from "@/lib/date";
 import BookingFlow from "./BookingFlow";
+import { parseNotice } from "@/domain/booking/paymentNotice";
 import { paymentProvider } from "@/lib/payment/provider";
 import { razorpayKeyId } from "@/lib/payment/razorpay";
 
@@ -13,8 +14,9 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   return { title: `Book — ${params.slug}` };
 }
 
-export default async function BookPage(props: { params: Promise<{ slug: string }> }) {
+export default async function BookPage(props: { params: Promise<{ slug: string }>; searchParams: Promise<{ payment?: string }> }) {
   const params = await props.params;
+  const { payment } = await props.searchParams; // set by the PhonePe callback on a closed/failed payment
   const supabase = createClient(await cookies());
 
   const { data: trek } = await supabase
@@ -65,6 +67,7 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       teamMembers={teamMembers ?? []}
       boardingLocations={boardingLocations ?? []}
       boardingDisclaimer={trek.boarding_disclaimer ?? null}
+      paymentNotice={parseNotice(payment)}
     />
   );
 }
