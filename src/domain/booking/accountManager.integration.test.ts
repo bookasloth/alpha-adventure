@@ -41,9 +41,23 @@ const RUN = Boolean(url && key);
       if (m.active) activeId = m.id; else inactiveId = m.id;
     }
 
-    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").not("base_price", "is", null).limit(1).single();
-    const { data: dep } = await admin.from("trek_departures").select("id").eq("trek_id", trek!.id).neq("status", "cancelled").order("start_date", { ascending: true }).limit(1).single();
-    base = { trek_id: trek!.id, departure_id: dep!.id, adults: 1, children: 0, contact_name: "Test Guest", travellers: [], addons: [] };
+    // Pick a genuinely bookable departure (future IST, non-cancelled, on a published
+    // trek with a price) — createDraftBooking rejects a past/absent one. Drafts reserve
+    // no seats, so free capacity is not required here.
+    const istToday = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+    const { data: deps } = await admin
+      .from("trek_departures")
+      .select("id,trek_id,treks!inner(status,base_price,deleted_at)")
+      .eq("treks.status", "published")
+      .not("treks.base_price", "is", null)
+      .is("treks.deleted_at", null)
+      .neq("status", "cancelled")
+      .gte("start_date", istToday)
+      .order("start_date", { ascending: true })
+      .limit(1);
+    const d0 = (deps ?? [])[0] as { id: string; trek_id: string } | undefined;
+    if (!d0) throw new Error("No future-bookable departure in the live DB — seed one to run this suite.");
+    base = { trek_id: d0.trek_id, departure_id: d0.id, adults: 1, children: 0, contact_name: "Test Guest", travellers: [], addons: [] };
   });
 
   afterAll(async () => {

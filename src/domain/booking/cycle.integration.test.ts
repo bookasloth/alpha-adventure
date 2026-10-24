@@ -18,6 +18,29 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RUN = Boolean(url && key);
 
+// IST "today" (business tz) — the booking engine rejects past departures by it.
+const IST_TODAY = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+
+// Pick a genuinely bookable departure on the LIVE DB: future (IST), non-cancelled,
+// with >= minSeats free, on a published trek that has a price. The old fixtures
+// grabbed an arbitrary published trek whose earliest departure was often in the
+// past (or absent), so the cycle never reached the code under test.
+async function pickBookable(admin: SupabaseClient, minSeats = 2): Promise<{ trekId: string; departureId: string }> {
+  const { data } = await admin
+    .from("trek_departures")
+    .select("id,capacity,booked_seats,trek_id,start_date,treks!inner(status,base_price,deleted_at)")
+    .eq("treks.status", "published")
+    .not("treks.base_price", "is", null)
+    .is("treks.deleted_at", null)
+    .neq("status", "cancelled")
+    .gte("start_date", IST_TODAY())
+    .order("start_date", { ascending: true });
+  const rows = (data ?? []) as Array<{ id: string; capacity: number; booked_seats: number; trek_id: string }>;
+  const row = rows.find((d) => d.capacity - d.booked_seats >= minSeats);
+  if (!row) throw new Error(`No future-bookable departure with >= ${minSeats} free seats in the live DB — seed one to run this suite.`);
+  return { trekId: row.trek_id, departureId: row.id };
+}
+
 (RUN ? describe : describe.skip)("booking cycle (integration, live DB)", () => {
   let admin: SupabaseClient;
   let userId = "";
@@ -43,25 +66,21 @@ const RUN = Boolean(url && key);
   });
 
   it("guest → account → pending_payment → mock pay → confirmed", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 3);
+    departureId = _depId;
     const { data: trek } = await admin
       .from("treks")
       .select("id,base_price,child_price")
-      .eq("status", "published")
-      .not("base_price", "is", null)
-      .limit(1)
+      .eq("id", _trekId)
       .single();
     expect(trek).toBeTruthy();
 
     const { data: dep } = await admin
       .from("trek_departures")
       .select("id,capacity,booked_seats")
-      .eq("trek_id", trek!.id)
-      .neq("status", "cancelled")
-      .order("start_date", { ascending: true })
-      .limit(1)
+      .eq("id", _depId)
       .single();
     expect(dep).toBeTruthy();
-    departureId = dep!.id;
 
     // 1) Guest draft — server prices it (2 adults + 1 child @ adult rate).
     const draft = await createDraftBooking(admin, {
@@ -122,14 +141,10 @@ const RUN = Boolean(url && key);
     expect(pay!.verified_at).toBeTruthy();
   });
 
-  it("DB rejects an invalid transition (draft → confirmed)", async () => {    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").limit(1).single();
-    const { data: dep } = await admin
-      .from("trek_departures")
-      .select("id")
-      .eq("trek_id", trek!.id)
-      .neq("status", "cancelled")
-      .limit(1)
-      .single();
+  it("DB rejects an invalid transition (draft → confirmed)", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 1);
+    const { data: trek } = await admin.from("treks").select("id").eq("id", _trekId).single();
+    const { data: dep } = await admin.from("trek_departures").select("id").eq("id", _depId).single();
     const { data: b } = await admin
       .from("bookings")
       .insert({ trek_id: trek!.id, departure_id: dep!.id, status: "draft", adults: 1, children: 0, currency: "INR" })
@@ -168,16 +183,10 @@ const RUN = Boolean(url && key);
   });
 
   it("finalize reserves seats for a signed-in user without the auth form", async () => {
-    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").not("base_price", "is", null).limit(1).single();
-    const { data: dep } = await admin
-      .from("trek_departures")
-      .select("id,booked_seats")
-      .eq("trek_id", trek!.id)
-      .neq("status", "cancelled")
-      .order("start_date", { ascending: true })
-      .limit(1)
-      .single();
-    departureId = dep!.id;
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
+    const { data: trek } = await admin.from("treks").select("id").eq("id", _trekId).single();
+    const { data: dep } = await admin.from("trek_departures").select("id,booked_seats").eq("id", _depId).single();
 
     const { data: created } = await admin.auth.admin.createUser({ email: `test+signedin${Date.now()}@example.com`, email_confirm: true });
     userId = created!.user!.id;
@@ -233,12 +242,12 @@ const RUN = Boolean(url && key);
   });
 
   it("a deposit payment moves the booking to deposit_paid, not confirmed", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
     const { data: trek } = await admin
       .from("treks")
       .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
-      .eq("status", "published")
-      .not("base_price", "is", null)
-      .limit(1)
+      .eq("id", _trekId)
       .single();
     expect(trek).toBeTruthy();
     trekId = trek!.id;
@@ -253,12 +262,8 @@ const RUN = Boolean(url && key);
     const { data: dep } = await admin
       .from("trek_departures")
       .select("id,booked_seats")
-      .eq("trek_id", trekId)
-      .neq("status", "cancelled")
-      .order("start_date", { ascending: true })
-      .limit(1)
+      .eq("id", _depId)
       .single();
-    departureId = dep!.id;
 
     const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
     userId = created!.user!.id;
@@ -351,12 +356,12 @@ const RUN = Boolean(url && key);
   });
 
   it("paying the balance confirms the booking and is idempotent", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
     const { data: trek } = await admin
       .from("treks")
       .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
-      .eq("status", "published")
-      .not("base_price", "is", null)
-      .limit(1)
+      .eq("id", _trekId)
       .single();
     trekId = trek!.id;
     origCfg = {
@@ -369,12 +374,8 @@ const RUN = Boolean(url && key);
     const { data: dep } = await admin
       .from("trek_departures")
       .select("id,booked_seats")
-      .eq("trek_id", trekId)
-      .neq("status", "cancelled")
-      .order("start_date", { ascending: true })
-      .limit(1)
+      .eq("id", _depId)
       .single();
-    departureId = dep!.id;
 
     const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
     userId = created!.user!.id;
@@ -482,20 +483,18 @@ const RUN = Boolean(url && key);
   };
 
   it("a wrong amount on a deposit or a balance payment flags a refund and never changes status", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
     const { data: trek } = await admin
       .from("treks")
       .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
-      .eq("status", "published")
-      .not("base_price", "is", null)
-      .limit(1)
+      .eq("id", _trekId)
       .single();
     trekId = trek!.id;
     origCfg = { deposit_type: trek!.deposit_type, deposit_value: trek!.deposit_value, balance_due_offset_days: trek!.balance_due_offset_days };
     await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
 
-    const { data: dep } = await admin
-      .from("trek_departures").select("id").eq("trek_id", trekId).neq("status", "cancelled")
-      .order("start_date", { ascending: true }).limit(1).single();
+    const { data: dep } = await admin.from("trek_departures").select("id").eq("id", _depId).single();
     departureId = dep!.id;
 
     const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
