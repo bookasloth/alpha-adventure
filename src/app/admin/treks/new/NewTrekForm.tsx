@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Trash2, ArrowLeft, Check, Sparkles, Compass, Star,
-  ListChecks, Footprints, Package, HelpCircle, Images, CalendarDays, MapPin,
+  ListChecks, Footprints, Package, HelpCircle, Images, CalendarDays, MapPin, Bus, Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createTrek } from "./actions";
 import ImageField from "@/app/admin/ImageField";
+import BoardingEditor, { boardingPayload, type BoardingRow } from "../BoardingEditor";
+import DepositEditor, { depositPayload, DEFAULT_DEPOSIT, type DepositState } from "../DepositEditor";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -97,6 +99,8 @@ const SECTIONS = [
   { id: "s-pkg", label: "Packages", req: "opt" },
   { id: "s-faq", label: "FAQs", req: "opt" },
   { id: "s-gallery", label: "Gallery", req: "opt" },
+  { id: "s-boarding", label: "Boarding", req: "opt" },
+  { id: "s-deposit", label: "Deposit", req: "opt" },
   { id: "s-dates", label: "Dates", req: "1 req" },
 ];
 
@@ -139,6 +143,9 @@ export default function NewTrekForm() {
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [gallery, setGallery] = useState<GalleryImg[]>([]);
   const [packages, setPackages] = useState<Pkg[]>([{ name: "Standard Batch", price: "", inclusions: "", cta_label: "Book Now" }]);
+  const [boarding, setBoarding] = useState<BoardingRow[]>([]);
+  const [boardingDisclaimer, setBoardingDisclaimer] = useState("");
+  const [deposit, setDeposit] = useState<DepositState>(DEFAULT_DEPOSIT);
   const [departures, setDepartures] = useState<Dep[]>([{ start_date: "", end_date: "", start_time: "", capacity: "30", price_override: "", status: "open" }]);
   const setDay = (i: number, key: keyof Day, v: string) => setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
   const setFaq = (i: number, key: keyof Faq, v: string) => setFaqs((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
@@ -214,6 +221,9 @@ export default function NewTrekForm() {
       gallery: gallery
         .filter((g) => g.image_url.trim())
         .map((g) => ({ image_url: g.image_url.trim(), caption: g.caption.trim() })),
+      boarding: boardingPayload(boarding),
+      boarding_disclaimer: boardingDisclaimer,
+      ...depositPayload(deposit),
       departures: departures
         .filter((d) => d.start_date.trim())
         .map((d) => ({
@@ -448,6 +458,14 @@ export default function NewTrekForm() {
               ))}
               <button type="button" onClick={() => setGallery([...gallery, { image_url: "", caption: "" }])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add photo</button>
             </div>
+          </SectionCard>
+
+          <SectionCard id="s-boarding" icon={<Bus size={16} />} title="Boarding locations" optional>
+            <BoardingEditor rows={boarding} setRows={setBoarding} disclaimer={boardingDisclaimer} setDisclaimer={setBoardingDisclaimer} />
+          </SectionCard>
+
+          <SectionCard id="s-deposit" icon={<Wallet size={16} />} title="Deposit / split payment" optional>
+            <DepositEditor value={deposit} onChange={setDeposit} />
           </SectionCard>
 
           <SectionCard id="s-dates" icon={<CalendarDays size={16} />} title="Dates" optional>

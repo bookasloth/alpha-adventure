@@ -6,6 +6,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { emailSchema, passwordSchema, nameSchema, passwordDisallowsIdentity } from "@/domain/booking/schema";
 import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment } from "@/domain/booking/service";
+import { resolveCharge, type Charge, type DepositConfig } from "@/domain/booking/pricing";
 import { phonePeInitiate, REDIRECT_BASE } from "@/lib/payment/phonepe";
 import { paymentProvider } from "@/lib/payment/provider";
 import { startRazorpayCheckout, verifyAndSettleCheckout, type CheckoutOrder } from "@/domain/booking/razorpayPayment";
@@ -144,6 +145,18 @@ export async function authenticateBooking(
     userId = res.data.user.id;
   }
 
+  return reserveForUser(admin, bookingId, draftToken, userId, email.data);
+}
+
+// Shared tail of authenticateBooking / finalizeAsCurrentUser: link the draft to
+// the user and reserve seats (pending_payment), then mint the pay bearer.
+async function reserveForUser(
+  admin: ReturnType<typeof createAdminClient>,
+  bookingId: string,
+  draftToken: string,
+  userId: string,
+  email: string,
+): Promise<Result<{ reference: string; payToken: string }>> {
   try {
     const finalized = await linkAndFinalize(admin, bookingId, draftToken, userId);
     (await cookies()).delete(DRAFT_COOKIE);
@@ -152,7 +165,7 @@ export async function authenticateBooking(
     // the reservation, and a mail failure must not fail a finalized booking.
     background(
       sendBookingPendingEmail({
-        to: email.data,
+        to: email,
         reference: finalized.reference,
         trekTitle: finalized.trek_title ?? "your trek",
         departureDate: finalized.departure_date,
@@ -169,12 +182,36 @@ export async function authenticateBooking(
   }
 }
 
+// ── 2+3 (signed-in). Already have a session: skip the email/password step and
+// reserve seats for that user via the same linkAndFinalize path (no oversell).
+export async function finalizeAsCurrentUser(
+  bookingId: string,
+  draftToken?: string,
+): Promise<Result<{ reference: string; payToken: string }>> {
+  if (!(await limitByIp("book-auth", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const { data: { user } } = await createClient(await cookies()).auth.getUser();
+  if (!user?.email) return { ok: false, error: "Please sign in to continue." };
+
+  const token = await draftTokenFrom(draftToken);
+  if (!token) return { ok: false, error: "Your booking session expired. Please start again." };
+
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,draft_token,status").eq("id", bookingId).maybeSingle();
+  if (!b || b.draft_token !== token) return { ok: false, error: "Booking not found." };
+  if (b.status !== "draft" && b.status !== "pending_auth")
+    return { ok: false, error: "This booking can no longer be verified." };
+  await admin.from("bookings").update({ contact_email: user.email, status: "pending_auth" }).eq("id", bookingId);
+
+  return reserveForUser(admin, bookingId, token, user.id, user.email);
+}
+
 // ── 4b. Start payment on the configured gateway (PAYMENT_PROVIDER).
 // Returns a Razorpay checkout order, a redirectUrl (PhonePe hosted page), or a
 // reference (mock = done).
 export async function startPayment(
   bookingId: string,
   payToken?: string,
+  mode: "full" | "deposit" = "full",
 ): Promise<Result<{ redirectUrl?: string; reference?: string; razorpay?: CheckoutOrder }>> {
   if (!(await limitByIp("pay-start", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
   const supabase = createClient(await cookies());
@@ -182,13 +219,34 @@ export async function startPayment(
   if (!userId) return { ok: false, error: "Please verify your email first." };
 
   const admin = createAdminClient();
-  const { data: b } = await admin.from("bookings").select("id,user_id,contact_email").eq("id", bookingId).maybeSingle();
+  const { data: b } = await admin
+    .from("bookings")
+    .select("id,user_id,contact_email,grand_total,trek_id")
+    .eq("id", bookingId)
+    .maybeSingle();
   if (!b || b.user_id !== userId) return { ok: false, error: "Booking not found." };
+
+  // Server-authoritative charge: the client only picks the mode. For a deposit we
+  // re-read the trek's deposit config and recompute the slice; resolveCharge falls
+  // back to full unless it's a real partial (> 0 and < total).
+  let charge: Charge = { amount: b.grand_total, kind: "full" };
+  if (mode === "deposit") {
+    const { data: trek } = await admin
+      .from("treks")
+      .select("deposit_type,deposit_value")
+      .eq("id", b.trek_id)
+      .maybeSingle();
+    const cfg: DepositConfig = {
+      type: (trek?.deposit_type as DepositConfig["type"]) ?? "none",
+      value: Number(trek?.deposit_value ?? 0),
+    };
+    charge = resolveCharge(b.grand_total, "deposit", cfg);
+  }
 
   const provider = paymentProvider();
   if (provider === "razorpay") {
     try {
-      return { ok: true, razorpay: await startRazorpayCheckout(admin, bookingId) };
+      return { ok: true, razorpay: await startRazorpayCheckout(admin, bookingId, charge) };
     } catch (e) {
       console.error("[pay] razorpay start failed:", (e as Error).message);
       const msg = (e as Error).message;
@@ -196,11 +254,15 @@ export async function startPayment(
     }
   }
   if (provider === "mock") {
+    // ponytail: mock is the dev-only fallback and confirms the FULL total via
+    // confirm_mock_payment (0019); it ignores deposit mode. The real gateways
+    // (razorpay/phonepe) carry the deposit slice. Add a mock-deposit RPC only if
+    // deposits ever need exercising without a live gateway.
     const r = await confirmMockAndNotify(admin, bookingId, b.contact_email);
     return r.ok ? { ok: true, reference: r.reference } : r;
   }
   try {
-    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId);
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId, charge);
     const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
     const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId, redirectUrl: cb, callbackUrl: cb });
     if (!init.ok) return { ok: false, error: init.error };
@@ -286,7 +348,8 @@ export async function verifyRazorpayPayment(
 
   try {
     const r = await verifyAndSettleCheckout(admin, bookingId, orderId, paymentId);
-    if (r.outcome === "confirmed" || r.outcome === "already_settled") return { ok: true, reference: r.reference ?? "" };
+    if (r.outcome === "confirmed" || r.outcome === "deposit_paid" || r.outcome === "already_settled")
+      return { ok: true, reference: r.reference ?? "" };
     if (r.outcome === "refunded")
       return { ok: false, error: "Your seat hold ended before the payment completed, so we've refunded you in full. Please book again." };
     if (r.outcome === "not_captured")
@@ -295,6 +358,95 @@ export async function verifyRazorpayPayment(
   } catch (e) {
     console.error("[pay] razorpay verify failed:", (e as Error).message);
     // The webhook will still settle it if the money was captured.
+    return { ok: false, error: "We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly." };
+  }
+}
+
+// ── 5. Collect the BALANCE on a deposit_paid booking, off-session.
+// Auth is lightweight by design — a balance link is opened without a login:
+// the caller proves identity with the booking reference AND the contact email.
+// The amount is ALWAYS the server-computed balance_due of the locked booking,
+// never anything the client sends. Routes to the gateway exactly like startPayment.
+export async function startBalancePayment(
+  reference: string,
+  email: string,
+): Promise<Result<{ redirectUrl?: string; reference?: string; razorpay?: CheckoutOrder }>> {
+  if (!(await limitByIp("pay-balance", 10, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success || typeof reference !== "string" || !reference)
+    return { ok: false, error: "Enter the email on your booking." };
+
+  const admin = createAdminClient();
+  const { data: b } = await admin
+    .from("bookings")
+    .select("id,user_id,status,balance_due,contact_email")
+    .eq("reference", reference)
+    .maybeSingle();
+  // Vague on mismatch so a wrong email can't probe which references exist.
+  if (!b || (b.contact_email ?? "").toLowerCase() !== parsedEmail.data.toLowerCase())
+    return { ok: false, error: "We couldn't find a balance to pay for that reference and email." };
+  if (b.status !== "deposit_paid" || !b.balance_due || b.balance_due <= 0)
+    return { ok: false, error: "This balance is already paid or not due." };
+
+  // Server-authoritative amount: the locked booking's balance_due, kind='balance'.
+  const charge = { amount: b.balance_due, kind: "balance" as const };
+  const provider = paymentProvider();
+  if (provider === "razorpay") {
+    try {
+      return { ok: true, razorpay: await startRazorpayCheckout(admin, b.id, charge) };
+    } catch (e) {
+      const msg = (e as Error).message;
+      return { ok: false, error: msg.startsWith("Razorpay") ? "Couldn't start the payment. Please try again." : msg };
+    }
+  }
+  if (provider === "mock") {
+    // ponytail: mock (confirm_mock_payment) only confirms the FULL total from
+    // pending_payment; it can't settle a balance slice. Balance needs a live gateway.
+    return { ok: false, error: "Balance payment isn't available in test mode." };
+  }
+  try {
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, b.id, charge);
+    const cb = `${REDIRECT_BASE}/api/phonepe/callback?mtx=${merchantTransactionId}`;
+    const init = await phonePeInitiate({ merchantTransactionId, amountPaise, userId: b.user_id ?? reference, redirectUrl: cb, callbackUrl: cb });
+    if (!init.ok) return { ok: false, error: init.error };
+    return { ok: true, redirectUrl: init.redirectUrl };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+// ── 5b. Razorpay Checkout success handler for a BALANCE payment. Same server-side
+// re-verification as verifyRazorpayPayment, but authed off reference+email (no
+// session) and settling the deposit_paid booking to confirmed.
+export async function verifyBalancePayment(
+  reference: string,
+  email: string,
+  resp: { razorpay_order_id?: unknown; razorpay_payment_id?: unknown; razorpay_signature?: unknown },
+): Promise<Result<{ reference: string }>> {
+  if (!(await limitByIp("pay-verify", 20, 60))) return { ok: false, error: "Too many attempts. Please wait a minute." };
+  const orderId = typeof resp?.razorpay_order_id === "string" ? resp.razorpay_order_id : "";
+  const paymentId = typeof resp?.razorpay_payment_id === "string" ? resp.razorpay_payment_id : "";
+  const signature = typeof resp?.razorpay_signature === "string" ? resp.razorpay_signature : "";
+  if (!verifyPaymentSignature(orderId, paymentId, signature)) return { ok: false, error: "Payment could not be verified." };
+
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success || !reference) return { ok: false, error: "Payment could not be verified." };
+  const admin = createAdminClient();
+  const { data: b } = await admin.from("bookings").select("id,contact_email").eq("reference", reference).maybeSingle();
+  if (!b || (b.contact_email ?? "").toLowerCase() !== parsedEmail.data.toLowerCase())
+    return { ok: false, error: "Payment could not be verified." };
+
+  try {
+    const r = await verifyAndSettleCheckout(admin, b.id, orderId, paymentId);
+    if (r.outcome === "confirmed" || r.outcome === "already_settled")
+      return { ok: true, reference: r.reference ?? reference };
+    if (r.outcome === "refunded")
+      return { ok: false, error: "This booking could no longer take the payment, so we've refunded you in full." };
+    if (r.outcome === "not_captured")
+      return { ok: false, error: "Your payment is still processing. We'll email you as soon as it's confirmed." };
+    return { ok: false, error: "Payment could not be verified." };
+  } catch (e) {
+    console.error("[pay] balance verify failed:", (e as Error).message);
     return { ok: false, error: "We couldn't confirm your payment yet. If money was taken, your booking will be confirmed by email shortly." };
   }
 }

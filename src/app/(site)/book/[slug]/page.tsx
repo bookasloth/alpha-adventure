@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { istToday } from "@/lib/date";
 import BookingFlow from "./BookingFlow";
+import { parseNotice } from "@/domain/booking/paymentNotice";
 import { paymentProvider } from "@/lib/payment/provider";
 import { razorpayKeyId } from "@/lib/payment/razorpay";
 
@@ -13,19 +14,20 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   return { title: `Book — ${params.slug}` };
 }
 
-export default async function BookPage(props: { params: Promise<{ slug: string }> }) {
+export default async function BookPage(props: { params: Promise<{ slug: string }>; searchParams: Promise<{ payment?: string }> }) {
   const params = await props.params;
+  const { payment } = await props.searchParams; // set by the PhonePe callback on a closed/failed payment
   const supabase = createClient(await cookies());
 
   const { data: trek } = await supabase
     .from("treks")
-    .select("id,slug,title,summary,location,state,base_price,child_price,status,deleted_at")
+    .select("id,slug,title,summary,location,state,base_price,child_price,boarding_disclaimer,deposit_type,deposit_value,balance_due_offset_days,status,deleted_at")
     .eq("slug", params.slug)
     .maybeSingle();
   if (!trek || trek.status !== "published" || trek.deleted_at) notFound();
 
-  // Both only need trek.id - fetch in parallel, not one after the other.
-  const [{ data: departures }, { data: addons }] = await Promise.all([
+  // All independent of each other (departures/addons only need trek.id) - fetch in parallel.
+  const [{ data: departures }, { data: addons }, { data: { user } }, { data: teamMembers }, { data: boardingLocations }] = await Promise.all([
     supabase
       .from("trek_departures")
       .select("id,start_date,end_date,capacity,booked_seats,price_override,status")
@@ -39,6 +41,9 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
       .eq("trek_id", trek.id)
       .eq("active", true)
       .order("position", { ascending: true }),
+    supabase.auth.getUser(),
+    supabase.from("team_members").select("id,name").eq("active", true).order("position", { ascending: true }),
+    supabase.from("trek_boarding_locations").select("id,name,subtext,price").eq("trek_id", trek.id).order("position", { ascending: true }),
   ]);
 
   return (
@@ -51,10 +56,18 @@ export default async function BookPage(props: { params: Promise<{ slug: string }
         base_price: trek.base_price ?? 0,
         child_price: trek.child_price ?? null,
         place: trek.location || trek.state || "India",
+        deposit_type: (trek.deposit_type ?? "none") as "none" | "percent" | "flat",
+        deposit_value: Number(trek.deposit_value ?? 0),
+        balance_due_offset_days: Number(trek.balance_due_offset_days ?? 2),
       }}
       departures={departures ?? []}
       addons={addons ?? []}
       payMode={payModeNow()}
+      user={user?.email ? { email: user.email } : null}
+      teamMembers={teamMembers ?? []}
+      boardingLocations={boardingLocations ?? []}
+      boardingDisclaimer={trek.boarding_disclaimer ?? null}
+      paymentNotice={parseNotice(payment)}
     />
   );
 }

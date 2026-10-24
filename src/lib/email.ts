@@ -78,9 +78,20 @@ export async function sendBookingConfirmedEmail(b: BookingEmail) {
   await send(b.to, T.bookingConfirmed(base, b));
   await alertOperator(T.adminBookingAlert(base, "confirmed", b), b.to);
 }
+// Deposit slice settled: "deposit received, balance due by {date}". Sent in
+// place of the full confirmation when a booking settles to deposit_paid.
+export async function sendDepositReceivedEmail(b: BookingEmail) {
+  const base = siteUrl();
+  await send(b.to, T.depositReceived(base, b));
+  await alertOperator(T.adminBookingAlert(base, "pending", b), b.to);
+}
 // Throws on failure so the cron only stamps on real success (retried next run).
 export async function sendBookingReminderEmail(b: BookingEmail) {
   await send(b.to, T.bookingReminder(siteUrl(), b), { throwOnError: true });
+}
+// Balance-due nudge (daily cron). Throws so the cron stamps only on real success.
+export async function sendBalanceDueReminderEmail(b: BookingEmail) {
+  await send(b.to, T.balanceDueReminder(siteUrl(), b), { throwOnError: true });
 }
 export async function sendBookingCancelledEmail(b: BookingEmail, by: "customer" | "operator") {
   const base = siteUrl();

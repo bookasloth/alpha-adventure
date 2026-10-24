@@ -3,6 +3,8 @@
 import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
+import { boardingListSchema, reconcileBoarding } from "../boarding";
+import { depositFields, refineDeposit, depositColumns } from "../deposit";
 
 const slugRe = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const rupees = z.coerce.number().min(0).max(10_000_000); // ₹, converted to paise on save
@@ -81,7 +83,12 @@ const trekSchema = z.object({
     caption: z.string().trim().optional().or(z.literal("")),
   })).default([]),
   departures: z.array(departureSchema).default([]),
-});
+  // boarding locations (migration 0029): max 4, priced per traveller
+  boarding: boardingListSchema,
+  boarding_disclaimer: z.string().trim().max(1000).optional().or(z.literal("")),
+  // deposit config (migration 0030): percent => whole 1-100, flat => rupees (stored as paise)
+  ...depositFields,
+}).superRefine(refineDeposit);
 
 export type CreateTrekInput = z.input<typeof trekSchema>;
 type Result = { ok: true; slug: string } | { ok: false; error: string };
@@ -132,6 +139,8 @@ export async function createTrek(raw: unknown): Promise<Result> {
       accommodation: blank(t.accommodation),
       fitness_criteria: blank(t.fitness_criteria),
       not_to_miss: t.not_to_miss,
+      boarding_disclaimer: blank(t.boarding_disclaimer),
+      ...depositColumns(t),
     })
     .select("id,slug")
     .single();
@@ -193,6 +202,7 @@ export async function createTrek(raw: unknown): Promise<Result> {
   }
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[createTrek] child insert failed:", r.error.message);
+  await reconcileBoarding(admin, trek.id, t.boarding);
 
   revalidatePublicTrek(trek.slug);
   return { ok: true, slug: trek.slug };

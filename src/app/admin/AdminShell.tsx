@@ -37,7 +37,7 @@ import { cancelBooking, getBookingDetail, type BookingDetail } from "./bookings/
 import { updateLeadStatus, replyToLead } from "./leads/actions";
 
 /* ─────────────────────────── types ─────────────────────────── */
-type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string };
+type Booking = { id?: string; ref: string; customer: string; trek: string; date: string; pax: number; amount: number; status: string; manager?: string; paid?: number; balance?: number; balanceDue?: string };
 type Trek = { title: string; region: string; difficulty: string; price: number; departures: number; status: string };
 type Departure = { trek: string; start: string; end: string; capacity: number; booked: number; status: string };
 type MenuItem = { label: string; onClick: () => void | Promise<unknown>; tone?: "danger" };
@@ -99,6 +99,7 @@ const NAV = [
   ] },
   { key: "settings", label: "Settings", icon: Cog, items: [
     { key: "s-general", label: "General" }, { key: "s-email", label: "Email" }, { key: "s-payments", label: "Payments" }, { key: "s-team", label: "Team" },
+    { key: "team-members", label: "Account Managers", href: "/admin/team" },
   ] },
 ] as const;
 
@@ -141,6 +142,7 @@ const genRef = (used: string[]) => {
 
 /* ─────────────────────────── shell ─────────────────────────── */
 export default function AdminShell({ data }: { data: AdminData }) {
+  const router = useRouter();
   const [section, setSection] = useState("overview");
   const [item, setItem] = useState("dashboard");
   // Seed editable state from real data (falls back to mock if a slice is empty
@@ -262,7 +264,7 @@ export default function AdminShell({ data }: { data: AdminData }) {
             const on = item === it.key;
             const Icon = PAGE_ICON[it.key];
             return (
-              <button key={it.key} onClick={() => setItem(it.key)}
+              <button key={it.key} onClick={() => ("href" in it ? router.push(it.href) : setItem(it.key))}
                 className={cn("flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   on ? "bg-primary/10 text-primary" : "text-gray-600 hover:bg-slate-100")}>
                 {Icon ? <Icon size={16} /> : <span className="h-1.5 w-1.5 rounded-full bg-current opacity-40" />}
@@ -505,13 +507,13 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
     <Table>
       <TableHeader><TableRow className="hover:bg-transparent">
         <TableHead>Ref</TableHead><TableHead>Customer</TableHead><TableHead>Trek</TableHead><TableHead>Departure</TableHead>
-        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead>
+        <TableHead>Pax</TableHead><TableHead>Amount</TableHead><TableHead>Paid</TableHead><TableHead>Balance</TableHead><TableHead>Manager</TableHead><TableHead>Status</TableHead>
         {rowMenu && <TableHead></TableHead>}
       </TableRow></TableHeader>
       <TableBody>
         {rows.length === 0 ? (
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={rowMenu ? 8 : 7} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
+            <TableCell colSpan={rowMenu ? 11 : 10} className="py-10 text-center text-gray-400">No bookings match your filters.</TableCell>
           </TableRow>
         ) : rows.map((b) => (
           <TableRow key={b.ref}>
@@ -521,6 +523,9 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
             <TableCell>{b.date}</TableCell>
             <TableCell>{b.pax}</TableCell>
             <TableCell className="font-semibold text-ink">{rupee(b.amount)}</TableCell>
+            <TableCell>{rupee(b.paid ?? 0)}</TableCell>
+            <TableCell>{b.balance ? <>{rupee(b.balance)}<span className="block text-xs text-gray-400">by {b.balanceDue}</span></> : "—"}</TableCell>
+            <TableCell className="text-gray-500">{b.manager ?? "—"}</TableCell>
             <TableCell><S s={b.status} /></TableCell>
             {rowMenu && <TableCell className="text-right">{<RowMenu options={rowMenu(b)} />}</TableCell>}
           </TableRow>
@@ -533,12 +538,13 @@ function BookingsTable({ rows, rowMenu }: { rows: Booking[]; rowMenu?: (b: Booki
 const BOOKING_TABS = [
   { key: "all", label: "All" },
   { key: "confirmed", label: "Confirmed" },
+  { key: "deposit_paid", label: "Deposit paid" },
   { key: "pending_payment", label: "Pending" },
   { key: "completed", label: "Completed" },
   { key: "cancelled", label: "Cancelled" },
 ];
 const BOOKING_TAB_STATUS: Record<string, string> = {
-  all: "", confirmed: "confirmed", pending_payment: "pending_payment", completed: "completed", cancelled: "cancelled",
+  all: "", confirmed: "confirmed", deposit_paid: "deposit_paid", pending_payment: "pending_payment", completed: "completed", cancelled: "cancelled",
 };
 const selectCls = "rounded-lg border border-line bg-slate-50 px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:bg-white";
 const PAGE_SIZE = 4;
@@ -653,7 +659,7 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold">{detail.reference}</h2>
-                  <Badge variant={badgeVariant(detail.status)}>{detail.status}</Badge>
+                  <Badge variant={badgeVariant(detail.status)}>{label(detail.status)}</Badge>
                 </div>
                 <p className="mt-0.5 text-sm text-gray-500">{detail.trekTitle} · {fmtDay(detail.departureDate)}</p>
               </div>
@@ -665,6 +671,7 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
                 <DRow k="Name" v={detail.contact.name || "—"} />
                 <DRow k="Email" v={detail.contact.email || "—"} />
                 <DRow k="Phone" v={detail.contact.phone || "—"} />
+                <DRow k="Account manager" v={detail.accountManager || "—"} />
                 <DRow k="Travellers" v={`${detail.adults} adult${detail.adults === 1 ? "" : "s"}${detail.children ? ` · ${detail.children} child` : ""} · ${detail.seats} seat(s)`} />
               </DetailBox>
               <DetailBox title="Payment">
@@ -673,6 +680,8 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
                 <DRow k="Grand total" v={money(detail.totals.grandTotal)} />
                 <DRow k="Paid" v={money(detail.totals.amountPaid)} />
                 {detail.totals.balanceDue > 0 && <DRow k="Balance due" v={money(detail.totals.balanceDue)} />}
+                {detail.balanceDueDate && <DRow k="Balance due by" v={fmtDay(detail.balanceDueDate)} />}
+                {detail.payBalanceUrl && <CopyLink url={detail.payBalanceUrl} />}
               </DetailBox>
             </div>
 
@@ -716,6 +725,19 @@ function BookingDetailModal({ detail, onClose }: { detail: BookingDetail | null;
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function CopyLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Pay-balance link"
+        className="min-w-0 flex-1 rounded-lg border border-line bg-slate-50 px-2 py-1.5 text-xs text-ink" />
+      <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}>
+        {copied ? "Copied" : "Copy link"}
+      </Button>
     </div>
   );
 }
@@ -809,6 +831,20 @@ function TrekDetailModal({ detail, onClose }: { detail: TrekDetail | null; onClo
                   <DetailBox title="Exclusions"><ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">{detail.exclusions.map((x, i) => <li key={i}>{x}</li>)}</ul></DetailBox>
                 )}
               </div>
+            )}
+
+            {detail.boarding.length > 0 && (
+              <DetailBox title="Boarding locations" className="mt-4">
+                <div className="divide-y divide-line">
+                  {detail.boarding.map((b, i) => (
+                    <div key={i} className="py-2">
+                      <div className="flex items-center justify-between text-sm"><span className="font-medium text-ink">{b.name}</span><span className="font-semibold text-primary">{b.price ? `${money(b.price)} / traveller` : "Free"}</span></div>
+                      {b.subtext && <p className="mt-0.5 text-xs text-gray-500">{b.subtext}</p>}
+                    </div>
+                  ))}
+                </div>
+                {detail.boardingDisclaimer && <p className="mt-2 text-xs text-gray-500 whitespace-pre-wrap">{detail.boardingDisclaimer}</p>}
+              </DetailBox>
             )}
 
             {detail.packages.length > 0 && (

@@ -3,6 +3,8 @@
 import { revalidatePublicTrek } from "@/lib/revalidateTrek";
 import { z } from "zod";
 import { requireAdmin } from "@/app/admin/data";
+import { boardingListSchema, reconcileBoarding } from "./boarding";
+import { depositFields, refineDeposit, depositColumns } from "./deposit";
 
 const toRupees = (paise: number | null) => Math.round((paise || 0) / 100);
 
@@ -27,6 +29,8 @@ export type TrekDetail = {
   itinerary: { title: string; description: string }[];
   faqs: { question: string; answer: string }[];
   gallery: { imageUrl: string; caption: string }[];
+  boarding: { name: string; subtext: string; price: number }[];
+  boardingDisclaimer: string;
   departures: number;
 };
 
@@ -38,11 +42,11 @@ export async function getTrekDetail(
   const { admin } = await requireAdmin();
   const { data: t } = await admin
     .from("treks")
-    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size,suitable_age,accommodation,fitness_criteria,not_to_miss,brochure_url")
+    .select("id,slug,title,summary,overview,hero_image,base_price,difficulty,status,group,tags,badge,region,location,state,duration_days,altitude,base_camp,best_season,group_size,suitable_age,accommodation,fitness_criteria,not_to_miss,brochure_url,boarding_disclaimer")
     .eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (!t) return { ok: false, error: "Trek not found." };
 
-  const [inc, exc, pkgs, iti, faq, gal, deps] = await Promise.all([
+  const [inc, exc, pkgs, iti, faq, gal, deps, brd] = await Promise.all([
     admin.from("inclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("exclusions").select("text").eq("trek_id", t.id).order("sort"),
     admin.from("pricing_packages").select("name,price,inclusions,cta_label").eq("trek_id", t.id).order("sort"),
@@ -50,6 +54,7 @@ export async function getTrekDetail(
     admin.from("trek_faqs").select("question,answer").eq("trek_id", t.id).order("sort"),
     admin.from("trek_gallery").select("image_url,caption").eq("trek_id", t.id).order("sort_order"),
     admin.from("trek_departures").select("id", { count: "exact", head: true }).eq("trek_id", t.id).neq("status", "cancelled"),
+    admin.from("trek_boarding_locations").select("name,subtext,price").eq("trek_id", t.id).order("position"),
   ]);
 
   return {
@@ -80,6 +85,8 @@ export async function getTrekDetail(
       itinerary: (iti.data ?? []).map((d) => ({ title: d.title ?? "", description: d.description ?? "" })),
       faqs: (faq.data ?? []).map((q) => ({ question: q.question ?? "", answer: q.answer ?? "" })),
       gallery: (gal.data ?? []).map((g) => ({ imageUrl: g.image_url ?? "", caption: g.caption ?? "" })),
+      boarding: (brd.data ?? []).map((b) => ({ name: b.name ?? "", subtext: b.subtext ?? "", price: toRupees(b.price) })),
+      boardingDisclaimer: t.boarding_disclaimer ?? "",
       departures: deps.count ?? 0,
     },
   };
@@ -142,7 +149,12 @@ const rowSchema = z.object({
     image_url: z.string().trim().min(1),
     caption: z.string().trim().optional().or(z.literal("")),
   })).default([]),
-});
+  // Boarding locations (migration 0029): max 4, priced per traveller.
+  boarding: boardingListSchema,
+  boarding_disclaimer: z.string().trim().max(1000).optional().or(z.literal("")),
+  // Deposit config (migration 0030): percent => whole 1-100, flat => rupees (stored as paise).
+  ...depositFields,
+}).superRefine(refineDeposit);
 
 type Result = { ok: true; slug: string } | { ok: false; error: string };
 const blank = (v: string | undefined) => (v && v.trim() ? v.trim() : null);
@@ -183,6 +195,8 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
     accommodation: blank(t.accommodation),
     fitness_criteria: blank(t.fitness_criteria),
     not_to_miss: t.not_to_miss,
+    boarding_disclaimer: blank(t.boarding_disclaimer),
+    ...depositColumns(t),
   }).eq("slug", slug).select("id").single();
 
   if (error || !trek) { console.error("[updateTrek]", error?.message); return { ok: false, error: "Could not save the trek." }; }
@@ -219,6 +233,8 @@ export async function updateTrek(slug: string, raw: unknown): Promise<Result> {
   ));
   const results = await Promise.all(jobs);
   for (const r of results) if (r.error) console.error("[updateTrek] child insert:", r.error.message);
+  // Boarding is reconciled by id (not delete-all) so existing bookings keep their link.
+  await reconcileBoarding(admin, id, t.boarding);
 
   revalidateTrek(slug);
   return { ok: true, slug };

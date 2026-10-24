@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { readFileSync } from "fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { createDraftBooking, linkAndFinalize, confirmMockPayment } from "./service";
+import { createDraftBooking, linkAndFinalize, confirmMockPayment, createPhonePePayment, confirmPhonePePayment } from "./service";
+import { computeDeposit } from "./pricing";
 
 // Load .env.local (vitest does not inject it).
 try {
@@ -16,6 +17,29 @@ try {
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RUN = Boolean(url && key);
+
+// IST "today" (business tz) — the booking engine rejects past departures by it.
+const IST_TODAY = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+
+// Pick a genuinely bookable departure on the LIVE DB: future (IST), non-cancelled,
+// with >= minSeats free, on a published trek that has a price. The old fixtures
+// grabbed an arbitrary published trek whose earliest departure was often in the
+// past (or absent), so the cycle never reached the code under test.
+async function pickBookable(admin: SupabaseClient, minSeats = 2): Promise<{ trekId: string; departureId: string }> {
+  const { data } = await admin
+    .from("trek_departures")
+    .select("id,capacity,booked_seats,trek_id,start_date,treks!inner(status,base_price,deleted_at)")
+    .eq("treks.status", "published")
+    .not("treks.base_price", "is", null)
+    .is("treks.deleted_at", null)
+    .neq("status", "cancelled")
+    .gte("start_date", IST_TODAY())
+    .order("start_date", { ascending: true });
+  const rows = (data ?? []) as Array<{ id: string; capacity: number; booked_seats: number; trek_id: string }>;
+  const row = rows.find((d) => d.capacity - d.booked_seats >= minSeats);
+  if (!row) throw new Error(`No future-bookable departure with >= ${minSeats} free seats in the live DB — seed one to run this suite.`);
+  return { trekId: row.trek_id, departureId: row.id };
+}
 
 (RUN ? describe : describe.skip)("booking cycle (integration, live DB)", () => {
   let admin: SupabaseClient;
@@ -42,25 +66,21 @@ const RUN = Boolean(url && key);
   });
 
   it("guest → account → pending_payment → mock pay → confirmed", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 3);
+    departureId = _depId;
     const { data: trek } = await admin
       .from("treks")
       .select("id,base_price,child_price")
-      .eq("status", "published")
-      .not("base_price", "is", null)
-      .limit(1)
+      .eq("id", _trekId)
       .single();
     expect(trek).toBeTruthy();
 
     const { data: dep } = await admin
       .from("trek_departures")
       .select("id,capacity,booked_seats")
-      .eq("trek_id", trek!.id)
-      .neq("status", "cancelled")
-      .order("start_date", { ascending: true })
-      .limit(1)
+      .eq("id", _depId)
       .single();
     expect(dep).toBeTruthy();
-    departureId = dep!.id;
 
     // 1) Guest draft — server prices it (2 adults + 1 child @ adult rate).
     const draft = await createDraftBooking(admin, {
@@ -122,14 +142,9 @@ const RUN = Boolean(url && key);
   });
 
   it("DB rejects an invalid transition (draft → confirmed)", async () => {
-    const { data: trek } = await admin.from("treks").select("id").eq("status", "published").limit(1).single();
-    const { data: dep } = await admin
-      .from("trek_departures")
-      .select("id")
-      .eq("trek_id", trek!.id)
-      .neq("status", "cancelled")
-      .limit(1)
-      .single();
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 1);
+    const { data: trek } = await admin.from("treks").select("id").eq("id", _trekId).single();
+    const { data: dep } = await admin.from("trek_departures").select("id").eq("id", _depId).single();
     const { data: b } = await admin
       .from("bookings")
       .insert({ trek_id: trek!.id, departure_id: dep!.id, status: "draft", adults: 1, children: 0, currency: "INR" })
@@ -140,5 +155,390 @@ const RUN = Boolean(url && key);
     expect(error).not.toBeNull(); // enforce_booking_transition() blocks it
 
     await admin.from("bookings").delete().eq("id", b!.id);
+  });
+});
+
+// finalizeAsCurrentUser (book/actions.ts) is link + finalize for a session user
+// with no OTP/password step; this exercises that same linkAndFinalize path.
+(RUN ? describe : describe.skip)("signed-in finalize (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+  });
+
+  it("finalize reserves seats for a signed-in user without the auth form", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
+    const { data: trek } = await admin.from("treks").select("id").eq("id", _trekId).single();
+    const { data: dep } = await admin.from("trek_departures").select("id,booked_seats").eq("id", _depId).single();
+
+    const { data: created } = await admin.auth.admin.createUser({ email: `test+signedin${Date.now()}@example.com`, email_confirm: true });
+    userId = created!.user!.id;
+
+    const draft = await createDraftBooking(admin, {
+      trek_id: trek!.id, departure_id: dep!.id, adults: 2, children: 0,
+      contact_name: "Signed In", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+
+    // Draft straight to pending_payment, no pending_auth/OTP step in between.
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    expect(finalized.status).toBe("pending_payment");
+
+    const { data: b } = await admin.from("bookings").select("status,user_id").eq("id", bookingId).single();
+    expect(b!.status).toBe("pending_payment");
+    expect(b!.user_id).toBe(userId);
+
+    const { data: depAfter } = await admin.from("trek_departures").select("booked_seats").eq("id", departureId).single();
+    expect(depAfter!.booked_seats).toBe(dep!.booked_seats + 2);
+  });
+});
+
+// Deposit (split) payment: a 'deposit'-kind settle moves the booking to
+// deposit_paid (NOT confirmed), part-credits amount_paid, records the balance +
+// its due date, and keeps the seats reserved. (Task 6, Review Focus #1.)
+(RUN ? describe : describe.skip)("deposit payment (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+  let trekId = "";
+  // Original per-trek deposit config, restored in afterAll so the live row is untouched.
+  let origCfg: { deposit_type: string; deposit_value: number; balance_due_offset_days: number } | null = null;
+  const email = `test+deposit${Date.now()}@example.com`;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    if (trekId && origCfg) await admin.from("treks").update(origCfg).eq("id", trekId);
+  });
+
+  it("a deposit payment moves the booking to deposit_paid, not confirmed", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
+    const { data: trek } = await admin
+      .from("treks")
+      .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
+      .eq("id", _trekId)
+      .single();
+    expect(trek).toBeTruthy();
+    trekId = trek!.id;
+    origCfg = {
+      deposit_type: trek!.deposit_type,
+      deposit_value: trek!.deposit_value,
+      balance_due_offset_days: trek!.balance_due_offset_days,
+    };
+    // Make this trek take a 30% deposit with the balance due 2 days before departure.
+    await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
+
+    const { data: dep } = await admin
+      .from("trek_departures")
+      .select("id,booked_seats")
+      .eq("id", _depId)
+      .single();
+
+    const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    userId = created!.user!.id;
+
+    // Draft → pending_auth → finalize (reserve 2 seats, pending_payment).
+    const draft = await createDraftBooking(admin, {
+      trek_id: trekId, departure_id: departureId, adults: 2, children: 0,
+      contact_name: "Deposit Guest", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+    await admin.from("bookings").update({ status: "pending_auth", contact_email: email }).eq("id", bookingId);
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    expect(finalized.status).toBe("pending_payment");
+
+    const grandTotal = finalized.grand_total;
+    const deposit = computeDeposit(grandTotal, { type: "percent", value: 30 });
+    expect(deposit).toBeGreaterThan(0);
+    expect(deposit).toBeLessThan(grandTotal);
+
+    // Charge the deposit slice via the real service path, then settle it like the
+    // PhonePe callback does (server-verified amount == the deposit we charged).
+    const { merchantTransactionId, amountPaise } = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    expect(amountPaise).toBe(deposit);
+    const settled = await confirmPhonePePayment(admin, merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+    expect(settled).not.toBeNull();
+
+    // Booking settled to deposit_paid, part-paid, balance recorded — NOT confirmed.
+    const { data: b } = await admin
+      .from("bookings")
+      .select("status,amount_paid,balance_due,balance_due_date,deposit_amount,grand_total")
+      .eq("id", bookingId)
+      .single();
+    expect(b!.status).toBe("deposit_paid");
+    expect(b!.status).not.toBe("confirmed");
+    expect(b!.amount_paid).toBe(deposit);
+    expect(b!.deposit_amount).toBe(deposit);
+    expect(b!.balance_due).toBe(grandTotal - deposit);
+    expect(b!.balance_due_date).toBeTruthy();
+
+    // Seats stay reserved while the balance is pending.
+    const { data: depAfter } = await admin.from("trek_departures").select("booked_seats").eq("id", departureId).single();
+    expect(depAfter!.booked_seats).toBe(dep!.booked_seats + 2);
+
+    // Payment row recorded as a successful deposit.
+    const { data: pay } = await admin.from("payments").select("status,amount,kind,verified_at").eq("booking_id", bookingId).single();
+    expect(pay!.status).toBe("success");
+    expect(pay!.amount).toBe(deposit);
+    expect(pay!.kind).toBe("deposit");
+    expect(pay!.verified_at).toBeTruthy();
+
+    // Idempotent: settling the same deposit again is a no-op, never over-credits.
+    const again = await confirmPhonePePayment(admin, merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+    expect(again).not.toBeNull();
+    const { data: b2 } = await admin.from("bookings").select("status,amount_paid").eq("id", bookingId).single();
+    expect(b2!.status).toBe("deposit_paid");
+    expect(b2!.amount_paid).toBe(deposit);
+  });
+});
+
+// Balance (split) payment: from a deposit_paid booking, a 'balance'-kind settle
+// confirms the booking, credits the FULL grand_total, and zeroes balance_due —
+// and a SECOND settle of the same order is a no-op (no double-credit). Exercises
+// the same service path startBalancePayment uses (createPhonePePayment with a
+// balance charge + settle_gateway_payment). (Task 7, Review Focus #2.)
+(RUN ? describe : describe.skip)("balance payment (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+  let trekId = "";
+  let origCfg: { deposit_type: string; deposit_value: number; balance_due_offset_days: number } | null = null;
+  const email = `test+balance${Date.now()}@example.com`;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    if (trekId && origCfg) await admin.from("treks").update(origCfg).eq("id", trekId);
+  });
+
+  it("paying the balance confirms the booking and is idempotent", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
+    const { data: trek } = await admin
+      .from("treks")
+      .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
+      .eq("id", _trekId)
+      .single();
+    trekId = trek!.id;
+    origCfg = {
+      deposit_type: trek!.deposit_type,
+      deposit_value: trek!.deposit_value,
+      balance_due_offset_days: trek!.balance_due_offset_days,
+    };
+    await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
+
+    const { data: dep } = await admin
+      .from("trek_departures")
+      .select("id,booked_seats")
+      .eq("id", _depId)
+      .single();
+
+    const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    userId = created!.user!.id;
+
+    // Draft → finalize → pay the deposit → deposit_paid.
+    const draft = await createDraftBooking(admin, {
+      trek_id: trekId, departure_id: departureId, adults: 2, children: 0,
+      contact_name: "Balance Guest", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+    await admin.from("bookings").update({ status: "pending_auth", contact_email: email }).eq("id", bookingId);
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    const grandTotal = finalized.grand_total;
+
+    const deposit = computeDeposit(grandTotal, { type: "percent", value: 30 });
+    const depPay = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    await confirmPhonePePayment(admin, depPay.merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+
+    const { data: afterDeposit } = await admin
+      .from("bookings")
+      .select("status,balance_due")
+      .eq("id", bookingId)
+      .single();
+    expect(afterDeposit!.status).toBe("deposit_paid");
+    const balance = afterDeposit!.balance_due as number;
+    expect(balance).toBe(grandTotal - deposit);
+    expect(balance).toBeGreaterThan(0);
+
+    // Charge + settle the BALANCE slice (the path startBalancePayment drives).
+    const balPay = await createPhonePePayment(admin, bookingId, { amount: balance, kind: "balance" });
+    expect(balPay.amountPaise).toBe(balance);
+    const settled = await confirmPhonePePayment(admin, balPay.merchantTransactionId, `txn_bal_${Date.now()}`, balance);
+    expect(settled).not.toBeNull();
+
+    // Booking confirmed, FULL total credited, nothing left owing.
+    const { data: b } = await admin
+      .from("bookings")
+      .select("status,amount_paid,balance_due,grand_total")
+      .eq("id", bookingId)
+      .single();
+    expect(b!.status).toBe("confirmed");
+    expect(b!.amount_paid).toBe(grandTotal);
+    expect(b!.balance_due).toBe(0);
+
+    // Balance payment recorded as a successful 'balance' slice.
+    const { data: pay } = await admin
+      .from("payments")
+      .select("status,amount,kind")
+      .eq("merchant_order_id", balPay.merchantTransactionId)
+      .single();
+    expect(pay!.status).toBe("success");
+    expect(pay!.amount).toBe(balance);
+    expect(pay!.kind).toBe("balance");
+
+    // Idempotent: settling the same balance order again is a no-op, never over-credits.
+    const again = await confirmPhonePePayment(admin, balPay.merchantTransactionId, `txn_bal_${Date.now()}`, balance);
+    expect(again).not.toBeNull();
+    const { data: b2 } = await admin.from("bookings").select("status,amount_paid").eq("id", bookingId).single();
+    expect(b2!.status).toBe("confirmed");
+    expect(b2!.amount_paid).toBe(grandTotal);
+  });
+});
+
+// Settlement edge (Task 9): a gateway amount that differs from the slice we
+// charged — on a DEPOSIT or a BALANCE — must flag amount_mismatch and leave the
+// booking status UNCHANGED (never confirmed / deposit_paid). It is a refund case,
+// not a booking. A replayed callback must not read as success either.
+(RUN ? describe : describe.skip)("amount_mismatch never confirms (integration, live DB)", () => {
+  let admin: SupabaseClient;
+  let userId = "";
+  let bookingId = "";
+  let departureId = "";
+  let seatsReserved = 0;
+  let trekId = "";
+  let origCfg: { deposit_type: string; deposit_value: number; balance_due_offset_days: number } | null = null;
+  const email = `test+mismatch${Date.now()}@example.com`;
+
+  beforeAll(() => {
+    admin = createClient(url!, key!, { auth: { persistSession: false, autoRefreshToken: false } });
+  });
+
+  afterAll(async () => {
+    if (bookingId) {
+      await admin.from("payments").delete().eq("booking_id", bookingId);
+      await admin.from("bookings").delete().eq("id", bookingId);
+    }
+    if (departureId && seatsReserved) {
+      await admin.rpc("release_departure_seats", { _departure_id: departureId, _seats: seatsReserved });
+    }
+    if (userId) await admin.auth.admin.deleteUser(userId);
+    if (trekId && origCfg) await admin.from("treks").update(origCfg).eq("id", trekId);
+  });
+
+  const settleRaw = async (orderId: string, amount: number) => {
+    const { data, error } = await admin.rpc("settle_gateway_payment", {
+      _order_id: orderId, _txn_id: `txn_mm_${Date.now()}`, _amount: amount, _method: "phonepe", _raw: { test: true },
+    });
+    expect(error).toBeNull();
+    return data as { outcome: string };
+  };
+  const snapshot = async () => {
+    const { data } = await admin.from("bookings").select("status,amount_paid,balance_due").eq("id", bookingId).single();
+    return data!;
+  };
+
+  it("a wrong amount on a deposit or a balance payment flags a refund and never changes status", async () => {
+    const { trekId: _trekId, departureId: _depId } = await pickBookable(admin, 2);
+    departureId = _depId;
+    const { data: trek } = await admin
+      .from("treks")
+      .select("id,base_price,deposit_type,deposit_value,balance_due_offset_days")
+      .eq("id", _trekId)
+      .single();
+    trekId = trek!.id;
+    origCfg = { deposit_type: trek!.deposit_type, deposit_value: trek!.deposit_value, balance_due_offset_days: trek!.balance_due_offset_days };
+    await admin.from("treks").update({ deposit_type: "percent", deposit_value: 30, balance_due_offset_days: 2 }).eq("id", trekId);
+
+    const { data: dep } = await admin.from("trek_departures").select("id").eq("id", _depId).single();
+    departureId = dep!.id;
+
+    const { data: created } = await admin.auth.admin.createUser({ email, email_confirm: true });
+    userId = created!.user!.id;
+
+    const draft = await createDraftBooking(admin, {
+      trek_id: trekId, departure_id: departureId, adults: 2, children: 0,
+      contact_name: "Mismatch Guest", contact_phone: "9999999999", travellers: [], addons: [],
+    });
+    bookingId = draft.bookingId;
+    await admin.from("bookings").update({ status: "pending_auth", contact_email: email }).eq("id", bookingId);
+    const finalized = await linkAndFinalize(admin, bookingId, draft.draftToken, userId);
+    seatsReserved = 2;
+    const grandTotal = finalized.grand_total;
+    const deposit = computeDeposit(grandTotal, { type: "percent", value: 30 });
+
+    // ── Deposit: charged `deposit`, gateway reports a different amount.
+    const depPay = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    expect((await settleRaw(depPay.merchantTransactionId, deposit + 100)).outcome).toBe("amount_mismatch");
+    const afterDepMismatch = await snapshot();
+    expect(afterDepMismatch.status).toBe("pending_payment"); // not deposit_paid, not confirmed
+    expect(afterDepMismatch.amount_paid).toBe(0);
+    const { data: depRow } = await admin.from("payments").select("status,failure_code").eq("merchant_order_id", depPay.merchantTransactionId).single();
+    expect(depRow!.status).toBe("failed");
+    expect(depRow!.failure_code).toBe("amount_mismatch");
+    // A replayed callback with the "right" amount must NOT read as success.
+    expect(await confirmPhonePePayment(admin, depPay.merchantTransactionId, "txn_replay", deposit)).toBeNull();
+    expect((await snapshot()).status).toBe("pending_payment");
+
+    // ── Balance: get legitimately to deposit_paid, then mis-pay the balance.
+    const goodDep = await createPhonePePayment(admin, bookingId, { amount: deposit, kind: "deposit" });
+    const ok = await confirmPhonePePayment(admin, goodDep.merchantTransactionId, `txn_dep_${Date.now()}`, deposit);
+    expect(ok?.outcome).toBe("deposit_paid");
+    const beforeBalance = await snapshot();
+    expect(beforeBalance.status).toBe("deposit_paid");
+    const balance = beforeBalance.balance_due as number;
+
+    const balPay = await createPhonePePayment(admin, bookingId, { amount: balance, kind: "balance" });
+    expect((await settleRaw(balPay.merchantTransactionId, balance - 100)).outcome).toBe("amount_mismatch");
+    const afterBalMismatch = await snapshot();
+    expect(afterBalMismatch.status).toBe("deposit_paid"); // NOT confirmed
+    expect(afterBalMismatch.amount_paid).toBe(deposit); // nothing over-credited
+    expect(afterBalMismatch.balance_due).toBe(balance);
+    expect(await confirmPhonePePayment(admin, balPay.merchantTransactionId, "txn_replay2", balance)).toBeNull();
+    expect((await snapshot()).status).toBe("deposit_paid");
   });
 });

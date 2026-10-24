@@ -45,7 +45,7 @@ export async function getAdminData() {
 
   const [bookingsRes, leadsRes, paymentsRes, profilesRes, departuresRes, treksRes, toursRes, galleryRes, testimonialsRes, postsRes] = await Promise.all([
     admin.from("bookings")
-      .select("id,reference,contact_name,contact_email,user_id,trek_title,departure_date,seats,grand_total,status,created_at")
+      .select("id,reference,contact_name,contact_email,user_id,trek_title,departure_date,seats,grand_total,amount_paid,balance_due,balance_due_date,status,created_at,team_members(name)")
       .order("created_at", { ascending: false }),
     admin.from("leads")
       .select("id,name,email,subject,status,created_at")
@@ -127,7 +127,12 @@ export async function getAdminData() {
     date: fmtDate(b.departure_date),
     pax: b.seats ?? 0,
     amount: rupees(b.grand_total),
+    paid: rupees(b.amount_paid),
+    // Only a deposit booking has an outstanding balance to chase.
+    balance: b.status === "deposit_paid" ? rupees(b.balance_due) : 0,
+    balanceDue: b.status === "deposit_paid" ? fmtDate(b.balance_due_date) : "—",
     status: b.status,
+    manager: (b.team_members as { name?: string } | null)?.name ?? "—",
   }));
 
   const leadRows = leads.map((l) => ({

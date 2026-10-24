@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingReminderEmail, sendReviewRequestEmail, type BookingEmail } from "@/lib/email";
+import { BOOKING_EMAIL_COLS, bookingEmailOf, sendBookingReminderEmail, sendReviewRequestEmail, sendBalanceDueReminderEmail, type BookingEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -8,15 +8,22 @@ export const dynamic = "force-dynamic";
 // and stamped only after a successful send, so a failure retries next run:
 //   - pre-departure reminder  (reminder_sent_at, 0021) — departing within REMIND_DAYS
 //   - "how was the trek?"     (review_request_sent_at, 0024) — trek ended in the last REVIEW_WINDOW days
+//   - balance-due reminder    (balance_due_reminder_sent_at, 0033) — deposit_paid, balance due within BALANCE_DAYS
 // Auth mirrors expire-bookings: fail-closed in prod.
 const REMIND_DAYS = 2;
 const REVIEW_WINDOW = 7;
+const BALANCE_DAYS = 3; // nudge when the balance comes due within this many days
 
 type Dep = { start_time: string | null; meeting_point: string | null; end_date: string | null } | null;
 type Row = {
   id: string; reference: string; trek_title: string | null; departure_date: string | null;
   adults: number | null; children: number | null; grand_total: number | null; contact_email: string | null;
   trek_departures: Dep | Dep[];
+};
+type BalRow = {
+  id: string; reference: string; trek_title: string | null; departure_date: string | null;
+  adults: number | null; children: number | null; grand_total: number | null; contact_email: string | null;
+  balance_due: number | null; balance_due_date: string | null;
 };
 const depOf = (r: Row): Dep => (Array.isArray(r.trek_departures) ? r.trek_departures[0] ?? null : r.trek_departures);
 const SELECT = `${BOOKING_EMAIL_COLS},trek_departures(start_time,meeting_point,end_date)`;
@@ -40,7 +47,7 @@ async function run(request: Request) {
   const today = day(0);
 
   // Send each, stamp on success. Returns {sent, failed}.
-  async function sendAndStamp(rows: Row[], column: string, build: (r: Row) => BookingEmail | null, sendFn: (b: BookingEmail) => Promise<void>) {
+  async function sendAndStamp<R extends { id: string; reference: string }>(rows: R[], column: string, build: (r: R) => BookingEmail | null, sendFn: (b: BookingEmail) => Promise<void>) {
     let sent = 0, failed = 0;
     for (const r of rows) {
       const mail = build(r);
@@ -57,7 +64,7 @@ async function run(request: Request) {
     return { sent, failed };
   }
 
-  const [reminders, reviews] = await Promise.all([
+  const [reminders, reviews, balances] = await Promise.all([
     admin.from("bookings").select(SELECT)
       .eq("status", "confirmed").is("reminder_sent_at", null).not("contact_email", "is", null)
       .gte("departure_date", today).lte("departure_date", day(REMIND_DAYS)),
@@ -65,9 +72,14 @@ async function run(request: Request) {
     admin.from("bookings").select(SELECT)
       .in("status", ["confirmed", "completed"]).is("review_request_sent_at", null).not("contact_email", "is", null)
       .gte("departure_date", day(-30)).lt("departure_date", today),
+    // Balance due on a deposit_paid booking, within the window, not yet reminded.
+    admin.from("bookings").select(`${BOOKING_EMAIL_COLS},balance_due,balance_due_date`)
+      .eq("status", "deposit_paid").is("balance_due_reminder_sent_at", null).not("contact_email", "is", null)
+      .not("balance_due_date", "is", null)
+      .gte("balance_due_date", today).lte("balance_due_date", day(BALANCE_DAYS)),
   ]);
-  if (reminders.error || reviews.error) {
-    const msg = (reminders.error ?? reviews.error)!.message;
+  if (reminders.error || reviews.error || balances.error) {
+    const msg = (reminders.error ?? reviews.error ?? balances.error)!.message;
     console.error("[cron] booking-reminders query failed:", msg);
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
@@ -82,8 +94,16 @@ async function run(request: Request) {
     return !!end && end < today && end >= day(-REVIEW_WINDOW);
   });
   const review = await sendAndStamp(ended, "review_request_sent_at", (r) => bookingEmailOf(r), sendReviewRequestEmail);
+  const balance = await sendAndStamp(
+    (balances.data ?? []) as BalRow[], "balance_due_reminder_sent_at",
+    (r) => {
+      const base = bookingEmailOf(r);
+      return base && { ...base, balanceDue: r.balance_due ?? 0, balanceDueDate: r.balance_due_date };
+    },
+    sendBalanceDueReminderEmail,
+  );
 
-  return NextResponse.json({ ok: true, reminder, review });
+  return NextResponse.json({ ok: true, reminder, review, balance });
 }
 
 export const GET = run;

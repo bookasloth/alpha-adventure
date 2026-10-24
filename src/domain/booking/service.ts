@@ -44,15 +44,43 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
   const seats = input.adults + input.children;
   if (dep.booked_seats + seats > dep.capacity) throw new Error("Not enough seats left.");
 
+  // Client-supplied id: must be one of THIS trek's own boarding locations (rejects
+  // tampered / foreign ids early). price_booking re-checks and prices it from the
+  // catalog — the client never supplies a boarding price.
+  const boardingId = input.boarding_location_id ?? null;
+  if (boardingId) {
+    const { data: bl } = await admin
+      .from("trek_boarding_locations")
+      .select("id")
+      .eq("id", boardingId)
+      .eq("trek_id", input.trek_id)
+      .maybeSingle();
+    if (!bl) throw new Error("Invalid boarding location.");
+  }
+
   const { data: priced, error: priceErr } = await admin.rpc("price_booking", {
     _trek_id: input.trek_id,
     _departure_id: input.departure_id,
     _adults: input.adults,
     _children: input.children,
     _addons: input.addons,
+    _boarding_id: boardingId,
   });
   if (priceErr || !priced) throw new Error(`Pricing failed: ${priceErr?.message ?? "unknown"}`);
-  const p = priced as Record<string, number>;
+  const p = priced as Record<string, number> & { boarding_name?: string | null };
+
+  // Client-supplied id: store only if it names an ACTIVE team member (rejects
+  // tampered / inactive / foreign ids), else null.
+  let accountManagerId: string | null = null;
+  if (input.account_manager_id) {
+    const { data: mgr } = await admin
+      .from("team_members")
+      .select("id")
+      .eq("id", input.account_manager_id)
+      .eq("active", true)
+      .maybeSingle();
+    accountManagerId = mgr?.id ?? null;
+  }
 
   const draftToken = crypto.randomUUID();
   const { data: booking, error: insErr } = await admin
@@ -67,10 +95,14 @@ export async function createDraftBooking(admin: Admin, raw: unknown): Promise<Dr
       children: input.children,
       contact_name: input.contact_name,
       contact_phone: input.contact_phone,
+      account_manager_id: accountManagerId,
       currency: "INR",
       price_adult: p.price_adult,
       price_child: p.price_child,
       addons_total: p.addons_total,
+      boarding_location_id: boardingId,
+      boarding_name: p.boarding_name ?? null,
+      boarding_total: p.boarding_total ?? 0,
       subtotal: p.subtotal,
       grand_total: p.grand_total,
       trek_title: trek.title,
@@ -163,32 +195,47 @@ export async function confirmMockPayment(admin: Admin, bookingId: string): Promi
 
 const BOOKING_COLS = "id,reference,status,grand_total,amount_paid,trek_title,departure_date,adults,children";
 
+// The slice of the booking to charge. Defaults to the full grand_total so
+// existing callers are unchanged; the deposit path passes { amount, kind }.
+export type ChargeInput = { amount?: number; kind?: "full" | "deposit" | "balance" };
+
 // PhonePe: create the pending payment row + return the merchant txn id to
-// initiate against. Booking must be pending_payment.
-export async function createPhonePePayment(admin: Admin, bookingId: string): Promise<{ merchantTransactionId: string; amountPaise: number }> {
+// initiate against. Booking must be pending_payment. The booking stays
+// pending_payment during the charge; settle_gateway_payment moves it on.
+export async function createPhonePePayment(admin: Admin, bookingId: string, charge: ChargeInput = {}): Promise<{ merchantTransactionId: string; amountPaise: number }> {
   const { data: b } = await admin.from("bookings").select("id,status,grand_total").eq("id", bookingId).maybeSingle();
   if (!b) throw new Error("Booking not found.");
-  if (b.status !== "pending_payment") throw new Error(`Booking not payable (is ${b.status}).`);
+  const kind = charge.kind ?? "full";
+  // A balance slice is collected from a deposit_paid booking (off-session link);
+  // full/deposit are collected during the pending_payment hold.
+  const payableStatus = kind === "balance" ? "deposit_paid" : "pending_payment";
+  if (b.status !== payableStatus) throw new Error(`Booking not payable (is ${b.status}).`);
+
+  const amount = charge.amount ?? b.grand_total;
+  if (!amount || amount < 100) throw new Error("Invalid payment amount.");
 
   const mtx = `AA${Date.now().toString(36)}${bookingId.replace(/-/g, "").slice(0, 12)}`.slice(0, 38);
   const { error } = await admin.from("payments").insert({
     booking_id: bookingId,
     provider: "phonepe",
     merchant_order_id: mtx,
-    amount: b.grand_total,
+    amount,
     currency: "INR",
     status: "pending",
     idempotency_key: mtx,
-    kind: "full",
+    kind,
   });
   if (error) throw new Error(`Payment insert failed: ${error.message}`);
-  return { merchantTransactionId: mtx, amountPaise: b.grand_total };
+  return { merchantTransactionId: mtx, amountPaise: amount };
 }
 
 // PhonePe: after a server-verified success, settle through the same locked,
 // idempotent DB function as Razorpay (settle_gateway_payment, 0026), so a
 // redirect and a server callback arriving together can't both confirm.
-export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<BookingRow | null> {
+// Returns the booking plus the settle outcome (callers send emails only on the first
+// "confirmed"/"deposit_paid"), or null when the payment was NOT applied.
+export type PhonePeSettle = BookingRow & { outcome: "confirmed" | "deposit_paid" | "already_settled" };
+export async function confirmPhonePePayment(admin: Admin, merchantTransactionId: string, providerTxnId: string | null, paidAmount?: number | null): Promise<PhonePeSettle | null> {
   const { data: pay } = await admin.from("payments").select("amount").eq("merchant_order_id", merchantTransactionId).maybeSingle();
   if (!pay) return null;
   const { data, error } = await admin.rpc("settle_gateway_payment", {
@@ -200,11 +247,18 @@ export async function confirmPhonePePayment(admin: Admin, merchantTransactionId:
   });
   if (error) { console.error("[phonepe] settle failed:", error.message); return null; }
   const res = data as { outcome: string; booking_id?: string };
-  if (res.outcome !== "confirmed" && res.outcome !== "already_settled") {
+  // deposit_paid is a successful settle too (part-paid, seats held) — not a refund case.
+  if (res.outcome !== "confirmed" && res.outcome !== "deposit_paid" && res.outcome !== "already_settled") {
     // amount_mismatch / refund_required: money needs a manual PhonePe refund.
     console.error(`[phonepe] ${merchantTransactionId} not confirmed: ${res.outcome} — refund manually.`);
     return null;
   }
+  // already_settled also covers a payment the guard already rejected (amount_mismatch
+  // = status 'failed'); a replayed callback must NOT read as success for those.
+  if (res.outcome === "already_settled") {
+    const { data: done } = await admin.from("payments").select("status").eq("merchant_order_id", merchantTransactionId).maybeSingle();
+    if (done?.status !== "success") return null;
+  }
   const { data: b } = await admin.from("bookings").select(BOOKING_COLS).eq("id", res.booking_id!).single();
-  return (b as BookingRow) ?? null;
+  return b ? { ...(b as BookingRow), outcome: res.outcome as PhonePeSettle["outcome"] } : null;
 }

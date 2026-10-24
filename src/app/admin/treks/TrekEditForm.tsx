@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, Check, Sparkles, Compass, Star,
-  ListChecks, Footprints, Package, HelpCircle, Images, MapPin,
+  ListChecks, Footprints, Package, HelpCircle, Images, MapPin, Bus, Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { updateTrek } from "./actions";
 import ImageField from "@/app/admin/ImageField";
+import BoardingEditor, { boardingPayload, type BoardingRow } from "./BoardingEditor";
+import DepositEditor, { depositPayload, type DepositState } from "./DepositEditor";
 
 const inp = "w-full rounded-[10px] border border-line bg-slate-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15";
 const inr = (v: string) => (v && Number(v) > 0 ? Number(v).toLocaleString("en-IN") : "—");
@@ -87,6 +89,8 @@ const SECTIONS = [
   { id: "s-incl", label: "Inclusions" },
   { id: "s-itin", label: "Itinerary" },
   { id: "s-pkg", label: "Packages" },
+  { id: "s-boarding", label: "Boarding" },
+  { id: "s-deposit", label: "Deposit" },
   { id: "s-faq", label: "FAQs" },
   { id: "s-gallery", label: "Gallery" },
 ];
@@ -100,6 +104,10 @@ export type TrekEditInitial = {
   brochure_url: string; suitable_age: string; accommodation: string; fitness_criteria: string;
   not_to_miss: string[];
   inclusions: string[]; exclusions: string[]; packages: Pkg[]; itinerary: Day[]; faqs: Faq[]; gallery: GalleryImg[];
+  // Boarding locations (migration 0029), max 4.
+  boarding: BoardingRow[]; boarding_disclaimer: string;
+  // Deposit / split payment (migration 0030).
+  deposit: DepositState;
 };
 
 export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) {
@@ -115,6 +123,9 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
   const [itinerary, setItinerary] = useState<Day[]>(initial.itinerary);
   const [faqs, setFaqs] = useState<Faq[]>(initial.faqs);
   const [gallery, setGallery] = useState<GalleryImg[]>(initial.gallery);
+  const [boarding, setBoarding] = useState<BoardingRow[]>(initial.boarding);
+  const [boardingDisclaimer, setBoardingDisclaimer] = useState(initial.boarding_disclaimer);
+  const [deposit, setDeposit] = useState<DepositState>(initial.deposit);
   const setDay = (i: number, key: keyof Day, v: string) =>
     setItinerary((prev) => prev.map((x, j) => (j === i ? { ...x, [key]: v } : x)));
   const setFaq = (i: number, key: keyof Faq, v: string) =>
@@ -135,6 +146,8 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
     "s-incl": inclusions.some((x) => x.trim()) || exclusions.some((x) => x.trim()),
     "s-itin": itinerary.some((d) => d.title.trim()),
     "s-pkg": packages.some((p) => p.name.trim()),
+    "s-boarding": boarding.some((b) => b.name.trim()),
+    "s-deposit": deposit.type !== "none",
     "s-faq": faqs.some((q) => q.question.trim() && q.answer.trim()),
     "s-gallery": gallery.some((g) => g.image_url.trim()),
   };
@@ -187,6 +200,9 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
       gallery: gallery.filter((g) => g.image_url.trim()).map((g) => ({
         image_url: g.image_url.trim(), caption: g.caption.trim(),
       })),
+      boarding: boardingPayload(boarding),
+      boarding_disclaimer: boardingDisclaimer,
+      ...depositPayload(deposit),
     };
     try {
       const r = await updateTrek(initial.slug, payload);
@@ -367,6 +383,14 @@ export default function TrekEditForm({ initial }: { initial: TrekEditInitial }) 
               ))}
               <button type="button" onClick={() => setPackages([...packages, { name: "", price: "", inclusions: "", cta_label: "Book Now" }])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/5"><Plus size={15} /> Add package</button>
             </div>
+          </SectionCard>
+
+          <SectionCard id="s-boarding" icon={<Bus size={16} />} title="Boarding locations" optional>
+            <BoardingEditor rows={boarding} setRows={setBoarding} disclaimer={boardingDisclaimer} setDisclaimer={setBoardingDisclaimer} />
+          </SectionCard>
+
+          <SectionCard id="s-deposit" icon={<Wallet size={16} />} title="Deposit / split payment" optional>
+            <DepositEditor value={deposit} onChange={setDeposit} />
           </SectionCard>
 
           <SectionCard id="s-faq" icon={<HelpCircle size={16} />} title="FAQs" optional>
